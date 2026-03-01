@@ -1,0 +1,157 @@
+body {
+    background-color: #1a1a1b;
+    color: #d1d1d1;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+}
+
+header {
+    background: #252526;
+    border-bottom: 2px solid #4a0000;
+    padding: 10px 0;
+}
+
+#main-menu {
+    display: flex;
+    justify-content: center;
+    list-style: none;
+    gap: 20px;
+}
+
+#main-menu li {
+    cursor: pointer;
+    padding: 10px 15px;
+    color: #ff4d4d;
+    font-weight: bold;
+    text-transform: uppercase;
+    transition: 0.3s;
+    border: 1px solid transparent;
+}
+
+#main-menu li:hover {
+    color: white;
+    background: #4a0000;
+    border-radius: 4px;
+}
+
+main {
+    padding: 40px;
+    text-align: center;
+}
+/* Стили для блока "Обо мне" */
+.about-me {
+    background: linear-gradient(135deg, #1e1e1f 0%, #2d2d30 100%);
+    padding: 40px 20px;
+    border-bottom: 1px solid #333;
+    text-align: center;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.profile-header h1 {
+    font-size: 2.5rem;
+    color: #fff;
+    margin-bottom: 5px;
+}
+
+.badge {
+    font-size: 1rem;
+    background: #4a0000;
+    color: #ff4d4d;
+    padding: 4px 10px;
+    border-radius: 4px;
+    vertical-align: middle;
+}
+
+.subtitle {
+    color: #888;
+    font-style: italic;
+    margin-bottom: 20px;
+}
+
+.bio p {
+    line-height: 1.6;
+    font-size: 1.1rem;
+    color: #bbb;
+}
+
+/* Стили для тегов технологий */
+.stack {
+    margin-top: 25px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+}
+
+.tag {
+    background: #333;
+    color: #00d4ff; /* Цвет "технологий" */
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-size: 0.9rem;
+    border: 1px solid #444;
+    transition: 0.3s;
+}
+
+.tag:hover {
+    background: #00d4ff;
+    color: #000;
+}
+.game-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 30px;
+}
+
+.game-card {
+    background: #252526;
+    border: 1px solid #444;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: left;
+    transition: transform 0.3s, border-color 0.3s;
+}
+
+.game-card:hover {
+    transform: translateY(-5px);
+    border-color: #ff4d4d;
+}
+
+/* Выделение для стратегии про гоблинов */
+.game-card.highlight {
+    border-left: 4px solid #00ff41; /* Зеленый цвет гоблинов */
+}
+
+.game-badge {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    background: #444;
+    color: #eee;
+    padding: 2px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-bottom: 10px;
+}
+
+.game-card h3 {
+    margin: 10px 0;
+    color: #fff;
+}
+
+.game-card p {
+    font-size: 0.9rem;
+    color: #aaa;
+    line-height: 1.4;
+}
+
+/* Адаптивность для мобилок */
+@media (max-width: 600px) {
+    .game-container {
+        grid-template-columns: 1fr;
+    }
+}
