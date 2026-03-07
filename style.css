@@ -294,3 +294,42 @@ h1 {
         height: 200px;
     }
 }
+/* --- Подвал (Footer) --- */
+.footer {
+    background-color: var(--nav-bg);
+    color: #888;
+    padding: 30px 20px;
+    margin-top: 60px; /* Отодвигаем подвал от основного контента */
+    border-top: 1px solid #333; /* Тонкая линия сверху */
+}
+
+.footer-content {
+    max-width: 1000px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+.footer-content p {
+    font-size: 0.9rem;
+}
+
+.social-links {
+    display: flex;
+    gap: 20px;
+}
+
+.social-links a {
+    color: #bbb;
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: color 0.3s ease, transform 0.3s ease;
+}
+
+.social-links a:hover {
+    color: var(--accent-color); /* Ссылки подсвечиваются фирменным цветом */
+    transform: translateY(-3px); /* Легкий прыжок при наведении */
+}
