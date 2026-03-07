@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function initGame() {
         score = 0;
-        lives = 5; // Сбрасываем жизни
+        lives = 5; // Сбрасываем жизни при старте
         isGameOver = false;
         enemies = [];
         particles = [];
@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
         gameLoop();
     }
 
-    // Функция создания взрыва (count - количество частиц)
+    // Функция создания взрыва
     function createExplosion(x, y, color, count = 15) {
         for (let i = 0; i < count; i++) {
             particles.push(new Particle(x, y, color));
@@ -134,13 +134,15 @@ document.addEventListener('DOMContentLoaded', () => {
             spawnTimer = 0;
         }
 
-        // Обновление частиц
-        particles.forEach((p, index) => {
-            p.update();
-            if (p.life <= 0) particles.splice(index, 1);
-        });
+        // Обновление частиц (с конца, чтобы безопасно удалять)
+        for (let i = particles.length - 1; i >= 0; i--) {
+            particles[i].update();
+            if (particles[i].life <= 0) {
+                particles.splice(i, 1);
+            }
+        }
 
-        // Проверяем врагов (идем с конца массива, так безопаснее при удалении элементов)
+        // Проверяем врагов (идем с конца массива)
         for (let i = enemies.length - 1; i >= 0; i--) {
             let enemy = enemies[i];
             enemy.update();
