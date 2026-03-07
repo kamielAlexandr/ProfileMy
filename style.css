@@ -102,7 +102,7 @@ h1 {
     margin: 20px 0 20px 20px;
 }
 
-.contact-btn {
+.contact-btn.contact-btn, .game-btn {
     background-color: var(--accent-color);
     color: white;
     border: none;
@@ -113,6 +113,9 @@ h1 {
     transition: background-color 0.3s;
 }
 
+.contact-btn:hover, .game-btn:hover {
+    background-color: #45a049;
+}
 .contact-btn:hover {
     background-color: #45a049;
 }
@@ -379,3 +382,4 @@ h1 {
     margin-bottom: 20px;
     text-shadow: 2px 2px 4px #000;
 }
+
