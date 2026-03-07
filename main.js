@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const contactBtn = document.querySelector('.contact-btn');
     if(contactBtn) {
         contactBtn.addEventListener('click', () => {
-            alert('Свяжитесь со мной в Telegram: @твой_ник');
+            alert('Свяжитесь со мной в Telegram: @kamielalex');
         });
     }
 });
