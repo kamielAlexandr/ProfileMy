@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Настройки игры
     let score = 0;
+    let lives = 5; // Прочность стены (жизни)
     let isGameOver = false;
     let animationId;
     
@@ -15,22 +16,32 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Спавн врагов
     let spawnTimer = 0;
-    let spawnInterval = 60; // Каждые 60 кадров (около 1 сек)
+    let spawnInterval = 60;
     let gameSpeedMultiplier = 1;
 
     // --- КЛАССЫ ---
 
-    // Класс Врага (Гоблина)
+    // Класс Врага (Гоблин или Босс)
     class Enemy {
-        constructor() {
-            this.width = 40;
-            this.height = 40;
-            // Появляется случайным образом по ширине экрана
+        constructor(isBoss = false) {
+            this.isBoss = isBoss;
+            
+            // Босс в 2 раза больше
+            this.width = isBoss ? 80 : 40;
+            this.height = isBoss ? 80 : 40;
             this.x = Math.random() * (canvas.width - this.width);
-            this.y = -this.height; // За пределами экрана сверху
-            // Скорость зависит от прогресса игры
-            this.speed = (1 + Math.random() * 2) * gameSpeedMultiplier;
-            this.color = '#2e7d32'; // Зеленый гоблинский цвет
+            this.y = -this.height;
+            
+            // Здоровье (клики для убийства)
+            this.hp = isBoss ? 5 : 1; 
+            this.maxHp = this.hp;
+            
+            // Скорость (Боссы идут медленнее)
+            let baseSpeed = isBoss ? 0.7 : (1 + Math.random() * 2);
+            this.speed = baseSpeed * gameSpeedMultiplier;
+            
+            // Цвет: Боссы красные, обычные зеленые
+            this.color = isBoss ? '#b71c1c' : '#2e7d32'; 
         }
 
         update() {
@@ -38,40 +49,53 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         draw() {
-            // Тело гоблина
+            // Тело
             ctx.fillStyle = this.color;
             ctx.fillRect(this.x, this.y, this.width, this.height);
             
-            // Злые красные глаза
-            ctx.fillStyle = '#ff1744';
-            ctx.fillRect(this.x + 8, this.y + 10, 8, 8);
-            ctx.fillRect(this.x + 24, this.y + 10, 8, 8);
+            // Глаза и Полоска HP для Босса
+            ctx.fillStyle = '#fff';
+            if (this.isBoss) {
+                // Глаза босса
+                ctx.fillRect(this.x + 16, this.y + 20, 16, 16);
+                ctx.fillRect(this.x + 48, this.y + 20, 16, 16);
+                
+                // Полоска здоровья над боссом
+                ctx.fillStyle = '#333'; // Фон полоски
+                ctx.fillRect(this.x, this.y - 12, this.width, 6);
+                ctx.fillStyle = '#4caf50'; // Само здоровье
+                ctx.fillRect(this.x, this.y - 12, this.width * (this.hp / this.maxHp), 6);
+            } else {
+                // Глаза обычного гоблина
+                ctx.fillRect(this.x + 8, this.y + 10, 8, 8);
+                ctx.fillRect(this.x + 24, this.y + 10, 8, 8);
+            }
         }
     }
 
-    // Класс Частиц (для эффекта взрыва при клике)
+    // Класс Частиц (взрыв)
     class Particle {
         constructor(x, y, color) {
             this.x = x;
             this.y = y;
             this.size = Math.random() * 5 + 2;
-            this.speedX = (Math.random() - 0.5) * 6;
-            this.speedY = (Math.random() - 0.5) * 6;
+            this.speedX = (Math.random() - 0.5) * 8;
+            this.speedY = (Math.random() - 0.5) * 8;
             this.color = color;
-            this.life = 1.0; // Прозрачность
+            this.life = 1.0;
         }
 
         update() {
             this.x += this.speedX;
             this.y += this.speedY;
-            this.life -= 0.05; // Постепенно исчезает
+            this.life -= 0.05;
         }
 
         draw() {
             ctx.globalAlpha = Math.max(0, this.life);
             ctx.fillStyle = this.color;
             ctx.fillRect(this.x, this.y, this.size, this.size);
-            ctx.globalAlpha = 1.0; // Возвращаем прозрачность
+            ctx.globalAlpha = 1.0;
         }
     }
 
@@ -79,6 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function initGame() {
         score = 0;
+        lives = 5; // Сбрасываем жизни
         isGameOver = false;
         enemies = [];
         particles = [];
@@ -86,25 +111,26 @@ document.addEventListener('DOMContentLoaded', () => {
         spawnInterval = 60;
         gameSpeedMultiplier = 1;
         
-        overlay.classList.add('hidden'); // Прячем меню
-        gameLoop(); // Запускаем цикл
+        overlay.classList.add('hidden');
+        gameLoop();
     }
 
-    function createExplosion(x, y, color) {
-        for (let i = 0; i < 15; i++) {
+    // Функция создания взрыва (count - количество частиц)
+    function createExplosion(x, y, color, count = 15) {
+        for (let i = 0; i < count; i++) {
             particles.push(new Particle(x, y, color));
         }
     }
 
     function update() {
-        // Усложнение игры со временем
-        gameSpeedMultiplier += 0.0005;
-        spawnInterval = Math.max(20, 60 - score * 0.5); // Спавн быстрее с ростом очков
+        gameSpeedMultiplier += 0.0005; // Постепенное ускорение
+        spawnInterval = Math.max(20, 60 - score * 0.4); // Уменьшаем интервал спавна
 
-        // Спавн новых гоблинов
         spawnTimer++;
         if (spawnTimer >= spawnInterval) {
-            enemies.push(new Enemy());
+            // Шанс 10% на появление Босса (только если счет > 10)
+            let spawnBoss = (score > 10 && Math.random() < 0.1);
+            enemies.push(new Enemy(spawnBoss));
             spawnTimer = 0;
         }
 
@@ -114,37 +140,54 @@ document.addEventListener('DOMContentLoaded', () => {
             if (p.life <= 0) particles.splice(index, 1);
         });
 
-        // Обновление врагов
-        enemies.forEach((enemy, index) => {
+        // Проверяем врагов (идем с конца массива, так безопаснее при удалении элементов)
+        for (let i = enemies.length - 1; i >= 0; i--) {
+            let enemy = enemies[i];
             enemy.update();
 
-            // Если гоблин дошел до низа экрана — конец игры
-            if (enemy.y + enemy.height >= canvas.height) {
-                isGameOver = true;
+            // Если гоблин ударился о стену Цитадели (низ экрана)
+            if (enemy.y + enemy.height >= canvas.height - 20) {
+                // Босс отнимает 3 жизни, обычный - 1
+                lives -= enemy.isBoss ? 3 : 1; 
+                
+                // Взрыв о стену
+                createExplosion(enemy.x + enemy.width/2, enemy.y + enemy.height, '#ff9800', 30);
+                
+                enemies.splice(i, 1); // Удаляем врага
+                
+                // Проверка на проигрыш
+                if (lives <= 0) {
+                    isGameOver = true;
+                }
             }
-        });
+        }
     }
 
     function draw() {
-        // Очищаем экран (рисуем темный фон)
         ctx.fillStyle = '#1a1a1a';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Рисуем стену Цитадели внизу
-        ctx.fillStyle = '#424242';
+        // Цвет стены меняется в зависимости от жизней
+        let wallColor = lives > 3 ? '#4caf50' : (lives > 1 ? '#ff9800' : '#f44336');
+        
+        // Рисуем стену
+        ctx.fillStyle = '#333';
         ctx.fillRect(0, canvas.height - 20, canvas.width, 20);
-        ctx.fillStyle = '#ffb300';
-        ctx.font = '14px Arial';
-        ctx.fillText('Стена Цитадели', 10, canvas.height - 5);
+        // Линия прочности поверх стены
+        ctx.fillStyle = wallColor;
+        ctx.fillRect(0, canvas.height - 20, canvas.width * (Math.max(0, lives) / 5), 3); 
 
         // Рисуем сущности
         enemies.forEach(enemy => enemy.draw());
         particles.forEach(p => p.draw());
 
-        // Отрисовка счета
+        // Отрисовка интерфейса (UI)
         ctx.fillStyle = '#fff';
-        ctx.font = '24px Arial';
-        ctx.fillText(`Убито гоблинов: ${score}`, 20, 40);
+        ctx.font = '20px Arial';
+        ctx.fillText(`💀 Убито: ${score}`, 20, 35);
+        
+        ctx.fillStyle = wallColor;
+        ctx.fillText(`🛡️ Прочность ворот: ${Math.max(0, lives)}/5`, 20, 65);
     }
 
     function gameLoop() {
@@ -152,28 +195,22 @@ document.addEventListener('DOMContentLoaded', () => {
             endGame();
             return;
         }
-
         update();
         draw();
-        
-        // Встроенный метод браузера для плавной анимации (обычно 60 FPS)
         animationId = requestAnimationFrame(gameLoop);
     }
 
     function endGame() {
         cancelAnimationFrame(animationId);
-        overlayTitle.innerHTML = `Цитадель пала!<br><span style="font-size:1.5rem; color:#ff5252;">Ваш счет: ${score}</span>`;
-        startBtn.textContent = 'Играть снова';
+        overlayTitle.innerHTML = `Ворота пробиты!<br><span style="font-size:1.5rem; color:#ff5252;">Повержено врагов: ${score}</span>`;
+        startBtn.textContent = 'Держать оборону снова';
         overlay.classList.remove('hidden');
     }
 
-    // --- УПРАВЛЕНИЕ ---
-
-    // Обработка кликов (стрельба)
+    // --- УПРАВЛЕНИЕ (КЛИКИ) ---
     canvas.addEventListener('mousedown', (e) => {
         if (isGameOver) return;
 
-        // Вычисляем точные координаты клика с учетом масштабирования canvas через CSS
         const rect = canvas.getBoundingClientRect();
         const scaleX = canvas.width / rect.width;
         const scaleY = canvas.height / rect.height;
@@ -181,29 +218,32 @@ document.addEventListener('DOMContentLoaded', () => {
         const clickX = (e.clientX - rect.left) * scaleX;
         const clickY = (e.clientY - rect.top) * scaleY;
 
-        // Проверяем попадание по врагам (идем с конца массива, чтобы убивать верхних визуально)
         for (let i = enemies.length - 1; i >= 0; i--) {
             const enemy = enemies[i];
             
-            // Простая проверка коллизии точки и прямоугольника (AABB)
+            // Если попали по врагу
             if (clickX >= enemy.x && clickX <= enemy.x + enemy.width &&
                 clickY >= enemy.y && clickY <= enemy.y + enemy.height) {
                 
-                // Создаем эффект взрыва
-                createExplosion(enemy.x + enemy.width/2, enemy.y + enemy.height/2, enemy.color);
+                enemy.hp--; // Отнимаем здоровье
                 
-                // Удаляем убитого гоблина и даем очко
-                enemies.splice(i, 1);
-                score++;
+                // Маленький эффект попадания
+                createExplosion(clickX, clickY, '#fff', 5);
                 
-                break; // За один клик убиваем только одного
+                // Если убили
+                if (enemy.hp <= 0) {
+                    // Большой взрыв (для босса частиц больше)
+                    createExplosion(enemy.x + enemy.width/2, enemy.y + enemy.height/2, enemy.color, enemy.isBoss ? 50 : 15);
+                    
+                    score += enemy.isBoss ? 5 : 1; // За босса даем 5 очков
+                    enemies.splice(i, 1);
+                }
+                
+                break; // За один клик бьем только одного врага
             }
         }
     });
 
-    // Запуск по кнопке
     startBtn.addEventListener('click', initGame);
-    
-    // Рисуем начальный экран (просто пустой фон)
-    draw();
+    draw(); // Рисуем первый кадр при загрузке страницы
 });
