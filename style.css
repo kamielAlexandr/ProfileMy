@@ -333,3 +333,49 @@ h1 {
     color: var(--accent-color); /* Ссылки подсвечиваются фирменным цветом */
     transform: translateY(-3px); /* Легкий прыжок при наведении */
 }
+
+/* --- Браузерная игра --- */
+.game-container {
+    position: relative;
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    background-color: #000;
+    border: 4px solid var(--accent-color);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+}
+
+#gameCanvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    /* Убираем сглаживание пикселей для эффекта ретро/пиксель-арта, если потребуется */
+    image-rendering: pixelated; 
+}
+
+.game-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(18, 18, 18, 0.85);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+}
+
+.game-overlay.hidden {
+    display: none;
+}
+
+#overlayTitle {
+    color: #fff;
+    font-size: 2rem;
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 4px #000;
+}
