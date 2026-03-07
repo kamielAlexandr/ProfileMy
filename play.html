@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KamielStudio | Играть онлайн</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">KamielStudio</div>
+        <ul class="nav-links">
+            <li><a href="index.html">Обо мне</a></li>
+            <li><a href="games.html">Мои игры</a></li>
+            <li><a href="tutor.html">ОГЭ / ЕГЭ</a></li>
+            <li><a href="play.html" class="active">Играть онлайн</a></li>
+        </ul>
+    </nav>
+
+    <main class="container">
+        <h1>Мини-игра: Защита Цитадели</h1>
+        <p>Небольшой интерактив прямо в браузере. Нажмите "Старт", чтобы начать.</p>
+        
+        <div class="game-container">
+            <canvas id="gameCanvas" width="800" height="450"></canvas>
+            
+            <div id="gameOverlay" class="game-overlay">
+                <h2 id="overlayTitle">Готовы к битве?</h2>
+                <button id="startGameBtn" class="contact-btn">Начать игру</button>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2026 KamielStudio. Все права защищены.</p>
+            <div class="social-links">
+                <a href="#" target="_blank">Telegram</a>
+                <a href="#" target="_blank">VK</a>
+                <a href="#" target="_blank">GitHub</a>
+                <a href="#" target="_blank">YouTube</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="main.js"></script>
+    <script src="game.js"></script> 
+</body>
+</html>
