@@ -2,48 +2,33 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Учебный Портал</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KamielStudio | Главная</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <header>
-    <nav>
-    <ul id="main-menu">
-        <li data-section="prog">Программирование</li>
-        <li data-section="oge">Подготовка к ОГЭ</li>
-        <li data-section="ege">Подготовка к ЕГЭ</li>
-        <li data-section="games">Игры</li> 
-    </ul> </nav>
-    </header>
-    
-  <section class="about-me">
-    <div class="container">
-        <div class="profile-header">
-            <h1>Александр <span class="badge">Dev & Tutor</span></h1>
-            <p class="subtitle">Преподаватель программирования | Game Developer</p>
-        </div>
-        
-        <div class="bio">
-            <p>Привет! Это мой личный портал. Здесь я делюсь своими <strong>достижениями</strong>, 
-               свежими <strong>проектами</strong> и полезными материалами для подготовки к экзаменам.</p>
-            
-            <p>Мой путь в образовании — более <strong>7 лет</strong>. Я помогаю ребятам освоить 
-               информатику и превратить скучный код в живые миры.</p>
-        </div>
+    <nav class="navbar">
+        <div class="logo">KamielStudio</div>
+        <ul class="nav-links">
+            <li><a href="index.html" class="active">Обо мне</a></li>
+            <li><a href="games.html">Мои игры</a></li>
+            <li><a href="tutor.html">ОГЭ / ЕГЭ</a></li>
+        </ul>
+    </nav>
 
-        <div class="stack">
-            <span class="tag">Python</span>
-            <span class="tag">C# (Unity)</span>
-            <span class="tag">GDScript (Godot)</span>
-            <span class="tag">C++</span>
-            <span class="tag">JavaScript / TS</span>
-        </div>
-    </div>
-</section>
+    <main class="container">
+        <header class="hero">
+            <h1>Добро пожаловать в KamielStudio</h1>
+            <p>Игры, код и обучение.</p>
+        </header>
 
-<main id="app">
+        <section class="about-section">
+            <h2>Обо мне</h2>
+            <p>Привет! Я преподаватель программирования и страстный разработчик видеоигр. Объединив свою любовь к коду и геймдизайну, я основал <strong>KamielStudio</strong>.</p>
+            <p>Моя цель — не только создавать увлекательные миры, но и делиться знаниями, помогая другим погрузиться в мир IT и разработки.</p>
+        </section>
     </main>
 
-    <script src="main.ts"></script> 
+    <script src="main.js"></script>
 </body>
 </html>
