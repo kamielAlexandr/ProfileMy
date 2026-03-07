@@ -245,3 +245,52 @@ h1 {
 .lightbox-close:hover {
     color: var(--accent-color);
 }
+/* --- Блок с фото и текстом Обо мне --- */
+.about-content {
+    display: flex;
+    align-items: center; /* Центрируем по вертикали */
+    justify-content: space-between;
+    gap: 40px; /* Расстояние между текстом и фото */
+    margin-bottom: 30px;
+}
+
+.about-text {
+    flex: 1; /* Текст занимает оставшееся свободное место */
+}
+
+.about-text p {
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+}
+
+.about-photo {
+    flex-shrink: 0; /* Чтобы фото не сжималось */
+}
+
+.about-photo img {
+    width: 250px;
+    height: 250px;
+    object-fit: cover; /* Обрезает фото, чтобы оно заполняло квадрат/круг без искажений */
+    border-radius: 50%; /* Делает фото круглым. Если хочешь квадрат с мягкими углами, замени на 20px */
+    border: 4px solid var(--accent-color); /* Рамка в цвет акцента сайта */
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5); /* Глубокая тень */
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.about-photo img:hover {
+    transform: scale(1.05) rotate(2deg); /* Эффект при наведении */
+    box-shadow: 0 15px 30px rgba(76, 175, 80, 0.4); /* Подсветка акцентным цветом (зеленым) */
+}
+
+/* --- Адаптивность для телефонов --- */
+@media (max-width: 768px) {
+    .about-content {
+        flex-direction: column-reverse; /* На мобилках текст будет снизу, а фото сверху */
+        text-align: center;
+    }
+    
+    .about-photo img {
+        width: 200px;
+        height: 200px;
+    }
+}
