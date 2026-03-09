@@ -11,8 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let isGameOver = false;
     let animationId;
     
-    // --- ДОБАВЛЕНО: Загружаем рекорд из памяти браузера ---
-    // Если рекорда еще нет, ставим 0
+    // Загружаем рекорд из памяти браузера
     let highScore = parseInt(localStorage.getItem('citadelHighScore')) || 0; 
     
     let enemies = [];
@@ -29,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
         constructor(isBoss = false) {
             this.isBoss = isBoss;
             
+            // Размер bounding box (для физики и кликов)
             this.width = isBoss ? 80 : 40;
             this.height = isBoss ? 80 : 40;
             this.x = Math.random() * (canvas.width - this.width);
@@ -40,30 +40,79 @@ document.addEventListener('DOMContentLoaded', () => {
             let baseSpeed = isBoss ? 0.7 : (1 + Math.random() * 2);
             this.speed = baseSpeed * gameSpeedMultiplier;
             
-            this.color = isBoss ? '#b71c1c' : '#2e7d32'; 
+            // Цвета кожи гоблинов
+            this.color = isBoss ? '#827717' : '#2e7d32'; // Босс более темный/оливковый
         }
 
         update() {
             this.y += this.speed;
         }
 
+        // --- ИЗМЕНЕНО: Процедурная отрисовка гоблина ---
         draw() {
+            // Сохраняем состояние контекста для безопасной трансформации координат
+            ctx.save();
+            ctx.translate(this.x, this.y); // Переносим начало координат в левый верхний угол врага
+
+            const w = this.width;
+            const h = this.height;
+
+            // 1. Рисуем голову (тело)
             ctx.fillStyle = this.color;
-            ctx.fillRect(this.x, this.y, this.width, this.height);
-            
-            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            // Pointy head / face shape
+            ctx.moveTo(w * 0.1, h * 0.3); // Left cheek top
+            ctx.lineTo(w * 0.5, 0);         // Top of head pointy
+            ctx.lineTo(w * 0.9, h * 0.3); // Right cheek top
+            ctx.lineTo(w, h * 0.8);        // Right jaw
+            ctx.lineTo(w * 0.5, h);         // Chin
+            ctx.lineTo(0, h * 0.8);        // Left jaw
+            ctx.closePath();
+            ctx.fill();
+
+            // 2. Злые светящиеся глаза
+            ctx.fillStyle = this.isBoss ? '#ffff00' : '#ff1744'; // Босс желтый, обычный красный
+            ctx.beginPath();
+            // Левый глаз (сердитый наклон)
+            ctx.moveTo(w * 0.2, h * 0.4);
+            ctx.lineTo(w * 0.4, h * 0.35);
+            ctx.lineTo(w * 0.45, h * 0.55);
+            ctx.closePath();
+            ctx.fill();
+            // Правый глаз
+            ctx.beginPath();
+            ctx.moveTo(w * 0.8, h * 0.4);
+            ctx.lineTo(w * 0.6, h * 0.35);
+            ctx.lineTo(w * 0.55, h * 0.55);
+            ctx.closePath();
+            ctx.fill();
+
+            // 3. Агрессивный рот (оскал)
+            ctx.fillStyle = '#000000'; // Черный оскал
+            ctx.beginPath();
+            ctx.moveTo(w * 0.25, h * 0.75);
+            ctx.lineTo(w * 0.75, h * 0.75);
+            ctx.lineTo(w * 0.5, h * 0.95);
+            ctx.closePath();
+            ctx.fill();
+
+            // Tiny white teeth (only for visible оскал)
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(w * 0.35, h * 0.75, w * 0.05, h * 0.08); // Tooth 1
+            ctx.fillRect(w * 0.6, h * 0.75, w * 0.05, h * 0.08);  // Tooth 2
+
+            // 4. Полоска HP для Босса (рисуем *поверх* гоблина внутри translated context)
             if (this.isBoss) {
-                ctx.fillRect(this.x + 16, this.y + 20, 16, 16);
-                ctx.fillRect(this.x + 48, this.y + 20, 16, 16);
-                
-                ctx.fillStyle = '#333';
-                ctx.fillRect(this.x, this.y - 12, this.width, 6);
-                ctx.fillStyle = '#4caf50';
-                ctx.fillRect(this.x, this.y - 12, this.width * (this.hp / this.maxHp), 6);
-            } else {
-                ctx.fillRect(this.x + 8, this.y + 10, 8, 8);
-                ctx.fillRect(this.x + 24, this.y + 10, 8, 8);
+                // Background bar (relative coords y=-12 above translated origin)
+                ctx.fillStyle = '#333'; 
+                ctx.fillRect(0, -12, this.width, 6); 
+                // Current HP
+                ctx.fillStyle = '#4caf50'; 
+                ctx.fillRect(0, -12, this.width * (this.hp / this.maxHp), 6);
             }
+
+            // Восстанавливаем контекст
+            ctx.restore();
         }
     }
 
@@ -162,7 +211,6 @@ document.addEventListener('DOMContentLoaded', () => {
         enemies.forEach(enemy => enemy.draw());
         particles.forEach(p => p.draw());
 
-        // --- ДОБАВЛЕНО: Отрисовка текущего счета и рекорда ---
         ctx.fillStyle = '#fff';
         ctx.font = '20px Arial';
         ctx.fillText(`💀 Убито: ${score}`, 20, 35);
@@ -170,7 +218,6 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.fillStyle = wallColor;
         ctx.fillText(`🛡️ Прочность: ${Math.max(0, lives)}/5`, 20, 65);
         
-        // Золотой цвет для рекорда
         ctx.fillStyle = '#ffd700'; 
         ctx.fillText(`🏆 Рекорд: ${highScore}`, 20, 95);
     }
@@ -188,11 +235,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function endGame() {
         cancelAnimationFrame(animationId);
         
-        // --- ДОБАВЛЕНО: Проверка и сохранение нового рекорда ---
         let recordMessage = "";
         if (score > highScore) {
             highScore = score;
-            localStorage.setItem('citadelHighScore', highScore); // Сохраняем в браузер
+            localStorage.setItem('citadelHighScore', highScore); 
             recordMessage = `<br><span style="font-size:1.2rem; color:#4caf50;">🎉 НОВЫЙ РЕКОРД!</span>`;
         } else {
             recordMessage = `<br><span style="font-size:1rem; color:#aaa;">(Ваш рекорд: ${highScore})</span>`;
@@ -202,7 +248,6 @@ document.addEventListener('DOMContentLoaded', () => {
         startBtn.textContent = 'Держать оборону снова';
         overlay.classList.remove('hidden');
         
-        // Обновляем отрисовку один раз, чтобы рекорд сразу обновился на экране под меню
         draw(); 
     }
 
