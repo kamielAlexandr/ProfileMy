@@ -34,9 +34,9 @@ document.addEventListener('DOMContentLoaded', () => {
     async function fetchGlobalHighScore() {
         try {
             // В БУДУЩЕМ ЗАМЕНИ ЭТОТ URL НА СВОЮ БАЗУ ДАННЫХ (Firebase / Supabase / JSONBin)
-            // const response = await fetch('https://твой-сервер.com/api/highscore');
-            // const data = await response.json();
-            // globalHighScore = data.score;
+            /const response = await fetch('https://bgzxdpjfsodndxroieay.supabase.com');
+            const data = await response.json();
+             globalHighScore = data.score;
             
             // Пока базы нет, сделаем фейковую загрузку для красоты:
             setTimeout(() => {
