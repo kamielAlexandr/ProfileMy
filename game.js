@@ -53,13 +53,13 @@ document.addEventListener('DOMContentLoaded', () => {
     async function saveGlobalHighScore(newScore) {
         try {
             // В БУДУЩЕМ РАСКОММЕНТИРУЙ И ВПИШИ СВОЙ API
-            /*
-            await fetch('https://твой-сервер.com/api/highscore', {
+            
+            await fetch('https://bgzxdpjfsodndxroieay.supabase.com', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ score: newScore, player: "Аноним" })
             });
-            */
+            
             console.log("Новый глобальный рекорд отправлен на сервер:", newScore);
         } catch (error) {
             console.error("Ошибка сохранения рекорда:", error);
