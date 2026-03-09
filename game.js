@@ -28,21 +28,31 @@ document.addEventListener('DOMContentLoaded', () => {
     let repairTimer = 0;
     let repairInterval = 500; 
 
-    // --- СЕТЕВАЯ ЛОГИКА (API) ---
+   // --- СЕТЕВАЯ ЛОГИКА (API SUPABASE) ---
+
+    // ВАЖНО: Вставь сюда свои данные из Supabase!
+    const SUPABASE_URL = 'https://bgzxdpjfsodndxroieay.supabase.co'; 
+    const SUPABASE_ANON_KEY = 'sb_publishable_7lewcPQCbnoXmkcMLu_Hlw_dnfCXZka';
 
     // 1. Функция получения рекорда сайта
     async function fetchGlobalHighScore() {
         try {
-            // В БУДУЩЕМ ЗАМЕНИ ЭТОТ URL НА СВОЮ БАЗУ ДАННЫХ (Firebase / Supabase / JSONBin)
-            const response = await fetch('https://bgzxdpjfsodndxroieay.supabase.com');
-            const data = await response.json();
-             globalHighScore = data.score;
+            // Запрашиваем 1 запись с самым большим score
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard?select=score&order=score.desc&limit=1`, {
+                method: 'GET',
+                headers: {
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                }
+            });
             
-            // Пока базы нет, сделаем фейковую загрузку для красоты:
-            setTimeout(() => {
-                globalHighScore = localHighScore; // Временно приравниваем к твоему
-            }, 1000);
-
+            const data = await response.json();
+            
+            if (data && data.length > 0) {
+                globalHighScore = data[0].score;
+            } else {
+                globalHighScore = 0; // Если таблица пустая
+            }
         } catch (error) {
             console.error("Ошибка загрузки рекорда сайта:", error);
             globalHighScore = "Ошибка";
@@ -52,15 +62,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. Функция отправки нового рекорда на сервер
     async function saveGlobalHighScore(newScore) {
         try {
-            // В БУДУЩЕМ РАСКОММЕНТИРУЙ И ВПИШИ СВОЙ API
-            
-            await fetch('https://bgzxdpjfsodndxroieay.supabase.com', {
+            await fetch(`${SUPABASE_URL}/rest/v1/leaderboard`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ score: newScore, player: "Аноним" })
+                headers: {
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'return=minimal'
+                },
+                body: JSON.stringify({ score: newScore })
             });
-            
-            console.log("Новый глобальный рекорд отправлен на сервер:", newScore);
+            console.log("Новый глобальный рекорд отправлен в Supabase:", newScore);
         } catch (error) {
             console.error("Ошибка сохранения рекорда:", error);
         }
@@ -68,6 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Запускаем загрузку рекорда при открытии страницы
     fetchGlobalHighScore();
+
 
     // --- КЛАССЫ ---
     // (Код классов Enemy, RepairItem, Particle остался без изменений)
