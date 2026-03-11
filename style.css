@@ -383,3 +383,21 @@ h1 {
     text-shadow: 2px 2px 4px #000;
 }
 
+/* --- Панель рекордов над игрой --- */
+.game-scoreboard {
+    background-color: #1a1a1a;
+    padding: 12px 20px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border-bottom: 2px solid #333;
+}
+
+#localScoreDisplay {
+    color: #ffd700; /* Золотой */
+}
+
+#globalScoreDisplay {
+    color: #00E676; /* Неоново-зеленый */
+}
