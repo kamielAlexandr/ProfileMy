@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aethelforge | Личный кабинет</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">Aethelforge</div>
+        <ul class="nav-links">
+            <li><a href="index.html">Обо мне</a></li>
+            <li><a href="games.html">Мои игры</a></li>
+            <li><a href="tutor.html">ОГЭ / ЕГЭ</a></li>
+            <li><a href="play.html">Играть онлайн</a></li>
+            <li id="authNavItem"><a href="login.html" class="active">Войти</a></li>
+        </ul>
+    </nav>
+
+    <main class="container">
+        <h1>Личный кабинет героя</h1>
+        <p>Добро пожаловать в гильдию. Здесь скоро появится ваша статистика, библиотека игр и список достижений.</p>
+        
+        <div style="margin-top: 40px; padding: 20px; background: var(--card-bg); border-radius: 8px; border: 1px solid #333;">
+            <h3>🚧 В разработке 🚧</h3>
+            <p>Кузня Aethelforge активно работает над этим разделом. Совсем скоро тут будет доступен профиль игрока.</p>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
