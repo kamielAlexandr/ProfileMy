@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тестовая площадка: Игры и Регистрация</title>
+    <style>
+        /* Основные стили */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1e2b3a, #0f1a24);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Шапка */
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 2.8em;
+            background: linear-gradient(45deg, #ffd700, #ff8c00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+        }
+
+        .subtitle {
+            color: #a0b8cc;
+            font-size: 1.2em;
+        }
+
+        /* Сетка: форма слева, игры справа */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+        }
+
+        /* Блок регистрации (левый сайдбар) */
+        .register-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            height: fit-content;
+        }
+
+        .register-card h2 {
+            color: #ffd700;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            border-bottom: 2px solid rgba(255, 215, 0, 0.3);
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #b8c7d9;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            background: rgba(10, 20, 30, 0.7);
+            border: 1px solid #3a4a5a;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #ffd700;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+            background: rgba(20, 30, 40, 0.9);
+        }
+
+        .register-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(45deg, #ffd700, #ffb347);
+            border: none;
+            border-radius: 12px;
+            color: #0f1a24;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .register-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(255, 215, 0, 0.4);
+        }
+
+        .register-btn:active {
+            transform: translateY(0);
+        }
+
+        .info-text {
+            margin-top: 20px;
+            font-size: 0.9em;
+            text-align: center;
+            color: #8a9eb0;
+        }
+
+        /* Блок с играми (правый сайдбар) */
+        .games-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .game-card {
+            background: rgba(30, 40, 55, 0.7);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 25px;
+            padding: 25px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+            transition: border-color 0.3s;
+        }
+
+        .game-card:hover {
+            border-color: rgba(255, 215, 0, 0.3);
+        }
+
+        .game-card h3 {
+            color: #ffd700;
+            font-size: 1.8em;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .game-area {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 10px;
+        }
+
+        /* Стили для конкретных игр */
+        .rps-buttons, .clicker-game, .guess-game {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .game-btn {
+            padding: 12px 25px;
+            background: #2a3a4a;
+            border: none;
+            border-radius: 50px;
+            color: white;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .game-btn:hover {
+            background: #3a4e62;
+            border-color: #ffd700;
+            transform: scale(1.05);
+        }
+
+        .result-box {
+            margin-top: 15px;
+            padding: 15px;
+            background: #1a2733;
+            border-radius: 10px;
+            font-size: 1.2em;
+            border-left: 4px solid #ffd700;
+            min-height: 60px;
+        }
+
+        .clicker-score {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 0 0 15px gold;
+        }
+
+        input[type="number"] {
+            padding: 12px;
+            background: #1e2e3c;
+            border: 1px solid #3a4f60;
+            color: white;
+            border-radius: 10px;
+            width: 120px;
+            font-size: 1.1em;
+        }
+
+        hr {
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            margin: 20px 0;
+        }
+
+        /* Адаптация под мобилки */
+        @media (max-width: 900px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎮 GameTest Portal</h1>
+            <div class="subtitle">Тестовая площадка: регистрация + браузерные игры</div>
+        </header>
+
+        <div class="dashboard">
+            <!-- Левая колонка: Регистрация -->
+            <div class="register-card">
+                <h2>📝 Регистрация</h2>
+                <form id="testRegisterForm">
+                    <div class="form-group">
+                        <label>👤 Имя пользователя</label>
+                        <input type="text" id="username" placeholder="Введите никнейм" required>
+                    </div>
+                    <div class="form-group">
+                        <label>📧 Email</label>
+                        <input type="email" id="email" placeholder="example@mail.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>🔒 Пароль</label>
+                        <input type="password" id="password" placeholder="Минимум 6 символов" required>
+                    </div>
+                    <button type="submit" class="register-btn" id="registerButton">Зарегистрироваться</button>
+                </form>
+                <div class="info-text">
+                    ⚡ Это тестовая форма. Данные никуда не отправляются.
+                </div>
+            </div>
+
+            <!-- Правая колонка: Игры -->
+            <div class="games-grid">
+                <!-- Игра 1: Камень, ножницы, бумага -->
+                <div class="game-card">
+                    <h3>🗿 Камень, ножницы, бумага</h3>
+                    <div class="game-area">
+                        <div class="rps-buttons">
+                            <button class="game-btn" onclick="playRPS('камень')">🗿 Камень</button>
+                            <button class="game-btn" onclick="playRPS('ножницы')">✂️ Ножницы</button>
+                            <button class="game-btn" onclick="playRPS('бумага')">📄 Бумага</button>
+                        </div>
+                        <div class="result-box" id="rpsResult">
+                            Нажми на кнопку, чтобы сыграть!
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Игра 2: Простой кликер -->
+                <div class="game-card">
+                    <h3>🖱️ Кликер (накопи очки)</h3>
+                    <div class="game-area">
+                        <div class="clicker-game">
+                            <button class="game-btn" onclick="increaseScore()">➕ Кликни!</button>
+                            <button class="game-btn" onclick="resetScore()" style="background: #4a3a2a;">🔄 Сброс</button>
+                        </div>
+                        <div class="result-box" style="text-align: center;">
+                            Счёт: <span class="clicker-score" id="scoreDisplay">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Игра 3: Угадай число -->
+                <div class="game-card">
+                    <h3>🔢 Угадай число (1-100)</h3>
+                    <div class="game-area">
+                        <div class="guess-game">
+                            <input type="number" id="guessInput" placeholder="Твой вариант" min="1" max="100">
+                            <button class="game-btn" onclick="makeGuess()">Проверить</button>
+                            <button class="game-btn" onclick="resetGuessGame()" style="background: #4a3a2a;">🔄 Новое число</button>
+                        </div>
+                        <div class="result-box" id="guessResult">
+                            Загадано число от 1 до 100. Попробуй угадать!
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ---------- ЛОГИКА ДЛЯ ФОРМЫ РЕГИСТРАЦИИ (ТЕСТОВАЯ) ----------
+        document.getElementById('testRegisterForm').addEventListener('submit', function(e) {
+            e.preventDefault(); // Отменяем отправку формы (чтобы страница не перезагружалась)
+            
+            const username = document.getElementById('username').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            if (username === '' || email === '' || password === '') {
+                alert('❌ Пожалуйста, заполните все поля!');
+                return;
+            }
+
+            if (password.length < 6) {
+                alert('❌ Пароль должен быть не менее 6 символов!');
+                return;
+            }
+
+            // Если всё ок, показываем сообщение
+            alert(`✅ Добро пожаловать, ${username}! Регистрация прошла успешно (тестовый режим).`);
+            
+            // Очищаем поля (опционально)
+            // document.getElementById('username').value = '';
+            // document.getElementById('email').value = '';
+            // document.getElementById('password').value = '';
+        });
+
+        // ---------- ИГРА 1: КАМЕНЬ, НОЖНИЦЫ, БУМАГА ----------
+        function playRPS(playerChoice) {
+            const choices = ['камень', 'ножницы', 'бумага'];
+            const computerChoice = choices[Math.floor(Math.random() * 3)];
+            
+            let result = '';
+            if (playerChoice === computerChoice) {
+                result = `🤝 Ничья! Оба выбрали ${playerChoice}.`;
+            } else if (
+                (playerChoice === 'камень' && computerChoice === 'ножницы') ||
+                (playerChoice === 'ножницы' && computerChoice === 'бумага') ||
+                (playerChoice === 'бумага' && computerChoice === 'камень')
+            ) {
+                result = `🎉 Ты выиграл! ${playerChoice} побеждает ${computerChoice}.`;
+            } else {
+                result = `💻 Компьютер выиграл! ${computerChoice} побеждает ${playerChoice}.`;
+            }
+            
+            document.getElementById('rpsResult').innerHTML = `👤 Ты: ${playerChoice}<br>🤖 Компьютер: ${computerChoice}<br><strong>${result}</strong>`;
+        }
+
+        // ---------- ИГРА 2: КЛИКЕР ----------
+        let score = 0;
+        const scoreDisplay = document.getElementById('scoreDisplay');
+
+        function increaseScore() {
+            score++;
+            scoreDisplay.textContent = score;
+            // Маленькая анимация (мигание)
+            scoreDisplay.style.transform = 'scale(1.2)';
+            setTimeout(() => scoreDisplay.style.transform = 'scale(1)', 100);
+        }
+
+        function resetScore() {
+            score = 0;
+            scoreDisplay.textContent = score;
+        }
+
+        // ---------- ИГРА 3: УГАДАЙ ЧИСЛО ----------
+        let secretNumber = Math.floor(Math.random() * 100) + 1;
+        let attempts = 0;
+        const guessResult = document.getElementById('guessResult');
+
+        function makeGuess() {
+            const input = document.getElementById('guessInput');
+            const guess = parseInt(input.value);
+            
+            if (isNaN(guess) || guess < 1 || guess > 100) {
+                alert('Пожалуйста, введите число от 1 до 100!');
+                return;
+            }
+            
+            attempts++;
+            
+            if (guess === secretNumber) {
+                guessResult.innerHTML = `🎉 Поздравляю! Ты угадал число ${secretNumber} за ${attempts} попыток!`;
+                // Автоматически загадываем новое число после победы
+                secretNumber = Math.floor(Math.random() * 100) + 1;
+                attempts = 0;
+                guessResult.innerHTML += '<br>✨ Я загадал новое число. Играем дальше!';
+                input.value = '';
+            } else if (guess < secretNumber) {
+                guessResult.innerHTML = `⬆️ Моё число БОЛЬШЕ, чем ${guess}. Попытка №${attempts}`;
+                input.value = '';
+                input.focus();
+            } else {
+                guessResult.innerHTML = `⬇️ Моё число МЕНЬШЕ, чем ${guess}. Попытка №${attempts}`;
+                input.value = '';
+                input.focus();
+            }
+        }
+
+        function resetGuessGame() {
+            secretNumber = Math.floor(Math.random() * 100) + 1;
+            attempts = 0;
+            document.getElementById('guessInput').value = '';
+            guessResult.innerHTML = '🔄 Число сброшено! Загадано новое число от 1 до 100. Попробуй угадать!';
+        }
+    </script>
+</body>
+</html>
