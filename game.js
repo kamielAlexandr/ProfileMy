@@ -28,41 +28,47 @@ document.addEventListener('DOMContentLoaded', () => {
     let repairTimer = 0;
     let repairInterval = 500; 
 
-   // --- СЕТЕВАЯ ЛОГИКА (API SUPABASE) ---
+// --- СЕТЕВАЯ ЛОГИКА (API SUPABASE) ---
 
     // ВАЖНО: Вставь сюда свои данные из Supabase!
-    const SUPABASE_URL = 'https://bgzxdpjfsodndxroieay.supabase.co'; 
-    const SUPABASE_ANON_KEY = 'sb_publishable_7lewcPQCbnoXmkcMLu_Hlw_dnfCXZka';
+    const SUPABASE_URL = 'https://ТВОЙ_ПРОЕКТ.supabase.co'; 
+    const SUPABASE_ANON_KEY = 'ТВОЙ_ДЛИННЫЙ_АНОНИМНЫЙ_КЛЮЧ';
 
     // 1. Функция получения рекорда сайта
     async function fetchGlobalHighScore() {
         try {
-            // Запрашиваем 1 запись с самым большим score
             const response = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard?select=score&order=score.desc&limit=1`, {
                 method: 'GET',
                 headers: {
                     'apikey': SUPABASE_ANON_KEY,
-                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                    'Cache-Control': 'no-cache', // Запрещаем браузеру кэшировать старый рекорд
+                    'Pragma': 'no-cache'
                 }
             });
             
             const data = await response.json();
             
+            // Если данные пришли и таблица не пустая
             if (data && data.length > 0) {
                 globalHighScore = data[0].score;
             } else {
-                globalHighScore = 0; // Если таблица пустая
+                globalHighScore = 0;
             }
+            
+            // ПРИНУДИТЕЛЬНО обновляем экран, как только рекорд загрузился!
+            if (!isGameOver) draw();
+
         } catch (error) {
             console.error("Ошибка загрузки рекорда сайта:", error);
-            globalHighScore = "Ошибка";
+            globalHighScore = 0;
         }
     }
 
     // 2. Функция отправки нового рекорда на сервер
     async function saveGlobalHighScore(newScore) {
         try {
-            await fetch(`${SUPABASE_URL}/rest/v1/leaderboard`, {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard`, {
                 method: 'POST',
                 headers: {
                     'apikey': SUPABASE_ANON_KEY,
@@ -70,11 +76,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Content-Type': 'application/json',
                     'Prefer': 'return=minimal'
                 },
+                // Отправляем объект с новым рекордом
                 body: JSON.stringify({ score: newScore })
             });
-            console.log("Новый глобальный рекорд отправлен в Supabase:", newScore);
+
+            if (response.ok) {
+                console.log("Успех: Новый глобальный рекорд сохранен в Supabase!", newScore);
+            } else {
+                console.error("Ошибка сохранения на сервере:", await response.text());
+            }
+
         } catch (error) {
-            console.error("Ошибка сохранения рекорда:", error);
+            console.error("Ошибка сети при сохранении рекорда:", error);
         }
     }
 
