@@ -5,6 +5,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const startBtn = document.getElementById('startGameBtn');
     const overlayTitle = document.getElementById('overlayTitle');
 
+    // Находим наши новые HTML-элементы для текста
+    const localScoreDisplay = document.getElementById('localScoreDisplay');
+    const globalScoreDisplay = document.getElementById('globalScoreDisplay');
+
     // Настройки игры
     let score = 0;
     const maxLives = 5;
@@ -12,11 +16,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let isGameOver = false;
     let animationId;
     
-    // Локальный рекорд
+    // Загружаем локальный рекорд и сразу выводим в HTML
     let localHighScore = parseInt(localStorage.getItem('citadelHighScore')) || 0; 
+    localScoreDisplay.textContent = localHighScore;
     
-    // ГЛОБАЛЬНЫЙ РЕКОРД (Загружается с сервера)
-    let globalHighScore = "..."; 
+    let globalHighScore = 0; 
     
     let enemies = [];
     let particles = [];
@@ -28,13 +32,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let repairTimer = 0;
     let repairInterval = 500; 
 
-// --- СЕТЕВАЯ ЛОГИКА (API SUPABASE) ---
-
+    // --- СЕТЕВАЯ ЛОГИКА (API SUPABASE) ---
     // ВАЖНО: Вставь сюда свои данные из Supabase!
-    const SUPABASE_URL = 'https://ТВОЙ_ПРОЕКТ.supabase.co'; 
-    const SUPABASE_ANON_KEY = 'ТВОЙ_ДЛИННЫЙ_АНОНИМНЫЙ_КЛЮЧ';
+    const SUPABASE_URL = 'https://bgzxdpjfsodndxroieay.supabase.co'; 
+    const SUPABASE_ANON_KEY = 'sb_publishable_7lewcPQCbnoXmkcMLu_Hlw_dnfCXZka';
 
-    // 1. Функция получения рекорда сайта
     async function fetchGlobalHighScore() {
         try {
             const response = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard?select=score&order=score.desc&limit=1`, {
@@ -42,33 +44,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: {
                     'apikey': SUPABASE_ANON_KEY,
                     'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                    'Cache-Control': 'no-cache', // Запрещаем браузеру кэшировать старый рекорд
+                    'Cache-Control': 'no-cache',
                     'Pragma': 'no-cache'
                 }
             });
             
             const data = await response.json();
             
-            // Если данные пришли и таблица не пустая
             if (data && data.length > 0) {
                 globalHighScore = data[0].score;
             } else {
                 globalHighScore = 0;
             }
-            
-            // ПРИНУДИТЕЛЬНО обновляем экран, как только рекорд загрузился!
-            if (!isGameOver) draw();
+            // Обновляем текст в HTML без перерисовки всего Canvas
+            globalScoreDisplay.textContent = globalHighScore;
 
         } catch (error) {
             console.error("Ошибка загрузки рекорда сайта:", error);
-            globalHighScore = 0;
+            globalScoreDisplay.textContent = "Ошибка сети";
         }
     }
 
-    // 2. Функция отправки нового рекорда на сервер
     async function saveGlobalHighScore(newScore) {
         try {
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard`, {
+            await fetch(`${SUPABASE_URL}/rest/v1/leaderboard`, {
                 method: 'POST',
                 headers: {
                     'apikey': SUPABASE_ANON_KEY,
@@ -76,27 +75,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Content-Type': 'application/json',
                     'Prefer': 'return=minimal'
                 },
-                // Отправляем объект с новым рекордом
                 body: JSON.stringify({ score: newScore })
             });
-
-            if (response.ok) {
-                console.log("Успех: Новый глобальный рекорд сохранен в Supabase!", newScore);
-            } else {
-                console.error("Ошибка сохранения на сервере:", await response.text());
-            }
-
+            console.log("Рекорд успешно отправлен в базу!");
         } catch (error) {
-            console.error("Ошибка сети при сохранении рекорда:", error);
+            console.error("Ошибка сохранения рекорда:", error);
         }
     }
 
-    // Запускаем загрузку рекорда при открытии страницы
     fetchGlobalHighScore();
 
-
-    // --- КЛАССЫ ---
-    // (Код классов Enemy, RepairItem, Particle остался без изменений)
+    // --- КЛАССЫ (Без изменений) ---
     class Enemy {
         constructor(isBoss = false) {
             this.isBoss = isBoss;
@@ -175,7 +164,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- ИГРОВАЯ ЛОГИКА ---
-
     function initGame() {
         score = 0; lives = maxLives; isGameOver = false;
         enemies = []; particles = []; repairItems = [];
@@ -250,13 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.fillStyle = wallColor;
         ctx.fillText(`🛡️ Прочность: ${Math.max(0, lives)}/${maxLives}`, 20, 65);
         
-        // Отрисовка двух рекордов
-        ctx.fillStyle = '#aaa'; 
-        ctx.fillText(`Ваш рекорд: ${localHighScore}`, 20, 95);
-        
-        // Глобальный рекорд
-        ctx.fillStyle = '#00E676'; // Неоново-зеленый
-        ctx.fillText(`🌍 РЕКОРД САЙТА: ${globalHighScore}`, 20, 125);
+        // ВНИМАНИЕ: Отрисовка рекордов отсюда УДАЛЕНА!
     }
 
     function gameLoop() {
@@ -273,18 +255,19 @@ document.addEventListener('DOMContentLoaded', () => {
         
         let recordMessage = "";
         
-        // Проверяем ЛОКАЛЬНЫЙ рекорд
+        // 1. Проверяем локальный рекорд
         if (score > localHighScore) {
             localHighScore = score;
             localStorage.setItem('citadelHighScore', localHighScore); 
+            localScoreDisplay.textContent = localHighScore; // Обновляем в HTML!
             recordMessage += `<br><span style="font-size:1.1rem; color:#aaa;">Вы побили свой рекорд!</span>`;
         }
         
-        // Проверяем ГЛОБАЛЬНЫЙ рекорд
-        // Проверка isNaN нужна, чтобы не сломаться, если сервер еще загружается ("...")
-        if (!isNaN(globalHighScore) && score > globalHighScore) {
+        // 2. Проверяем глобальный рекорд
+        if (score > globalHighScore) {
             globalHighScore = score;
-            saveGlobalHighScore(score); // Отправляем на сервер!
+            globalScoreDisplay.textContent = globalHighScore; // Обновляем в HTML!
+            saveGlobalHighScore(score); 
             recordMessage += `<br><span style="font-size:1.3rem; color:#00E676; text-shadow: 0 0 10px #00E676;">👑 ВЫ ПОБИЛИ РЕКОРД САЙТА! 👑</span>`;
         }
 
