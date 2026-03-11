@@ -35,10 +35,25 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- СЕТЕВАЯ ЛОГИКА (API SUPABASE) ---
     const SUPABASE_URL = 'https://bgzxdpjfsodndxroieay.supabase.co'; 
     const SUPABASE_ANON_KEY = 'sb_publishable_7lewcPQCbnoXmkcMLu_Hlw_dnfCXZka';
+    // Создаем клиента Supabase для проверки авторизации прямо в игре
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    // Переменная для хранения имени текущего игрока
+    let currentPlayerName = "Аноним";
+
+    // 1. Узнаем, кто сейчас играет
+    async function checkCurrentPlayer() {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            currentPlayerName = user.email.split('@')[0]; // Делаем ник из почты
+        }
+    }
+
+    // 2. Получаем рекорд И ИМЯ рекордсмена
     async function fetchGlobalHighScore() {
         try {
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard?select=score&order=score.desc&limit=1`, {
+            // Добавили nickname в запрос (select=score,nickname)
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard?select=score,nickname&order=score.desc&limit=1`, {
                 method: 'GET',
                 headers: {
                     'apikey': SUPABASE_ANON_KEY,
@@ -52,12 +67,14 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (data && data.length > 0) {
                 globalHighScore = data[0].score;
+                const recordHolder = data[0].nickname || "Неизвестный герой";
+                
+                if (globalScoreDisplay) {
+                     globalScoreDisplay.textContent = `${globalHighScore} (${recordHolder})`;
+                }
             } else {
                 globalHighScore = 0;
-            }
-            
-            if (globalScoreDisplay) {
-                 globalScoreDisplay.textContent = globalHighScore;
+                if (globalScoreDisplay) globalScoreDisplay.textContent = "0 (Пока никого)";
             }
         } catch (error) {
             console.error("Ошибка загрузки рекорда сайта:", error);
@@ -65,6 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // 3. Сохраняем рекорд ВМЕСТЕ с именем
     async function saveGlobalHighScore(newScore) {
         try {
             const response = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard`, {
@@ -75,19 +93,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Content-Type': 'application/json',
                     'Prefer': 'return=minimal'
                 },
-                body: JSON.stringify({ score: newScore })
+                // Отправляем счет и имя в базу!
+                body: JSON.stringify({ score: newScore, nickname: currentPlayerName })
             });
             
             if(response.ok) {
-                console.log("Рекорд успешно отправлен в базу!");
+                console.log("Рекорд успешно отправлен в базу от имени:", currentPlayerName);
                 globalHighScore = newScore;
-                if(globalScoreDisplay) globalScoreDisplay.textContent = globalHighScore;
+                if(globalScoreDisplay) globalScoreDisplay.textContent = `${globalHighScore} (${currentPlayerName})`;
             }
         } catch (error) {
             console.error("Ошибка сохранения рекорда:", error);
         }
     }
 
+    // Запускаем проверки при загрузке
+    checkCurrentPlayer();
     fetchGlobalHighScore();
 
     // --- КЛАССЫ ---
