@@ -16,9 +16,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let isGameOver = true; // Изначально игра не начата
     let animationId;
     
-    // Загружаем локальный рекорд и сразу выводим в HTML
-    let localHighScore = parseInt(localStorage.getItem('citadelHighScore')) || 0; 
-    localScoreDisplay.textContent = localHighScore;
+let localHighScore = parseInt(localStorage.getItem('citadelHighScore')) || 0; 
+    if (localScoreDisplay) {
+        localScoreDisplay.textContent = localHighScore;
+    }
     
     let globalHighScore = 0; 
     
