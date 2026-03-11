@@ -32,27 +32,25 @@ document.addEventListener('DOMContentLoaded', () => {
     let repairTimer = 0;
     let repairInterval = 500; 
 
-    // --- СЕТЕВАЯ ЛОГИКА (API SUPABASE) ---
+   // --- СЕТЕВАЯ ЛОГИКА (API SUPABASE) ---
     const SUPABASE_URL = 'https://bgzxdpjfsodndxroieay.supabase.co'; 
     const SUPABASE_ANON_KEY = 'sb_publishable_7lewcPQCbnoXmkcMLu_Hlw_dnfCXZka';
-    // Создаем клиента Supabase для проверки авторизации прямо в игре
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Переменная для хранения имени текущего игрока
     let currentPlayerName = "Аноним";
+    const leaderboardList = document.getElementById('leaderboardList'); // Нашли список в HTML
 
     // 1. Узнаем, кто сейчас играет
     async function checkCurrentPlayer() {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-            currentPlayerName = user.email.split('@')[0]; // Делаем ник из почты
+            currentPlayerName = user.email.split('@')[0]; 
         }
     }
 
-    // 2. Получаем рекорд И ИМЯ рекордсмена
+    // 2. Получаем абсолютный рекорд для верхней плашки
     async function fetchGlobalHighScore() {
         try {
-            // Добавили nickname в запрос (select=score,nickname)
             const response = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard?select=score,nickname&order=score.desc&limit=1`, {
                 method: 'GET',
                 headers: {
@@ -62,27 +60,68 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Pragma': 'no-cache'
                 }
             });
-            
             const data = await response.json();
             
             if (data && data.length > 0) {
                 globalHighScore = data[0].score;
                 const recordHolder = data[0].nickname || "Неизвестный герой";
-                
-                if (globalScoreDisplay) {
-                     globalScoreDisplay.textContent = `${globalHighScore} (${recordHolder})`;
-                }
+                if (globalScoreDisplay) globalScoreDisplay.textContent = `${globalHighScore} (${recordHolder})`;
             } else {
                 globalHighScore = 0;
                 if (globalScoreDisplay) globalScoreDisplay.textContent = "0 (Пока никого)";
             }
         } catch (error) {
             console.error("Ошибка загрузки рекорда сайта:", error);
-            if (globalScoreDisplay) globalScoreDisplay.textContent = "Ошибка сети";
         }
     }
 
-    // 3. Сохраняем рекорд ВМЕСТЕ с именем
+    // 3. НОВОЕ: Загружаем ТОП-5 для Зала Славы
+    async function fetchLeaderboard() {
+        try {
+            // Берем 5 лучших результатов (limit=5)
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard?select=score,nickname&order=score.desc&limit=5`, {
+                method: 'GET',
+                headers: {
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache'
+                }
+            });
+            const data = await response.json();
+            
+            if (data && data.length > 0 && leaderboardList) {
+                leaderboardList.innerHTML = ''; // Очищаем текст "Загрузка..."
+                
+                data.forEach((entry, index) => {
+                    const li = document.createElement('li');
+                    const rank = index + 1;
+                    const name = entry.nickname || "Аноним";
+                    const score = entry.score;
+                    
+                    // Раздаем медали
+                    let medal = `${rank}.`;
+                    if (rank === 1) medal = '🥇';
+                    if (rank === 2) medal = '🥈';
+                    if (rank === 3) medal = '🥉';
+
+                    li.innerHTML = `
+                        <span class="rank">${medal}</span> 
+                        <span class="name">${name}</span> 
+                        <span class="score">${score}</span>
+                    `;
+                    leaderboardList.appendChild(li);
+                });
+            } else if (leaderboardList) {
+                leaderboardList.innerHTML = '<li style="text-align:center; color:#aaa;">Пока нет рекордов. Станьте первым!</li>';
+            }
+        } catch (error) {
+            console.error("Ошибка загрузки Зала Славы:", error);
+            if (leaderboardList) leaderboardList.innerHTML = '<li style="text-align:center; color:#ff5252;">Ошибка загрузки данных</li>';
+        }
+    }
+
+    // 4. Сохраняем рекорд
     async function saveGlobalHighScore(newScore) {
         try {
             const response = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard`, {
@@ -93,23 +132,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Content-Type': 'application/json',
                     'Prefer': 'return=minimal'
                 },
-                // Отправляем счет и имя в базу!
                 body: JSON.stringify({ score: newScore, nickname: currentPlayerName })
             });
             
             if(response.ok) {
-                console.log("Рекорд успешно отправлен в базу от имени:", currentPlayerName);
+                console.log("Рекорд сохранен!");
                 globalHighScore = newScore;
                 if(globalScoreDisplay) globalScoreDisplay.textContent = `${globalHighScore} (${currentPlayerName})`;
+                
+                // ВАЖНО: Обновляем Зал Славы после нового рекорда!
+                fetchLeaderboard();
             }
         } catch (error) {
             console.error("Ошибка сохранения рекорда:", error);
         }
     }
 
-    // Запускаем проверки при загрузке
+    // Запускаем все загрузки при открытии страницы
     checkCurrentPlayer();
     fetchGlobalHighScore();
+    fetchLeaderboard(); // Вызываем новую функцию
 
     // --- КЛАССЫ ---
     class Enemy {
