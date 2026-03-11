@@ -3,12 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GameTest Portal 2.0 | Кибер-арена</title>
+    <title>🧠 НЕЙРО-АРЕНА: ИГРЫ С ИИ | УЛЬТИМАТИВНАЯ ПЛАТФОРМА</title>
     <style>
-        /* Импорт крутых шрифтов */
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&family=Press+Start+2P&display=swap');
         
-        /* Сброс и базовые стили */
         * {
             margin: 0;
             padding: 0;
@@ -17,793 +15,1049 @@
 
         body {
             font-family: 'Rajdhani', sans-serif;
-            background: #0a0c0f;
+            background: #03050a;
             color: #fff;
             min-height: 100vh;
             overflow-x: hidden;
             position: relative;
         }
 
-        /* Анимированный фон с частицами */
-        #particles-canvas {
+        /* Сложный фон с сеткой и частицами */
+        #grid-canvas {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             z-index: 0;
+            opacity: 0.15;
             pointer-events: none;
         }
 
-        /* Основной контейнер с затемнением для читаемости */
+        .matrix-rain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+            color: #0f0;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 20px;
+            line-height: 1;
+            writing-mode: vertical-rl;
+            text-orientation: upright;
+            opacity: 0.1;
+        }
+
         .container {
             position: relative;
             z-index: 10;
-            max-width: 1400px;
+            max-width: 1800px;
             margin: 0 auto;
-            padding: 30px 20px;
+            padding: 20px;
         }
 
-        /* Неоновый хедер */
-        .neon-header {
+        /* Верхняя панель с профилем */
+        .profile-panel {
+            background: rgba(0, 20, 40, 0.8);
+            backdrop-filter: blur(20px);
+            border: 2px solid #0ff;
+            border-radius: 20px;
+            padding: 20px 30px;
+            margin-bottom: 30px;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            gap: 30px;
+            box-shadow: 0 0 50px rgba(0, 255, 255, 0.3);
+            animation: borderPulse 3s infinite;
+        }
+
+        @keyframes borderPulse {
+            0%, 100% { border-color: #0ff; box-shadow: 0 0 50px rgba(0, 255, 255, 0.3); }
+            50% { border-color: #f0f; box-shadow: 0 0 70px rgba(255, 0, 255, 0.4); }
+        }
+
+        .avatar {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #00ffaa, #00aaff);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            border: 3px solid white;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 30px;
+        }
+
+        .stat-item {
             text-align: center;
-            margin-bottom: 40px;
-            position: relative;
         }
 
-        h1 {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 4em;
-            font-weight: 900;
-            text-transform: uppercase;
-            background: linear-gradient(135deg, #00ff88, #00ccff, #aa00ff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: neonPulse 2s ease-in-out infinite;
-            letter-spacing: 4px;
-            filter: drop-shadow(0 0 20px rgba(0, 255, 136, 0.5));
-        }
-
-        @keyframes neonPulse {
-            0%, 100% { filter: drop-shadow(0 0 20px #00ff88) drop-shadow(0 0 40px #00ccff); }
-            50% { filter: drop-shadow(0 0 30px #aa00ff) drop-shadow(0 0 60px #00ff88); }
-        }
-
-        .subtitle {
-            font-size: 1.3em;
-            color: rgba(255, 255, 255, 0.7);
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            margin-top: 10px;
-        }
-
-        /* Счетчик достижений */
-        .achievement-badge {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(10, 20, 30, 0.9);
-            backdrop-filter: blur(10px);
-            border: 1px solid #00ff88;
-            border-radius: 50px;
-            padding: 15px 30px;
-            z-index: 100;
-            box-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
-            animation: float 3s ease-in-out infinite;
-        }
-
-        .achievement-badge span {
-            color: #00ff88;
+        .stat-value {
+            font-size: 2em;
             font-weight: bold;
-            font-size: 1.5em;
-            margin-left: 10px;
+            color: #0ff;
+            font-family: 'Orbitron', sans-serif;
         }
 
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-5px); }
+        .stat-label {
+            color: #89a9c4;
+            text-transform: uppercase;
+            font-size: 0.8em;
+        }
+
+        .level-badge {
+            background: linear-gradient(135deg, #ffaa00, #ff5500);
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 1.3em;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(255, 170, 0, 0.5);
         }
 
         /* Основная сетка */
-        .dashboard {
+        .main-grid {
             display: grid;
-            grid-template-columns: 350px 1fr;
-            gap: 30px;
+            grid-template-columns: 300px 1fr 300px;
+            gap: 20px;
         }
 
-        /* Неоновая карточка регистрации */
-        .register-card {
-            background: rgba(20, 30, 45, 0.7);
-            backdrop-filter: blur(15px);
-            border: 2px solid rgba(0, 255, 136, 0.3);
-            border-radius: 30px;
-            padding: 30px;
-            box-shadow: 0 0 50px rgba(0, 255, 136, 0.2);
-            transition: all 0.3s;
-            position: relative;
-            overflow: hidden;
+        /* Левая панель - квесты и задания */
+        .quest-panel {
+            background: rgba(10, 20, 35, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid #0ff;
+            border-radius: 20px;
+            padding: 20px;
+            height: fit-content;
         }
 
-        .register-card::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(0, 255, 136, 0.1), transparent);
-            transform: rotate(45deg);
-            animation: shimmer 6s linear infinite;
-        }
-
-        @keyframes shimmer {
-            0% { transform: translateX(-100%) rotate(45deg); }
-            100% { transform: translateX(100%) rotate(45deg); }
-        }
-
-        .register-card:hover {
-            border-color: #00ff88;
-            box-shadow: 0 0 80px rgba(0, 255, 136, 0.4);
-        }
-
-        .register-card h2 {
-            font-family: 'Orbitron', sans-serif;
-            color: #00ff88;
-            font-size: 2em;
-            margin-bottom: 25px;
-            text-align: center;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        /* Стили для формы */
-        .form-group {
-            margin-bottom: 25px;
-            position: relative;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: #00ccff;
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 0.9em;
-            letter-spacing: 1px;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 16px 20px;
-            background: rgba(0, 0, 0, 0.5);
-            border: 2px solid rgba(0, 204, 255, 0.3);
+        .quest-item {
+            background: rgba(255, 255, 255, 0.05);
             border-radius: 15px;
-            color: #fff;
-            font-size: 1.1em;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #0ff;
             transition: all 0.3s;
-            font-family: 'Rajdhani', sans-serif;
         }
 
-        .form-group input:focus {
-            outline: none;
-            border-color: #00ff88;
-            box-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
-            background: rgba(0, 0, 0, 0.7);
+        .quest-item.completed {
+            border-left-color: #0f0;
+            opacity: 0.6;
         }
 
-        .register-btn {
+        .quest-progress {
             width: 100%;
-            padding: 18px;
-            background: linear-gradient(45deg, #00ff88, #00ccff);
-            border: none;
-            border-radius: 15px;
-            color: #0a0c0f;
-            font-size: 1.3em;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            font-family: 'Orbitron', sans-serif;
-            position: relative;
-            overflow: hidden;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            margin-top: 10px;
         }
 
-        .register-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 50px rgba(0, 255, 136, 0.6);
+        .quest-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #0ff, #f0f);
+            width: 0%;
+            border-radius: 3px;
         }
 
-        .register-btn:active {
-            transform: scale(0.95);
-        }
-
-        /* Сетка игр */
-        .games-grid {
+        /* Центральная область - игры */
+        .games-section {
             display: flex;
             flex-direction: column;
-            gap: 30px;
+            gap: 20px;
+        }
+
+        .games-category {
+            background: rgba(10, 20, 35, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 20px;
+            padding: 20px;
+        }
+
+        .category-title {
+            font-family: 'Orbitron', sans-serif;
+            color: #0ff;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .games-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
         }
 
         .game-card {
-            background: rgba(30, 40, 60, 0.6);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(0, 204, 255, 0.3);
-            border-radius: 30px;
-            padding: 25px;
-            transition: all 0.4s;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #0ff;
+            border-radius: 15px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
             position: relative;
             overflow: hidden;
         }
 
         .game-card:hover {
-            transform: translateY(-5px);
-            border-color: #00ff88;
-            box-shadow: 0 20px 40px rgba(0, 255, 136, 0.2);
+            transform: translateY(-5px) scale(1.02);
+            border-color: #f0f;
+            box-shadow: 0 10px 40px rgba(255, 0, 255, 0.3);
         }
 
-        .game-card h3 {
-            font-family: 'Orbitron', sans-serif;
-            color: #00ccff;
-            font-size: 2em;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
+        .game-card.active {
+            border-color: #ffaa00;
+            box-shadow: 0 0 50px rgba(255, 170, 0, 0.5);
         }
 
-        .game-card h3 i {
-            color: #00ff88;
-            font-size: 1.5em;
+        .game-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
         }
 
-        /* Игровые области */
-        .game-area {
-            background: rgba(0, 0, 0, 0.4);
+        .game-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #0ff;
+            margin-bottom: 5px;
+        }
+
+        .game-desc {
+            color: #89a9c4;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+
+        .game-reward {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 215, 0, 0.3);
             border-radius: 20px;
-            padding: 25px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 5px 10px;
+            font-size: 0.8em;
+            color: gold;
         }
 
-        /* Стили для кнопок игр */
-        .game-btn {
-            padding: 15px 30px;
-            background: linear-gradient(135deg, #1a2a3a, #0f1a24);
-            border: 2px solid #00ccff;
-            border-radius: 50px;
-            color: white;
-            font-size: 1.1em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-family: 'Rajdhani', sans-serif;
-        }
-
-        .game-btn:hover {
-            border-color: #00ff88;
-            box-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
-            transform: scale(1.1) rotate(2deg);
-        }
-
-        .game-btn:active {
-            transform: scale(0.95);
-        }
-
-        /* Результаты игр */
-        .result-box {
+        /* Игровая арена */
+        .game-arena {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            border: 2px solid #0ff;
+            border-radius: 20px;
+            padding: 30px;
             margin-top: 20px;
+            min-height: 400px;
+            box-shadow: 0 0 100px rgba(0, 255, 255, 0.2);
+        }
+
+        /* Правая панель - магазин */
+        .shop-panel {
+            background: rgba(10, 20, 35, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid #f0f;
+            border-radius: 20px;
             padding: 20px;
-            background: rgba(0, 0, 0, 0.5);
+            height: fit-content;
+        }
+
+        .shop-item {
+            background: rgba(255, 255, 255, 0.05);
             border-radius: 15px;
-            font-size: 1.2em;
-            border-left: 4px solid #00ff88;
-            box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
-            animation: glowPulse 2s infinite;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255, 0, 255, 0.3);
         }
 
-        @keyframes glowPulse {
-            0%, 100% { box-shadow: 0 0 20px rgba(0, 255, 136, 0.2); }
-            50% { box-shadow: 0 0 30px rgba(0, 204, 255, 0.3); }
-        }
-
-        /* Стили для кликера */
-        .clicker-score {
-            font-size: 4em;
+        .shop-item button {
+            background: linear-gradient(135deg, #f0f, #90f);
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 10px;
+            cursor: pointer;
             font-weight: bold;
-            background: linear-gradient(45deg, #00ff88, #00ccff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 0 20px rgba(0, 255, 136, 0.5));
         }
 
-        /* Прогресс-бар для кликера */
-        .progress-bar {
-            width: 100%;
-            height: 20px;
+        /* Чат с ИИ */
+        .ai-chat {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #0ff;
+            border-radius: 15px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .chat-messages {
+            height: 200px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            padding: 10px;
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 10px;
             background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #0ff;
             border-radius: 10px;
-            margin-top: 15px;
-            overflow: hidden;
+            color: white;
         }
 
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #00ff88, #00ccff);
-            width: 0%;
-            transition: width 0.3s;
-            border-radius: 10px;
-        }
-
-        /* Ачивки */
-        .achievement-popup {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            background: linear-gradient(135deg, #00ff88, #00ccff);
-            color: #0a0c0f;
-            padding: 20px 30px;
-            border-radius: 15px;
-            font-weight: bold;
-            transform: translateX(400px);
-            transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            z-index: 1000;
-            box-shadow: 0 10px 40px rgba(0, 255, 136, 0.5);
-        }
-
-        .achievement-popup.show {
-            transform: translateX(0);
-        }
-
-        /* Медиа-запросы */
-        @media (max-width: 900px) {
-            .dashboard {
+        /* Адаптивность */
+        @media (max-width: 1200px) {
+            .main-grid {
                 grid-template-columns: 1fr;
             }
             
-            h1 {
-                font-size: 2.5em;
+            .profile-panel {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+            
+            .avatar {
+                margin: 0 auto;
             }
         }
 
-        /* Эффект нажатия */
-        .pulse {
-            animation: pulse 0.3s ease;
+        /* Анимации */
+        @keyframes glow {
+            0%, 100% { text-shadow: 0 0 10px #0ff; }
+            50% { text-shadow: 0 0 30px #f0f; }
         }
 
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
+        .glitch {
+            animation: glitch 1s infinite;
+        }
+
+        @keyframes glitch {
+            2%, 64% { transform: translate(2px, 0) skew(0deg); }
+            4%, 60% { transform: translate(-2px, 0) skew(0deg); }
+            62% { transform: translate(0, 0) skew(5deg); }
         }
     </style>
 </head>
 <body>
-    <canvas id="particles-canvas"></canvas>
-
-    <!-- Счетчик достижений -->
-    <div class="achievement-badge">
-        🏆 Достижения: <span id="achievementCount">0</span>/10
-    </div>
-
-    <!-- Поп-ап для ачивок -->
-    <div id="achievementPopup" class="achievement-popup">
-        🎉 Получено достижение!
-    </div>
+    <canvas id="grid-canvas"></canvas>
+    <div class="matrix-rain" id="matrixRain"></div>
 
     <div class="container">
-        <div class="neon-header">
-            <h1>⚡ КИБЕР-АРЕНА ⚡</h1>
-            <div class="subtitle">ТЕСТОВАЯ ПЛОЩАДКА СЛЕДУЮЩЕГО ПОКОЛЕНИЯ</div>
+        <!-- Профиль пользователя -->
+        <div class="profile-panel">
+            <div class="avatar">🧠</div>
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="xpDisplay">0</div>
+                    <div class="stat-label">XP</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="levelDisplay">1</div>
+                    <div class="stat-label">УРОВЕНЬ</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="coinsDisplay">1000</div>
+                    <div class="stat-label">🪙 КОИНЫ</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="gamesPlayed">0</div>
+                    <div class="stat-label">ИГР СЫГРАНО</div>
+                </div>
+            </div>
+            <div class="level-badge" id="levelTitle">
+                НОВИЧОК
+            </div>
         </div>
 
-        <div class="dashboard">
-            <!-- Левая колонка: Регистрация -->
-            <div class="register-card">
-                <h2>🔐 ДОСТУП</h2>
-                <form id="testRegisterForm">
-                    <div class="form-group">
-                        <label>👾 ИГРОК</label>
-                        <input type="text" id="username" placeholder="Введи свой ник" required>
+        <!-- Основной контент -->
+        <div class="main-grid">
+            <!-- Левая панель: Квесты -->
+            <div class="quest-panel">
+                <h2 style="color: #0ff; margin-bottom: 20px;">📋 ЕЖЕДНЕВНЫЕ КВЕСТЫ</h2>
+                <div id="quests"></div>
+                <div class="ai-chat">
+                    <h3 style="color: #f0f;">🤖 AI-ПОМОЩНИК</h3>
+                    <div class="chat-messages" id="chatMessages">
+                        <div>🧠: Привет! Я помогу тебе стать лучше!</div>
                     </div>
-                    <div class="form-group">
-                        <label>📧 КОНТАКТ</label>
-                        <input type="email" id="email" placeholder="cyber@arena.com" required>
+                    <div class="chat-input">
+                        <input type="text" id="chatInput" placeholder="Спроси совета...">
+                        <button class="game-btn" onclick="sendMessage()" style="padding: 10px 20px;">➡️</button>
                     </div>
-                    <div class="form-group">
-                        <label>🔑 КЛЮЧ</label>
-                        <input type="password" id="password" placeholder="Минимум 6 символов" required>
-                    </div>
-                    <button type="submit" class="register-btn">АКТИВИРОВАТЬ ДОСТУП</button>
-                </form>
-                <div style="text-align: center; margin-top: 20px; color: rgba(255,255,255,0.5);">
-                    ⚡ Тестовый режим • Данные не сохраняются
                 </div>
             </div>
 
-            <!-- Правая колонка: Игры -->
-            <div class="games-grid">
-                <!-- Игра 1: Камень, ножницы, бумага (улучшенная) -->
-                <div class="game-card">
-                    <h3>
-                        <span>🗿⚔️📄</span>
-                        БИТВА СТИХИЙ
-                    </h3>
-                    <div class="game-area">
-                        <div style="display: flex; gap: 15px; flex-wrap: wrap; justify-content: center;">
-                            <button class="game-btn" onclick="playRPS('камень')" style="border-color: #ff4444;">🗿 КАМЕНЬ</button>
-                            <button class="game-btn" onclick="playRPS('ножницы')" style="border-color: #44ff44;">✂️ НОЖНИЦЫ</button>
-                            <button class="game-btn" onclick="playRPS('бумага')" style="border-color: #4444ff;">📄 БУМАГА</button>
-                        </div>
-                        <div class="result-box" id="rpsResult">
-                            🔥 ВЫБЕРИ ОРУЖИЕ, ВОИН!
-                        </div>
-                        <div style="margin-top: 15px; text-align: center; color: #00ccff;" id="rpsStats">
-                            Побед: 0 | Поражений: 0 | Ничьих: 0
-                        </div>
+            <!-- Центр: Игры -->
+            <div class="games-section">
+                <!-- Категория: Классические -->
+                <div class="games-category">
+                    <div class="category-title">
+                        <span>🎮</span> КЛАССИЧЕСКИЕ ИГРЫ
                     </div>
+                    <div class="games-row" id="classicGames"></div>
                 </div>
 
-                <!-- Игра 2: Супер-кликер с комбо -->
-                <div class="game-card">
-                    <h3>
-                        <span>⚡</span>
-                        КИБЕР-КЛИКЕР
-                    </h3>
-                    <div class="game-area">
-                        <div style="text-align: center;">
-                            <div class="clicker-score" id="scoreDisplay">0</div>
-                            <div style="font-size: 1.5em; margin: 10px 0;" id="comboDisplay">🔥 x1</div>
-                            <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-                                <button class="game-btn" onclick="increaseScore()" style="font-size: 1.5em; padding: 20px 40px;">💥 КЛИК!</button>
-                                <button class="game-btn" onclick="resetScore()" style="background: linear-gradient(135deg, #442211, #221100);">🔄 СБРОС</button>
-                                <button class="game-btn" onclick="buyBoost()" id="boostBtn" style="background: linear-gradient(135deg, #aa00ff, #6600cc);">⚡ УСИЛИТЕЛЬ (50)</button>
-                            </div>
-                            <div class="progress-bar">
-                                <div class="progress-fill" id="progressFill"></div>
-                            </div>
-                            <div style="margin-top: 15px; color: #00ff88;" id="nextMilestone">До следующей цели: 100</div>
-                        </div>
+                <!-- Категория: На логику -->
+                <div class="games-category">
+                    <div class="category-title">
+                        <span>🧩</span> ИГРЫ НА ЛОГИКУ
                     </div>
+                    <div class="games-row" id="logicGames"></div>
                 </div>
 
-                <!-- Игра 3: Угадай число (с подсказками и историей) -->
-                <div class="game-card">
-                    <h3>
-                        <span>🎯</span>
-                        НЕЙРО-УГАДАЙКА
-                    </h3>
-                    <div class="game-area">
-                        <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; justify-content: center;">
-                            <input type="number" id="guessInput" placeholder="1-100" min="1" max="100" style="padding: 15px; font-size: 1.3em;">
-                            <button class="game-btn" onclick="makeGuess()">🎯 ПРОВЕРИТЬ</button>
-                            <button class="game-btn" onclick="resetGuessGame()" style="background: linear-gradient(135deg, #442211, #221100);">🔄 НОВАЯ ИГРА</button>
-                        </div>
-                        <div class="result-box" id="guessResult">
-                            🤖 Я ЗАГАДАЛ ЧИСЛО ОТ 1 ДО 100
-                        </div>
-                        <div style="margin-top: 15px;" id="guessHistory"></div>
-                        <div style="margin-top: 10px; color: #00ff88;" id="attemptsDisplay">Попыток: 0</div>
+                <!-- Категория: Экшен -->
+                <div class="games-category">
+                    <div class="category-title">
+                        <span>⚡</span> ЭКШЕН И РЕАКЦИЯ
                     </div>
+                    <div class="games-row" id="actionGames"></div>
+                </div>
+
+                <!-- Активная игровая арена -->
+                <div class="game-arena" id="gameArena">
+                    <h2 style="color: #0ff; text-align: center; margin-bottom: 20px;">🎮 ВЫБЕРИ ИГРУ</h2>
+                    <div style="text-align: center; color: #89a9c4;">
+                        Нажми на любую игру, чтобы начать
+                    </div>
+                </div>
+            </div>
+
+            <!-- Правая панель: Магазин -->
+            <div class="shop-panel">
+                <h2 style="color: #f0f; margin-bottom: 20px;">🛒 МАГАЗИН УСИЛЕНИЙ</h2>
+                <div id="shop"></div>
+                <div style="margin-top: 20px; padding: 15px; background: rgba(255, 215, 0, 0.1); border-radius: 15px;">
+                    <h3 style="color: gold;">🏆 ТОП-ИГРОКИ</h3>
+                    <div id="leaderboard"></div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // ---------- АНИМИРОВАННЫЙ ФОН С ЧАСТИЦАМИ ----------
-        const canvas = document.getElementById('particles-canvas');
-        const ctx = canvas.getContext('2d');
-        
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-
-        class Particle {
-            constructor() {
-                this.x = Math.random() * canvas.width;
-                this.y = Math.random() * canvas.height;
-                this.size = Math.random() * 2 + 0.5;
-                this.speedX = (Math.random() - 0.5) * 0.5;
-                this.speedY = (Math.random() - 0.5) * 0.5;
-                this.color = `rgba(${Math.random() * 100 + 155}, ${Math.random() * 255}, ${Math.random() * 255}, 0.5)`;
+        // ==================== СИСТЕМА ПРОФИЛЯ И ПРОГРЕССИИ ====================
+        let player = {
+            xp: 0,
+            level: 1,
+            coins: 1000,
+            gamesPlayed: 0,
+            achievements: [],
+            inventory: [],
+            stats: {
+                rpsWins: 0,
+                clickerScore: 0,
+                guessGames: 0,
+                memoryWins: 0
             }
-            
-            update() {
-                this.x += this.speedX;
-                this.y += this.speedY;
-                
-                if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
-                if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
-            }
-            
-            draw() {
-                ctx.fillStyle = this.color;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
-
-        const particles = [];
-        for (let i = 0; i < 100; i++) {
-            particles.push(new Particle());
-        }
-
-        function animateParticles() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            for (let particle of particles) {
-                particle.update();
-                particle.draw();
-            }
-            requestAnimationFrame(animateParticles);
-        }
-
-        animateParticles();
-
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        });
-
-        // ---------- СИСТЕМА ДОСТИЖЕНИЙ ----------
-        let achievements = 0;
-        const achievementCount = document.getElementById('achievementCount');
-        const achievementPopup = document.getElementById('achievementPopup');
-
-        function unlockAchievement(name) {
-            achievements++;
-            achievementCount.textContent = achievements;
-            achievementPopup.innerHTML = `🏆 ДОСТИЖЕНИЕ РАЗБЛОКИРОВАНО: ${name}!`;
-            achievementPopup.classList.add('show');
-            
-            // Создаем конфетти эффект
-            for (let i = 0; i < 20; i++) {
-                setTimeout(() => {
-                    const particle = new Particle();
-                    particle.x = window.innerWidth / 2;
-                    particle.y = window.innerHeight / 2;
-                    particle.size = Math.random() * 5 + 2;
-                    particles.push(particle);
-                }, i * 50);
-            }
-            
-            setTimeout(() => {
-                achievementPopup.classList.remove('show');
-            }, 3000);
-        }
-
-        // ---------- ИГРА 1: КАМЕНЬ, НОЖНИЦЫ, БУМАГА СО СТАТИСТИКОЙ ----------
-        let rpsStats = {
-            wins: 0,
-            losses: 0,
-            draws: 0
         };
 
-        function playRPS(playerChoice) {
-            const choices = ['камень', 'ножницы', 'бумага'];
-            const computerChoice = choices[Math.floor(Math.random() * 3)];
+        const xpPerLevel = 1000;
+        
+        function addXP(amount) {
+            player.xp += amount;
+            while (player.xp >= player.level * xpPerLevel) {
+                levelUp();
+            }
+            updateProfile();
+        }
+
+        function levelUp() {
+            player.level++;
+            player.coins += player.level * 100;
+            addAIMessage(`🎉 ПОЗДРАВЛЯЮ! Ты достиг ${player.level} уровня! Получено ${player.level * 100} монет!`);
+            createParticleExplosion();
+        }
+
+        function updateProfile() {
+            document.getElementById('xpDisplay').textContent = player.xp;
+            document.getElementById('levelDisplay').textContent = player.level;
+            document.getElementById('coinsDisplay').textContent = player.coins;
+            document.getElementById('gamesPlayed').textContent = player.gamesPlayed;
             
-            let result = '';
-            let isWin = false;
+            const titles = ['НОВИЧОК', 'ЛЮБИТЕЛЬ', 'ПРОФИ', 'ЭКСПЕРТ', 'МАСТЕР', 'ЛЕГЕНДА'];
+            const titleIndex = Math.min(Math.floor(player.level / 5), titles.length - 1);
+            document.getElementById('levelTitle').textContent = titles[titleIndex];
+        }
+
+        // ==================== СИСТЕМА КВЕСТОВ ====================
+        const quests = [
+            { id: 1, name: 'Первая победа', desc: 'Выиграй в любой игре', reward: 100, progress: 0, target: 1, type: 'win' },
+            { id: 2, name: 'Кликер-мания', desc: 'Набери 500 очков в кликере', reward: 200, progress: 0, target: 500, type: 'clicker' },
+            { id: 3, name: 'Угадайка', desc: 'Сыграй 3 игры в "Угадай число"', reward: 150, progress: 0, target: 3, type: 'guess' },
+            { id: 4, name: 'Богатей', desc: 'Заработай 500 монет', reward: 300, progress: 0, target: 500, type: 'coins' },
+            { id: 5, name: 'Мастер комбо', desc: 'Достигни комбо x5 в кликере', reward: 250, progress: 0, target: 5, type: 'combo' }
+        ];
+
+        function updateQuests(type, amount = 1) {
+            quests.forEach(quest => {
+                if (quest.type === type && quest.progress < quest.target) {
+                    quest.progress = Math.min(quest.progress + amount, quest.target);
+                    if (quest.progress === quest.target) {
+                        player.coins += quest.reward;
+                        addXP(200);
+                        addAIMessage(`✅ Квест "${quest.name}" выполнен! +${quest.reward} монет!`);
+                        createParticleExplosion();
+                    }
+                }
+            });
+            renderQuests();
+        }
+
+        function renderQuests() {
+            const container = document.getElementById('quests');
+            container.innerHTML = quests.map(quest => `
+                <div class="quest-item ${quest.progress >= quest.target ? 'completed' : ''}">
+                    <div style="display: flex; justify-content: space-between;">
+                        <strong>${quest.name}</strong>
+                        <span style="color: gold;">+${quest.reward}</span>
+                    </div>
+                    <div style="font-size: 0.9em; color: #89a9c4;">${quest.desc}</div>
+                    <div class="quest-progress">
+                        <div class="quest-progress-fill" style="width: ${(quest.progress/quest.target)*100}%"></div>
+                    </div>
+                    <div style="font-size: 0.8em; text-align: right;">${quest.progress}/${quest.target}</div>
+                </div>
+            `).join('');
+        }
+
+        // ==================== МАГАЗИН ====================
+        const shopItems = [
+            { id: 1, name: 'Удвоение опыта', desc: '30 минут ×2 XP', price: 500, emoji: '⚡' },
+            { id: 2, name: 'Супер-клик', desc: 'Навсегда +5 к клику', price: 1000, emoji: '🖱️' },
+            { id: 3, name: 'Подсказка в угадайке', desc: 'Показать диапазон', price: 300, emoji: '🔍' },
+            { id: 4, name: 'Золотой статус', desc: '+50% монет', price: 2000, emoji: '👑' },
+            { id: 5, name: 'Аватар-неон', desc: 'Крутой скин', price: 1500, emoji: '✨' }
+        ];
+
+        function renderShop() {
+            const container = document.getElementById('shop');
+            container.innerHTML = shopItems.map(item => `
+                <div class="shop-item">
+                    <div>
+                        <span style="font-size: 1.5em;">${item.emoji}</span>
+                        <strong>${item.name}</strong>
+                        <div style="font-size: 0.8em;">${item.desc}</div>
+                    </div>
+                    <div>
+                        <button onclick="buyItem(${item.id})" ${player.coins < item.price ? 'disabled' : ''}>
+                            ${item.price} 🪙
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function buyItem(id) {
+            const item = shopItems.find(i => i.id === id);
+            if (player.coins >= item.price) {
+                player.coins -= item.price;
+                player.inventory.push(item);
+                updateProfile();
+                addAIMessage(`🛒 Куплено: ${item.name}!`);
+                renderShop();
+            }
+        }
+
+        // ==================== AI-ПОМОЩНИК ====================
+        function addAIMessage(msg) {
+            const chat = document.getElementById('chatMessages');
+            chat.innerHTML += `<div>🧠: ${msg}</div>`;
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const msg = input.value;
+            if (!msg) return;
             
-            if (playerChoice === computerChoice) {
-                result = `🤝 НИЧЬЯ! Оба выбрали ${playerChoice}.`;
-                rpsStats.draws++;
-            } else if (
-                (playerChoice === 'камень' && computerChoice === 'ножницы') ||
-                (playerChoice === 'ножницы' && computerChoice === 'бумага') ||
-                (playerChoice === 'бумага' && computerChoice === 'камень')
-            ) {
-                result = `🎉 ПОБЕДА! ${playerChoice} побеждает ${computerChoice}.`;
-                rpsStats.wins++;
-                isWin = true;
+            const chat = document.getElementById('chatMessages');
+            chat.innerHTML += `<div>👤: ${msg}</div>`;
+            
+            // AI-ответы
+            setTimeout(() => {
+                let response;
+                if (msg.includes('как играть')) response = 'Выбери игру из списка и следуй инструкциям!';
+                else if (msg.includes('монеты')) response = 'Зарабатывай монеты в играх и выполняй квесты!';
+                else if (msg.includes('уровень')) response = `У тебя ${player.level} уровень. До следующего: ${player.level * 1000 - player.xp} XP`;
+                else if (msg.includes('совет')) response = 'Попробуй кликер - там можно быстро набрать очки!';
+                else response = 'Интересный вопрос! Продолжай играть и узнаешь больше!';
                 
-                // Достижение за первую победу
-                if (rpsStats.wins === 1) unlockAchievement('Первая победа');
-                if (rpsStats.wins === 5) unlockAchievement('Ветеран битв');
+                addAIMessage(response);
+            }, 500);
+            
+            input.value = '';
+        }
+
+        // ==================== ИГРЫ ====================
+        const games = {
+            classic: [
+                { id: 'rps', name: '⚔️ КАМЕНЬ-НОЖНИЦЫ-БУМАГА', desc: 'Классическая битва с ИИ', icon: '🗿', reward: 50 },
+                { id: 'guess', name: '🔢 УГАДАЙ ЧИСЛО', desc: 'Компьютер загадал число...', icon: '🎯', reward: 30 },
+                { id: 'higherlower', name: '📈 БОЛЬШЕ-МЕНЬШЕ', desc: 'Угадай следующее число', icon: '⬆️', reward: 40 }
+            ],
+            logic: [
+                { id: 'memory', name: '🧠 МЕМОРИ-ТЕСТ', desc: 'Запомни последовательность', icon: '🔴', reward: 100 },
+                { id: 'math', name: '🧮 БЫСТРЫЙ СЧЁТ', desc: 'Решай примеры на время', icon: '➕', reward: 75 },
+                { id: 'patterns', name: '🔷 НАЙДИ ЗАКОНОМЕРНОСТЬ', desc: 'Продолжи ряд', icon: '🔲', reward: 90 }
+            ],
+            action: [
+                { id: 'clicker', name: '⚡ КИБЕР-КЛИКЕР', desc: 'Кликай и зарабатывай', icon: '🖱️', reward: 20 },
+                { id: 'reaction', name: '🎯 ТЕСТ РЕАКЦИИ', desc: 'Нажми как можно быстрее', icon: '⚡', reward: 60 },
+                { id: 'typer', name: '⌨️ БЫСТРЫЙ НАБОР', desc: 'Напечатай слово первым', icon: '✍️', reward: 80 },
+                { id: 'aim', name: '🎯 МЕТКИЙ СТРЕЛОК', desc: 'Попади по мишени', icon: '🔫', reward: 120 }
+            ]
+        };
+
+        function renderGames() {
+            document.getElementById('classicGames').innerHTML = games.classic.map(game => createGameCard(game)).join('');
+            document.getElementById('logicGames').innerHTML = games.logic.map(game => createGameCard(game)).join('');
+            document.getElementById('actionGames').innerHTML = games.action.map(game => createGameCard(game)).join('');
+        }
+
+        function createGameCard(game) {
+            return `
+                <div class="game-card" onclick="loadGame('${game.id}')">
+                    <div class="game-icon">${game.icon}</div>
+                    <div class="game-title">${game.name}</div>
+                    <div class="game-desc">${game.desc}</div>
+                    <div class="game-reward">🎁 +${game.reward} XP</div>
+                </div>
+            `;
+        }
+
+        // ==================== ЗАГРУЗКА ИГР ====================
+        function loadGame(gameId) {
+            const arena = document.getElementById('gameArena');
+            player.gamesPlayed++;
+            updateProfile();
+            
+            switch(gameId) {
+                case 'rps':
+                    arena.innerHTML = getRPSGame();
+                    break;
+                case 'clicker':
+                    arena.innerHTML = getClickerGame();
+                    break;
+                case 'guess':
+                    arena.innerHTML = getGuessGame();
+                    break;
+                case 'memory':
+                    arena.innerHTML = getMemoryGame();
+                    break;
+                case 'math':
+                    arena.innerHTML = getMathGame();
+                    break;
+                case 'reaction':
+                    arena.innerHTML = getReactionGame();
+                    break;
+                case 'higherlower':
+                    arena.innerHTML = getHigherLowerGame();
+                    break;
+                case 'patterns':
+                    arena.innerHTML = getPatternsGame();
+                    break;
+                case 'typer':
+                    arena.innerHTML = getTyperGame();
+                    break;
+                case 'aim':
+                    arena.innerHTML = getAimGame();
+                    break;
+            }
+        }
+
+        // ИГРА 1: КАМЕНЬ-НОЖНИЦЫ-БУМАГА (улучшенная)
+        function getRPSGame() {
+            return `
+                <h3 style="color: #0ff;">🗿 КАМЕНЬ-НОЖНИЦЫ-БУМАГА vs ИИ</h3>
+                <div style="display: flex; gap: 20px; justify-content: center; margin: 30px 0;">
+                    <button class="game-btn" onclick="playRPS('камень')">🗿 КАМЕНЬ</button>
+                    <button class="game-btn" onclick="playRPS('ножницы')">✂️ НОЖНИЦЫ</button>
+                    <button class="game-btn" onclick="playRPS('бумага')">📄 БУМАГА</button>
+                </div>
+                <div id="rpsResult" class="result-box" style="text-align: center;">НАЧНИ ИГРУ!</div>
+                <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+                    <span>Побед: <span id="rpsWins">0</span></span>
+                    <span>Поражений: <span id="rpsLosses">0</span></span>
+                    <span>Ничьих: <span id="rpsDraws">0</span></span>
+                </div>
+            `;
+        }
+
+        // ИГРА 2: КЛИКЕР
+        function getClickerGame() {
+            return `
+                <h3 style="color: #0ff;">⚡ КИБЕР-КЛИКЕР С КОМБО</h3>
+                <div style="text-align: center;">
+                    <div style="font-size: 5em; font-weight: bold; color: #0ff;" id="clickerScore">0</div>
+                    <div style="font-size: 2em;" id="clickerCombo">🔥 x1</div>
+                    <button class="game-btn" onclick="clickerClick()" style="font-size: 2em; padding: 20px 50px; margin: 20px;">⚡ КЛИК!</button>
+                    <div>Автокликер: <span id="autoClickerCount">0</span></div>
+                    <button class="game-btn" onclick="buyAutoClicker()" id="autoClickerBtn">Купить автокликер (500)</button>
+                </div>
+            `;
+        }
+
+        // ИГРА 3: УГАДАЙ ЧИСЛО
+        function getGuessGame() {
+            return `
+                <h3 style="color: #0ff;">🔢 УГАДАЙ ЧИСЛО (1-1000)</h3>
+                <div style="text-align: center;">
+                    <input type="number" id="guessInput" min="1" max="1000" style="padding: 15px; font-size: 1.5em; width: 200px;">
+                    <button class="game-btn" onclick="makeGuess()" style="margin-left: 10px;">🎯 ПРОВЕРИТЬ</button>
+                    <div id="guessResult" class="result-box" style="margin-top: 20px;"></div>
+                    <div>Попыток: <span id="guessAttempts">0</span></div>
+                </div>
+            `;
+        }
+
+        // ИГРА 4: МЕМОРИ-ТЕСТ
+        function getMemoryGame() {
+            return `
+                <h3 style="color: #0ff;">🧠 МЕМОРИ-ТЕСТ</h3>
+                <div style="text-align: center;">
+                    <div id="memoryPattern" style="font-size: 3em; margin: 20px;"></div>
+                    <button class="game-btn" onclick="startMemoryGame()">СТАРТ</button>
+                    <div id="memoryButtons" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 300px; margin: 20px auto;"></div>
+                </div>
+            `;
+        }
+
+        // ИГРА 5: БЫСТРЫЙ СЧЁТ
+        function getMathGame() {
+            return `
+                <h3 style="color: #0ff;">🧮 БЫСТРЫЙ СЧЁТ</h3>
+                <div style="text-align: center;">
+                    <div id="mathQuestion" style="font-size: 3em; margin: 20px;"></div>
+                    <input type="number" id="mathAnswer" style="padding: 15px; font-size: 1.5em; width: 150px;">
+                    <button class="game-btn" onclick="checkMath()">✅ ОТВЕТИТЬ</button>
+                    <div id="mathScore" style="margin-top: 20px;">Счёт: 0</div>
+                </div>
+            `;
+        }
+
+        // ИГРА 6: ТЕСТ РЕАКЦИИ
+        function getReactionGame() {
+            return `
+                <h3 style="color: #0ff;">⚡ ТЕСТ РЕАКЦИИ</h3>
+                <div style="text-align: center;">
+                    <div id="reactionBox" style="width: 100%; height: 200px; background: #333; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 2em; cursor: pointer;" onclick="reactionClick()">
+                        ЖДИ ЗЕЛЕНОГО...
+                    </div>
+                    <div id="reactionTime" style="margin-top: 20px; font-size: 1.5em;"></div>
+                </div>
+            `;
+        }
+
+        // ==================== ЛОГИКА ИГР ====================
+        
+        // RPS логика
+        let rpsWins = 0, rpsLosses = 0, rpsDraws = 0;
+        
+        window.playRPS = function(choice) {
+            const choices = ['камень', 'ножницы', 'бумага'];
+            const computer = choices[Math.floor(Math.random() * 3)];
+            
+            let result;
+            if (choice === computer) {
+                result = 'НИЧЬЯ!';
+                rpsDraws++;
+            } else if (
+                (choice === 'камень' && computer === 'ножницы') ||
+                (choice === 'ножницы' && computer === 'бумага') ||
+                (choice === 'бумага' && computer === 'камень')
+            ) {
+                result = 'ТЫ ПОБЕДИЛ!';
+                rpsWins++;
+                addXP(50);
+                player.coins += 25;
+                updateQuests('win');
             } else {
-                result = `💔 ПОРАЖЕНИЕ! ${computerChoice} побеждает ${playerChoice}.`;
-                rpsStats.losses++;
+                result = 'ПРОИГРЫШ...';
+                rpsLosses++;
             }
             
             document.getElementById('rpsResult').innerHTML = `
-                👤 Ты выбрал: ${playerChoice}<br>
-                🤖 Противник выбрал: ${computerChoice}<br>
-                <strong style="color: ${isWin ? '#00ff88' : '#ff4444'}">${result}</strong>
+                Твой выбор: ${choice}<br>
+                Компьютер: ${computer}<br>
+                <strong style="color: #0ff;">${result}</strong>
             `;
             
-            document.getElementById('rpsStats').innerHTML = 
-                `Побед: ${rpsStats.wins} | Поражений: ${rpsStats.losses} | Ничьих: ${rpsStats.draws}`;
+            document.getElementById('rpsWins').textContent = rpsWins;
+            document.getElementById('rpsLosses').textContent = rpsLosses;
+            document.getElementById('rpsDraws').textContent = rpsDraws;
             
-            // Анимация кнопки
-            event.target.classList.add('pulse');
-            setTimeout(() => event.target.classList.remove('pulse'), 300);
-        }
+            updateProfile();
+        };
 
-        // ---------- ИГРА 2: УЛУЧШЕННЫЙ КЛИКЕР ----------
-        let score = 0;
-        let combo = 1;
-        let boostCost = 50;
-        let lastClickTime = 0;
+        // Кликер логика
+        let clickerScore = 0;
+        let clickerCombo = 1;
+        let lastClick = 0;
+        let autoClickerCount = 0;
         
-        const scoreDisplay = document.getElementById('scoreDisplay');
-        const comboDisplay = document.getElementById('comboDisplay');
-        const progressFill = document.getElementById('progressFill');
-        const nextMilestone = document.getElementById('nextMilestone');
-        const boostBtn = document.getElementById('boostBtn');
-
-        function increaseScore() {
+        window.clickerClick = function() {
             const now = Date.now();
-            
-            // Система комбо (если кликнуть быстро)
-            if (now - lastClickTime < 1000) {
-                combo = Math.min(combo + 0.5, 5);
+            if (now - lastClick < 1000) {
+                clickerCombo = Math.min(clickerCombo + 0.2, 5);
             } else {
-                combo = 1;
+                clickerCombo = 1;
             }
+            lastClick = now;
             
-            lastClickTime = now;
+            const points = Math.floor(10 * clickerCombo);
+            clickerScore += points;
             
-            // Добавляем очки с учетом комбо
-            score += Math.floor(10 * combo);
-            updateScore();
+            document.getElementById('clickerScore').textContent = clickerScore;
+            document.getElementById('clickerCombo').textContent = `🔥 x${clickerCombo.toFixed(1)}`;
             
-            // Анимация
-            event.target.classList.add('pulse');
-            setTimeout(() => event.target.classList.remove('pulse'), 200);
+            updateQuests('clicker', points);
+            updateQuests('combo', clickerCombo);
             
-            // Достижения
-            if (score >= 100) unlockAchievement('Первая сотня');
-            if (score >= 1000) unlockAchievement('Тысяча и одна ночь');
-            if (combo >= 3) unlockAchievement('Комбо-мастер');
-        }
+            if (clickerScore % 500 === 0) {
+                addXP(100);
+                addAIMessage('🎉 Отличный кликерский результат!');
+            }
+        };
 
-        function updateScore() {
-            scoreDisplay.textContent = score;
-            comboDisplay.innerHTML = `🔥 x${combo.toFixed(1)}`;
-            
-            // Обновляем прогресс бар (цель - 1000)
-            const progress = (score % 1000) / 10;
-            progressFill.style.width = `${progress}%`;
-            
-            const nextMilestoneValue = (Math.floor(score / 1000) + 1) * 1000;
-            nextMilestone.innerHTML = `До следующей цели: ${nextMilestoneValue - score}`;
-            
-            // Активируем/деактивируем кнопку усиления
-            boostBtn.disabled = score < boostCost;
-            boostBtn.style.opacity = score < boostCost ? 0.5 : 1;
-        }
-
-        function buyBoost() {
-            if (score >= boostCost) {
-                score -= boostCost;
-                combo = 5; // Максимальное комбо на время
-                updateScore();
-                unlockAchievement('Усиление куплено');
+        window.buyAutoClicker = function() {
+            if (player.coins >= 500) {
+                player.coins -= 500;
+                autoClickerCount++;
+                document.getElementById('autoClickerCount').textContent = autoClickerCount;
                 
-                // Эффект
-                document.body.style.filter = 'hue-rotate(90deg)';
-                setTimeout(() => document.body.style.filter = 'none', 1000);
+                setInterval(() => {
+                    clickerScore += autoClickerCount * 5;
+                    document.getElementById('clickerScore').textContent = clickerScore;
+                }, 1000);
+                
+                updateProfile();
             }
-        }
+        };
 
-        function resetScore() {
-            score = 0;
-            combo = 1;
-            updateScore();
-        }
-
-        // ---------- ИГРА 3: УГАДАЙ ЧИСЛО С ИСТОРИЕЙ ----------
-        let secretNumber = Math.floor(Math.random() * 100) + 1;
-        let attempts = 0;
-        let guessHistory = [];
+        // Угадай число логика
+        let secretNumber = Math.floor(Math.random() * 1000) + 1;
+        let guessAttempts = 0;
         
-        const guessResult = document.getElementById('guessResult');
-        const guessHistoryEl = document.getElementById('guessHistory');
-        const attemptsDisplay = document.getElementById('attemptsDisplay');
-
-        function makeGuess() {
-            const input = document.getElementById('guessInput');
-            const guess = parseInt(input.value);
+        window.makeGuess = function() {
+            const guess = parseInt(document.getElementById('guessInput').value);
+            if (isNaN(guess)) return;
             
-            if (isNaN(guess) || guess < 1 || guess > 100) {
-                alert('⚡ Введи число от 1 до 100!');
-                return;
-            }
-            
-            attempts++;
-            guessHistory.push(guess);
-            
-            let message = '';
-            let color = '#00ff88';
+            guessAttempts++;
+            let message;
             
             if (guess === secretNumber) {
-                message = `🎉 ПОБЕДА! Число ${secretNumber} угадано за ${attempts} попыток!`;
-                unlockAchievement('Математический гений');
-                
-                // Загадываем новое число
-                secretNumber = Math.floor(Math.random() * 100) + 1;
-                attempts = 0;
-                guessHistory = [];
-                
-                // Анимация
-                document.body.style.backgroundColor = '#00ff8822';
-                setTimeout(() => document.body.style.backgroundColor = '', 500);
+                message = `🎉 ПОБЕДА! Число ${secretNumber} угадано за ${guessAttempts} попыток!`;
+                addXP(100);
+                player.coins += 50;
+                updateQuests('guess');
+                secretNumber = Math.floor(Math.random() * 1000) + 1;
+                guessAttempts = 0;
             } else if (guess < secretNumber) {
-                message = `⬆️ Больше, чем ${guess}`;
-                color = '#ffaa00';
+                message = `⬆️ Загаданное число БОЛЬШЕ ${guess}`;
             } else {
-                message = `⬇️ Меньше, чем ${guess}`;
-                color = '#ffaa00';
+                message = `⬇️ Загаданное число МЕНЬШЕ ${guess}`;
             }
             
-            guessResult.innerHTML = message;
-            guessResult.style.borderLeftColor = color;
-            
-            // Показываем историю попыток
-            let historyHtml = '📜 История: ';
-            guessHistory.slice(-5).forEach((g, i) => {
-                historyHtml += `${g} `;
-                if (i < guessHistory.slice(-5).length - 1) historyHtml += '→ ';
-            });
-            guessHistoryEl.innerHTML = historyHtml;
-            
-            attemptsDisplay.innerHTML = `Попыток: ${attempts}`;
-            
-            input.value = '';
-            input.focus();
-            
-            // Достижение за малое количество попыток
-            if (attempts === 1 && guess === secretNumber) {
-                unlockAchievement('Ясновидящий');
+            document.getElementById('guessResult').textContent = message;
+            document.getElementById('guessAttempts').textContent = guessAttempts;
+            updateProfile();
+        };
+
+        // Мемори игра
+        let memoryPattern = [];
+        let memoryIndex = 0;
+        
+        window.startMemoryGame = function() {
+            memoryPattern = [];
+            for (let i = 0; i < 5; i++) {
+                memoryPattern.push(Math.floor(Math.random() * 9));
             }
+            
+            let i = 0;
+            const interval = setInterval(() => {
+                if (i < memoryPattern.length) {
+                    document.getElementById('memoryPattern').textContent = memoryPattern[i] + 1;
+                    i++;
+                } else {
+                    clearInterval(interval);
+                    document.getElementById('memoryPattern').textContent = '❓';
+                    createMemoryButtons();
+                }
+            }, 1000);
+        };
+
+        function createMemoryButtons() {
+            let html = '';
+            for (let i = 0; i < 9; i++) {
+                html += `<button class="game-btn" onclick="checkMemory(${i})">${i + 1}</button>`;
+            }
+            document.getElementById('memoryButtons').innerHTML = html;
+            memoryIndex = 0;
         }
 
-        function resetGuessGame() {
-            secretNumber = Math.floor(Math.random() * 100) + 1;
-            attempts = 0;
-            guessHistory = [];
-            guessResult.innerHTML = '🔄 НОВОЕ ЧИСЛО ЗАГАДАНО!';
-            guessHistoryEl.innerHTML = '';
-            attemptsDisplay.innerHTML = 'Попыток: 0';
-        }
-
-        // ---------- ОБРАБОТКА РЕГИСТРАЦИИ ----------
-        document.getElementById('testRegisterForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const username = document.getElementById('username').value.trim();
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value.trim();
-
-            if (username === '' || email === '' || password === '') {
-                alert('❌ Заполни все поля, боец!');
-                return;
+        window.checkMemory = function(num) {
+            if (num === memoryPattern[memoryIndex]) {
+                memoryIndex++;
+                if (memoryIndex === memoryPattern.length) {
+                    addAIMessage('🎉 Отличная память! +100 XP');
+                    addXP(100);
+                    player.coins += 50;
+                    updateProfile();
+                    startMemoryGame();
+                }
+            } else {
+                addAIMessage('❌ Ошибка! Попробуй снова');
             }
+        };
 
-            if (password.length < 6) {
-                alert('❌ Пароль должен быть не менее 6 символов!');
-                return;
-            }
-
-            unlockAchievement('Регистрация пройдена');
-            alert(`⚡ ДОБРО ПОЖАЛОВАТЬ В МАТРИЦУ, ${username}! ⚡`);
+        // Математическая игра
+        let mathScore = 0;
+        let currentAnswer = 0;
+        
+        window.startMathGame = function() {
+            const num1 = Math.floor(Math.random() * 20) + 1;
+            const num2 = Math.floor(Math.random() * 20) + 1;
+            const op = Math.random() > 0.5 ? '+' : '-';
             
-            // Эффект при регистрации
-            for (let i = 0; i < 10; i++) {
+            if (op === '+') {
+                currentAnswer = num1 + num2;
+                document.getElementById('mathQuestion').textContent = `${num1} + ${num2} = ?`;
+            } else {
+                currentAnswer = num1 - num2;
+                document.getElementById('mathQuestion').textContent = `${num1} - ${num2} = ?`;
+            }
+        };
+
+        window.checkMath = function() {
+            const answer = parseInt(document.getElementById('mathAnswer').value);
+            if (answer === currentAnswer) {
+                mathScore += 10;
+                addXP(20);
+                startMathGame();
+            }
+            document.getElementById('mathScore').textContent = `Счёт: ${mathScore}`;
+        };
+
+        // Тест реакции
+        let reactionStart = 0;
+        let reactionWaiting = false;
+        
+        window.startReactionTest = function() {
+            const box = document.getElementById('reactionBox');
+            box.style.background = '#333';
+            box.textContent = 'ЖДИ...';
+            reactionWaiting = true;
+            
+            setTimeout(() => {
+                if (reactionWaiting) {
+                    box.style.background = '#0f0';
+                    box.textContent = 'КЛИК!';
+                    reactionStart = Date.now();
+                }
+            }, Math.random() * 3000 + 1000);
+        };
+
+        window.reactionClick = function() {
+            const box = document.getElementById('reactionBox');
+            if (box.style.background === 'rgb(0, 255, 0)') {
+                const time = Date.now() - reactionStart;
+                document.getElementById('reactionTime').textContent = `Время реакции: ${time} мс`;
+                if (time < 200) {
+                    addAIMessage('🔥 Феноменальная реакция! +50 XP');
+                    addXP(50);
+                }
+                reactionWaiting = false;
+                setTimeout(startReactionTest, 1000);
+            }
+        };
+
+        // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
+        function createParticleExplosion() {
+            for (let i = 0; i < 20; i++) {
                 setTimeout(() => {
-                    const particle = new Particle();
-                    particle.x = Math.random() * canvas.width;
-                    particle.y = Math.random() * canvas.height;
-                    particle.size = Math.random() * 3 + 1;
-                    particles.push(particle);
-                }, i * 100);
+                    const particle = document.createElement('div');
+                    particle.style.position = 'fixed';
+                    particle.style.left = Math.random() * 100 + '%';
+                    particle.style.top = Math.random() * 100 + '%';
+                    particle.style.color = ['#0ff', '#f0f', '#ff0'][Math.floor(Math.random() * 3)];
+                    particle.style.fontSize = '30px';
+                    particle.style.zIndex = '9999';
+                    particle.innerHTML = ['✨', '💫', '⭐', '🎉'][Math.floor(Math.random() * 4)];
+                    document.body.appendChild(particle);
+                    setTimeout(() => particle.remove(), 1000);
+                }, i * 50);
             }
-        });
+        }
+
+        // Матричный дождь
+        function startMatrixRain() {
+            const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
+            const rain = document.getElementById('matrixRain');
+            for (let i = 0; i < 50; i++) {
+                const column = document.createElement('div');
+                column.style.position = 'absolute';
+                column.style.left = i * 30 + 'px';
+                column.style.top = '-100px';
+                column.style.color = '#0f0';
+                column.style.opacity = '0.3';
+                column.style.writingMode = 'vertical-rl';
+                column.style.textOrientation = 'upright';
+                column.style.fontSize = '20px';
+                column.style.animation = `matrixFall ${Math.random() * 5 + 5}s linear infinite`;
+                column.style.animationDelay = Math.random() * 5 + 's';
+                
+                let text = '';
+                for (let j = 0; j < 20; j++) {
+                    text += chars[Math.floor(Math.random() * chars.length)] + '<br>';
+                }
+                column.innerHTML = text;
+                rain.appendChild(column);
+            }
+        }
+
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes matrixFall {
+                0% { transform: translateY(-100%); }
+                100% { transform: translateY(200vh); }
+            }
+        `;
+        document.head.appendChild(style);
 
         // Инициализация
-        updateScore();
+        renderQuests();
+        renderShop();
+        renderGames();
+        updateProfile();
+        startMatrixRain();
+        startMathGame();
+        startReactionTest();
+        
+        // Автосохранение
+        setInterval(() => {
+            localStorage.setItem('playerData', JSON.stringify(player));
+        }, 30000);
     </script>
 </body>
 </html>
