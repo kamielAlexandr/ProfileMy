@@ -20,8 +20,22 @@
     <main class="container">
         <h1>Мини-игра: Защита Цитадели</h1>
         <p>Небольшой интерактив прямо в браузере. Нажмите "Старт", чтобы начать.</p><br>
+
         
         <div class="game-container">
+            <div class="game-container">
+            <div class="game-scoreboard">
+                <div>🏆 Ваш рекорд: <span id="localScoreDisplay">0</span></div>
+                <div>🌍 Рекорд сайта: <span id="globalScoreDisplay">Загрузка...</span></div>
+            </div>
+
+            <canvas id="gameCanvas" width="800" height="450"></canvas>
+            
+            <div id="gameOverlay" class="game-overlay">
+                <h2 id="overlayTitle">Готовы к битве?</h2>
+                <button id="startGameBtn" class="game-btn">Начать игру</button>
+            </div>
+        </div>
             <canvas id="gameCanvas" width="800" height="450"></canvas>
             
             <div id="gameOverlay" class="game-overlay">
