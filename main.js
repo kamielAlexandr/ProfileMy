@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Сайт KamielStudio успешно загружен!');
+    console.log('Сайт Aethelforge успешно загружен!');
     
     // --- Логика Лайтбокса (увеличение картинок) ---
     
