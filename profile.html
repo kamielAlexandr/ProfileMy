@@ -5,6 +5,46 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aethelforge | Личный кабинет</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Стили специально для профиля */
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            margin-bottom: 30px;
+        }
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            background-color: var(--accent-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: bold;
+            color: white;
+        }
+        .profile-info h2 { margin: 0 0 5px 0; color: #fff; }
+        .profile-info p { margin: 0; color: #aaa; }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .dashboard-card {
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+        .dashboard-card h3 { color: var(--accent-color); margin-top: 0; border-bottom: 1px solid #333; padding-bottom: 10px; }
+    </style>
 </head>
 <body>
     <nav class="navbar">
@@ -19,17 +59,64 @@
     </nav>
 
     <main class="container">
-        <h1>Личный кабинет героя</h1>
-        <p>Добро пожаловать в гильдию. Здесь скоро появится ваша статистика, библиотека игр и список достижений.</p>
-        
-        <div style="margin-top: 40px; padding: 20px; background: var(--card-bg); border-radius: 8px; border: 1px solid #333;">
-            <h3>🚧 В разработке 🚧</h3>
-            <p>Кузня Aethelforge активно работает над этим разделом. Совсем скоро тут будет доступен профиль игрока.</p>
+        <div class="profile-header">
+            <div class="profile-avatar" id="userAvatar">?</div>
+            <div class="profile-info">
+                <h2 id="userName">Загрузка героя...</h2>
+                <p id="userEmail">Устанавливаем связь с сервером...</p>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="dashboard-card">
+                <h3>🎮 Библиотека игр</h3>
+                <ul style="list-style: none; padding: 0; color: #ccc;">
+                    <li style="margin-bottom: 10px;">🟢 Защита Цитадели <a href="play.html" style="color: var(--accent-color); text-decoration: none; font-size: 0.9em; margin-left: 10px;">[Играть]</a></li>
+                    <li style="color: #666;">🔒 Dark Fantasy RPG (В разработке)</li>
+                    <li style="color: #666;">🔒 RTS про гоблинов (Скоро)</li>
+                </ul>
+            </div>
+
+            <div class="dashboard-card">
+                <h3>🏆 Достижения (Скоро)</h3>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <div title="Первая кровь" style="width: 50px; height: 50px; background: #333; border-radius: 8px; border: 2px solid #555; display: flex; justify-content: center; align-items: center; opacity: 0.5;">🗡️</div>
+                    <div title="Убийца боссов" style="width: 50px; height: 50px; background: #333; border-radius: 8px; border: 2px solid #555; display: flex; justify-content: center; align-items: center; opacity: 0.5;">👹</div>
+                    <div title="Непробиваемая стена" style="width: 50px; height: 50px; background: #333; border-radius: 8px; border: 2px solid #555; display: flex; justify-content: center; align-items: center; opacity: 0.5;">🛡️</div>
+                </div>
+                <p style="font-size: 0.85em; color: #888; margin-top: 15px;">Выполняйте условия в играх, чтобы разблокировать значки.</p>
+            </div>
         </div>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="auth.js"></script>
     <script src="main.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const SUPABASE_URL = 'https://bgzxdpjfsodndxroieay.supabase.co'; 
+            const SUPABASE_ANON_KEY = 'sb_publishable_7lewcPQCbnoXmkcMLu_Hlw_dnfCXZka';
+            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+            // Получаем данные текущего пользователя
+            const { data: { user } } = await supabase.auth.getUser();
+
+            if (user) {
+                // Если пользователь найден, заполняем карточку
+                document.getElementById('userEmail').textContent = user.email;
+                
+                // Делаем никнейм из начала почты (до @)
+                const nickname = user.email.split('@')[0];
+                document.getElementById('userName').textContent = nickname;
+                
+                // Ставим первую букву ника в аватар
+                document.getElementById('userAvatar').textContent = nickname.charAt(0).toUpperCase();
+            } else {
+                // Если кто-то зашел на страницу без авторизации — выкидываем на логин
+                window.location.href = 'login.html';
+            }
+        });
+    </script>
 </body>
 </html>
