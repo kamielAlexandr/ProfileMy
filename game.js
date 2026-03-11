@@ -1,11 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
+    console.log("Скрипт игры успешно загружен!");
+
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const overlay = document.getElementById('gameOverlay');
     const startBtn = document.getElementById('startGameBtn');
     const overlayTitle = document.getElementById('overlayTitle');
 
-    // Находим наши новые HTML-элементы для текста
     const localScoreDisplay = document.getElementById('localScoreDisplay');
     const globalScoreDisplay = document.getElementById('globalScoreDisplay');
 
@@ -13,13 +14,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let score = 0;
     const maxLives = 5;
     let lives = maxLives;
-    let isGameOver = true; // Изначально игра не начата
+    let isGameOver = true; 
     let animationId;
     
-let localHighScore = parseInt(localStorage.getItem('citadelHighScore')) || 0; 
-    if (localScoreDisplay) {
-        localScoreDisplay.textContent = localHighScore;
-    }
+    let localHighScore = parseInt(localStorage.getItem('citadelHighScore')) || 0; 
+    if (localScoreDisplay) localScoreDisplay.textContent = localHighScore;
     
     let globalHighScore = 0; 
     
@@ -57,16 +56,12 @@ let localHighScore = parseInt(localStorage.getItem('citadelHighScore')) || 0;
                 globalHighScore = 0;
             }
             
-            // Надежно обновляем HTML элемент
             if (globalScoreDisplay) {
                  globalScoreDisplay.textContent = globalHighScore;
             }
-
         } catch (error) {
             console.error("Ошибка загрузки рекорда сайта:", error);
-            if (globalScoreDisplay) {
-                 globalScoreDisplay.textContent = "Ошибка сети";
-            }
+            if (globalScoreDisplay) globalScoreDisplay.textContent = "Ошибка сети";
         }
     }
 
@@ -85,19 +80,14 @@ let localHighScore = parseInt(localStorage.getItem('citadelHighScore')) || 0;
             
             if(response.ok) {
                 console.log("Рекорд успешно отправлен в базу!");
-                // Сразу обновляем цифру на экране, чтобы игрок видел свой триумф!
                 globalHighScore = newScore;
                 if(globalScoreDisplay) globalScoreDisplay.textContent = globalHighScore;
-            } else {
-                console.error("Сервер отклонил рекорд.");
             }
-            
         } catch (error) {
             console.error("Ошибка сохранения рекорда:", error);
         }
     }
 
-    // Загружаем рекорд при старте страницы
     fetchGlobalHighScore();
 
     // --- КЛАССЫ ---
@@ -180,12 +170,15 @@ let localHighScore = parseInt(localStorage.getItem('citadelHighScore')) || 0;
 
     // --- ИГРОВАЯ ЛОГИКА ---
     function initGame() {
+        console.log("Кнопка нажата! Игра начинается...");
+        
         score = 0; lives = maxLives; isGameOver = false;
         enemies = []; particles = []; repairItems = [];
         spawnTimer = 0; spawnInterval = 60; repairTimer = 0; gameSpeedMultiplier = 1;
-        overlay.classList.add('hidden');
         
-        // На всякий случай актуализируем рекорды перед стартом
+        // ЖЕЛЕЗОБЕТОННОЕ СКРЫТИЕ ОКНА
+        overlay.style.display = 'none';
+        
         if(localScoreDisplay) localScoreDisplay.textContent = localHighScore;
         if(globalScoreDisplay && globalScoreDisplay.textContent === "Загрузка...") {
              globalScoreDisplay.textContent = globalHighScore;
@@ -275,7 +268,6 @@ let localHighScore = parseInt(localStorage.getItem('citadelHighScore')) || 0;
         
         let recordMessage = "";
         
-        // 1. Проверяем локальный рекорд
         if (score > localHighScore) {
             localHighScore = score;
             localStorage.setItem('citadelHighScore', localHighScore); 
@@ -283,17 +275,16 @@ let localHighScore = parseInt(localStorage.getItem('citadelHighScore')) || 0;
             recordMessage += `<br><span style="font-size:1.1rem; color:#aaa;">Вы побили свой рекорд!</span>`;
         }
         
-        // 2. Проверяем глобальный рекорд
         if (!isNaN(globalHighScore) && score > globalHighScore) {
-            // Чтобы не отправлять кучу одинаковых рекордов, если мы умерли,
-            // но наш счет всё еще больше глобального, мы отправляем только ЕСЛИ мы его реально побили.
             saveGlobalHighScore(score); 
             recordMessage += `<br><span style="font-size:1.3rem; color:#00E676; text-shadow: 0 0 10px #00E676;">👑 ВЫ ПОБИЛИ РЕКОРД САЙТА! 👑</span>`;
         }
 
         overlayTitle.innerHTML = `Ворота пробиты!<br><span style="font-size:1.5rem; color:#ff5252;">Счет: ${score}</span>${recordMessage}`;
         startBtn.textContent = 'Держать оборону снова';
-        overlay.classList.remove('hidden');
+        
+        // ЖЕЛЕЗОБЕТОННОЕ ПОЯВЛЕНИЕ ОКНА
+        overlay.style.display = 'flex';
         draw(); 
     }
 
@@ -335,6 +326,11 @@ let localHighScore = parseInt(localStorage.getItem('citadelHighScore')) || 0;
         }
     });
 
-    startBtn.addEventListener('click', initGame);
+    if(startBtn) {
+        startBtn.addEventListener('click', initGame);
+    } else {
+        console.error("Кнопка startGameBtn не найдена в HTML!");
+    }
+    
     draw(); 
 });
