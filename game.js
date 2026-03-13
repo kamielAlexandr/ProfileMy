@@ -10,11 +10,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const localScoreDisplay = document.getElementById('localScoreDisplay');
     const globalScoreDisplay = document.getElementById('globalScoreDisplay');
 
-    // 1. СНАЧАЛА ОБЪЯВЛЯЕМ ВСЕ ПЕРЕМЕННЫЕ
+    // 1. ОБЪЯВЛЯЕМ ВСЕ ПЕРЕМЕННЫЕ
     let score = 0;
     const maxLives = 5;
     let lives = maxLives;
-    let isGameOver = true; // Вот она! Теперь скрипт о ней знает до загрузки картинки
+    let isGameOver = true; 
     let animationId;
     
     let localHighScore = parseInt(localStorage.getItem('citadelHighScore')) || 0; 
@@ -32,42 +32,49 @@ document.addEventListener('DOMContentLoaded', () => {
     let repairTimer = 0;
     let repairInterval = 500; 
 
-    // 2. И ТОЛЬКО ТЕПЕРЬ ЗАГРУЖАЕМ КАРТИНКУ
-    const goblinSprite = new Image(); 
+    // 2. ЗАГРУЗКА ОТДЕЛЬНЫХ КАДРОВ АНИМАЦИИ
+    const goblinFrames = []; 
     let isSpriteLoaded = false;
+    let loadedImagesCount = 0;
     
-    goblinSprite.onload = () => { 
-        isSpriteLoaded = true; 
-        if (isGameOver && startBtn) {
-            startBtn.textContent = "Начать игру";
-            startBtn.disabled = false;
-            overlayTitle.textContent = "Готовы к битве?";
-        }
-    };
+    // ВНИМАНИЕ: Убедись, что названия файлов точно совпадают с теми, что в папке img!
+    const frameNames = ['img/gob1.png', 'img/gob2.png', 'img/gob3.png', 'img/gob4.png'];
 
-    goblinSprite.onerror = () => {
-        console.error("Не удалось загрузить картинку гоблина. Включаем запасной режим!");
-        if (isGameOver && startBtn) {
-            startBtn.textContent = "Начать игру (Классика)";
-            startBtn.disabled = false;
-            overlayTitle.textContent = "Готовы к битве?";
-        }
-    };
+    frameNames.forEach((src) => {
+        const img = new Image();
+        
+        img.onload = () => {
+            loadedImagesCount++;
+            if (loadedImagesCount === frameNames.length) {
+                isSpriteLoaded = true;
+                if (isGameOver && startBtn) {
+                    startBtn.textContent = "Начать игру";
+                    startBtn.disabled = false;
+                    overlayTitle.textContent = "Готовы к битве?";
+                }
+            }
+        };
 
-    // Даем команду браузеру скачать картинку
-    goblinSprite.src = 'img/gob_go.png'; 
+        img.onerror = () => {
+            console.error("Ошибка загрузки кадра: " + src);
+            if (isGameOver && startBtn) {
+                startBtn.textContent = "Начать (Без анимации)";
+                startBtn.disabled = false;
+            }
+        };
 
-   // --- ДАЛЬШЕ ИДЕТ СЕТЕВАЯ ЛОГИКА (API SUPABASE) И ВЕСЬ ОСТАЛЬНОЙ КОД ---
+        img.src = src;
+        goblinFrames.push(img); 
+    });
 
-   // --- СЕТЕВАЯ ЛОГИКА (API SUPABASE) ---
+    // 3. СЕТЕВАЯ ЛОГИКА (API SUPABASE)
     const SUPABASE_URL = 'https://bgzxdpjfsodndxroieay.supabase.co'; 
     const SUPABASE_ANON_KEY = 'sb_publishable_7lewcPQCbnoXmkcMLu_Hlw_dnfCXZka';
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let currentPlayerName = "Аноним";
-    const leaderboardList = document.getElementById('leaderboardList'); // Нашли список в HTML
+    const leaderboardList = document.getElementById('leaderboardList'); 
 
-    // 1. Узнаем, кто сейчас играет
     async function checkCurrentPlayer() {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
@@ -75,7 +82,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 2. Получаем абсолютный рекорд для верхней плашки
     async function fetchGlobalHighScore() {
         try {
             const response = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard?select=score,nickname&order=score.desc&limit=1`, {
@@ -102,10 +108,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 3. НОВОЕ: Загружаем ТОП-5 для Зала Славы
     async function fetchLeaderboard() {
         try {
-            // Берем 5 лучших результатов (limit=5)
             const response = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard?select=score,nickname&order=score.desc&limit=5`, {
                 method: 'GET',
                 headers: {
@@ -118,7 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
             
             if (data && data.length > 0 && leaderboardList) {
-                leaderboardList.innerHTML = ''; // Очищаем текст "Загрузка..."
+                leaderboardList.innerHTML = ''; 
                 
                 data.forEach((entry, index) => {
                     const li = document.createElement('li');
@@ -126,7 +130,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     const name = entry.nickname || "Аноним";
                     const score = entry.score;
                     
-                    // Раздаем медали
                     let medal = `${rank}.`;
                     if (rank === 1) medal = '🥇';
                     if (rank === 2) medal = '🥈';
@@ -148,7 +151,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 4. Сохраняем рекорд
     async function saveGlobalHighScore(newScore) {
         try {
             const response = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard`, {
@@ -166,8 +168,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log("Рекорд сохранен!");
                 globalHighScore = newScore;
                 if(globalScoreDisplay) globalScoreDisplay.textContent = `${globalHighScore} (${currentPlayerName})`;
-                
-                // ВАЖНО: Обновляем Зал Славы после нового рекорда!
                 fetchLeaderboard();
             }
         } catch (error) {
@@ -175,35 +175,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Запускаем все загрузки при открытии страницы
     checkCurrentPlayer();
     fetchGlobalHighScore();
-    fetchLeaderboard(); // Вызываем новую функцию
+    fetchLeaderboard(); 
 
-    // --- КЛАССЫ ---
-    // --- ОБНОВЛЕННЫЙ КЛАСС ENEMY ---
-    // --- ОБНОВЛЕННЫЙ КЛАСС ENEMY (ИСПРАВЛЕННЫЙ) ---
-   // --- ОБНОВЛЕННЫЙ КЛАСС ENEMY (ИСПРАВЛЕННЫЙ И ПОДГОТОВЛЕННЫЙ К АНИМАЦИИ) ---
+    // 4. КЛАССЫ И ИГРОВАЯ ЛОГИКА
     class Enemy {
         constructor(isBoss = false) {
             this.isBoss = isBoss;
-            // ВАЖНО: Задай здесь размер ОДНОГО КАДРА в твоем спрайт-листе!
-            this.baseFrameSize = 64; 
-            
             this.width = isBoss ? 100 : 64;
             this.height = isBoss ? 100 : 64;
             
-            this.x = Math.random() * (canvas.width - this.drawWidth);
-            this.y = -this.drawHeight;
+            this.x = Math.random() * (canvas.width - this.width);
+            this.y = -this.height;
             this.hp = isBoss ? 5 : 1; 
             this.maxHp = this.hp;
             let baseSpeed = isBoss ? 0.7 : (1 + Math.random() * 2);
             this.speed = baseSpeed * gameSpeedMultiplier;
             this.color = isBoss ? '#827717' : '#2e7d32'; 
 
-            // --- ПАРАМЕТРЫ АНИМАЦИИ ---
-            this.frameX = 0; // Текущий номер кадра (счет от 0)
-            this.maxFrame = 3; // Максимальный номер кадра (у нас 4 кадра, счет от 0 до 3)
+            this.frameX = 0; 
+            this.maxFrame = 3; 
             this.animationSpeed = 8; 
             this.frameTimer = 0; 
         }
@@ -211,7 +203,6 @@ document.addEventListener('DOMContentLoaded', () => {
         update() {
             this.y += this.speed;
 
-            // --- ОБНОВЛЕНИЕ КАДРА АНИМАЦИИ ---
             this.frameTimer++;
             if (this.frameTimer % this.animationSpeed === 0) {
                 if (this.frameX < this.maxFrame) {
@@ -224,7 +215,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         draw() {
-            // Если картинка не загрузилась или это босс
             if (!isSpriteLoaded || this.isBoss) {
                 ctx.save();
                 ctx.translate(this.x, this.y);
@@ -244,21 +234,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 return; 
             }
 
-            // --- РИСУЕМ АНИМИРОВАННЫЙ СПРАЙТ (Нарезка) ---
             ctx.drawImage(
-                goblinSprite, 
-                // «Нож»: вырезаем
-                this.frameX * this.baseFrameSize, // sx: смещение по X на основе номера кадра
-                0, // sy: смещение по Y (всегда 0, так как у нас один ряд)
-                this.baseFrameSize, // sWidth: ширина одного кадра в спрайт-листе
-                this.baseFrameSize, // sHeight: высота одного кадра в спрайт-листе
-                // «Холст»: рисуем
-                this.x, // dx
-                this.y, // dy
-                this.width, // dWidth
-                this.height // dHeight
+                goblinFrames[this.frameX], 
+                this.x, 
+                this.y, 
+                this.width, 
+                this.height
             );
-        } // Конец функции draw
+        }
     }
 
     class RepairItem {
@@ -292,7 +275,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- ИГРОВАЯ ЛОГИКА ---
     function initGame() {
         console.log("Кнопка нажата! Игра начинается...");
         
@@ -300,7 +282,6 @@ document.addEventListener('DOMContentLoaded', () => {
         enemies = []; particles = []; repairItems = [];
         spawnTimer = 0; spawnInterval = 60; repairTimer = 0; gameSpeedMultiplier = 1;
         
-        // ЖЕЛЕЗОБЕТОННОЕ СКРЫТИЕ ОКНА
         overlay.style.display = 'none';
         
         if(localScoreDisplay) localScoreDisplay.textContent = localHighScore;
@@ -318,7 +299,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function update() {
         gameSpeedMultiplier = Math.min(3.5, 1 + (score * 0.015));
         
-        // Спавн тоже ограничен (минимум 25 кадров, чтобы экран не заливало врагами)
         spawnInterval = Math.max(25, 60 - score * 0.3);
         spawnTimer++;
         if (spawnTimer >= spawnInterval) {
@@ -408,17 +388,13 @@ document.addEventListener('DOMContentLoaded', () => {
         overlayTitle.innerHTML = `Ворота пробиты!<br><span style="font-size:1.5rem; color:#ff5252;">Счет: ${score}</span>${recordMessage}`;
         startBtn.textContent = 'Держать оборону снова';
         
-        // ЖЕЛЕЗОБЕТОННОЕ ПОЯВЛЕНИЕ ОКНА
         overlay.style.display = 'flex';
         draw(); 
     }
 
-    // --- УПРАВЛЕНИЕ ---
-    // --- УПРАВЛЕНИЕ (Мышь + Сенсор) ---
     function handleInput(e) {
         if (isGameOver) return;
         
-        // Предотвращаем стандартное поведение браузера (скролл/зум при тапе)
         e.preventDefault(); 
 
         const rect = canvas.getBoundingClientRect();
@@ -427,7 +403,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         let clientX, clientY;
         
-        // Проверяем, это палец или мышка
         if (e.type === 'touchstart') {
             clientX = e.touches[0].clientX;
             clientY = e.touches[0].clientY;
@@ -441,7 +416,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         let hitSomething = false;
 
-        // Проверка по ящикам
         for (let i = repairItems.length - 1; i >= 0; i--) {
             const item = repairItems[i];
             if (clickX >= item.x && clickX <= item.x + item.width && clickY >= item.y && clickY <= item.y + item.height) {
@@ -454,7 +428,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (hitSomething) return; 
 
-        // Проверка по врагам
         for (let i = enemies.length - 1; i >= 0; i--) {
             const enemy = enemies[i];
             if (clickX >= enemy.x && clickX <= enemy.x + enemy.width && clickY >= enemy.y && clickY <= enemy.y + enemy.height) {
@@ -470,8 +443,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Слушаем и мышку (ПК), и тапы (Телефоны). 
-    // passive: false нужно для того, чтобы e.preventDefault() сработал.
     canvas.addEventListener('mousedown', handleInput);
     canvas.addEventListener('touchstart', handleInput, { passive: false });
 
