@@ -460,7 +460,17 @@ h1 {
     margin: 0 auto;
     position: relative;
     box-sizing: border-box; 
-    background-color: #000;
+    
+    /* --- ИСПРАВЛЕНО ДЛЯ ФОНА --- */
+    /* background-color: #000; Убрали черный цвет */
+    
+    /* Добавили фоновую картинку (ЗАМЕНИ ИМЯ ФАЙЛА НА СВОЕ!) */
+    background-image: url('img/map_bg.jpg'); 
+    background-size: cover; /* Идеально вписывает карту */
+    background-position: center;
+    background-repeat: no-repeat;
+    /* -------------------------- */
+    
     border: 4px solid var(--accent-color);
     border-radius: 8px;
     overflow: hidden;
@@ -476,7 +486,10 @@ h1 {
     margin: 0 auto;
     touch-action: none;
     image-rendering: pixelated; 
-    cursor: url('img/cursor.cur') 0 0, crosshair;
+    
+    /* НОВАЯ СТРОЧКА: СВОЙ КУРСОР МЕЧ */
+    /* Убедись, что положил sword.png в папку img! */
+    cursor: url('img/sword.png') 0 0, crosshair; 
 }
 
 .game-overlay {
@@ -537,8 +550,10 @@ h1 {
     height: 100vh;
     padding: 0;
     margin: 0;
-    border: none; /* Убираем зеленую рамку в полном экране */
-    border-radius: 0;
+    
+    /* МЫ ЗАКОММЕНТИРОВАЛИ ЭТО, ЧТОБЫ ЗАМОК НЕ ПРИЛИПАЛ К КРАЮ ЭКРАНА */
+    /* border: none; */
+    /* border-radius: 0; */
 }
 
 /* Идеальное масштабирование холста (Без сплющивания) */
@@ -623,4 +638,3 @@ h1 {
         font-size: 1rem;
     }
 }
-
