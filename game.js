@@ -175,18 +175,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- КЛАССЫ ---
     // --- ОБНОВЛЕННЫЙ КЛАСС ENEMY ---
+    // --- ОБНОВЛЕННЫЙ КЛАСС ENEMY (ИСПРАВЛЕННЫЙ) ---
     class Enemy {
         constructor(isBoss = false) {
             this.isBoss = isBoss;
-            // Установим базовые размеры в 64x64, так как это размер наших кадров
+            // Базовый размер кадра на картинке
             this.baseSize = 64; 
             
-            // Если босс, делаем его чуть крупнее при отрисовке, но кадр берем тот же
-            this.drawWidth = isBoss ? 100 : 64;
-            this.drawHeight = isBoss ? 100 : 64;
+            // ВАЖНО: Вернули названия width и height, чтобы игра их понимала!
+            this.width = isBoss ? 100 : 64;
+            this.height = isBoss ? 100 : 64;
             
-            this.x = Math.random() * (canvas.width - this.drawWidth);
-            this.y = -this.drawHeight;
+            this.x = Math.random() * (canvas.width - this.width);
+            this.y = -this.height;
             this.hp = isBoss ? 5 : 1; 
             this.maxHp = this.hp;
             let baseSpeed = isBoss ? 0.7 : (1 + Math.random() * 2);
@@ -194,14 +195,62 @@ document.addEventListener('DOMContentLoaded', () => {
             this.color = isBoss ? '#827717' : '#2e7d32'; 
 
             // --- ПАРАМЕТРЫ АНИМАЦИИ ---
-            this.frameX = 0; // С какого кадра по счету мы начинаем (0 = первый кадр)
-            this.maxFrame = 3; // Максимальный номер кадра (у нас 4 кадра, счет от 0 до 3)
-            
-            // Счётчик кадров игры, чтобы анимация не летела слишком быстро
-            // (Меняем кадр спрайта каждые 8 кадров игры)
+            this.frameX = 0; 
+            this.maxFrame = 3; 
             this.animationSpeed = 8; 
             this.frameTimer = 0; 
         }
+
+        update() {
+            this.y += this.speed;
+
+            // --- ОБНОВЛЕНИЕ КАДРА АНИМАЦИИ ---
+            this.frameTimer++;
+            if (this.frameTimer % this.animationSpeed === 0) {
+                if (this.frameX < this.maxFrame) {
+                    this.frameX++; 
+                } else {
+                    this.frameX = 0; 
+                }
+                this.frameTimer = 0; 
+            }
+        }
+
+        draw() {
+            // Если картинка не загрузилась или это босс
+            if (!isSpriteLoaded || this.isBoss) {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                const w = this.width; const h = this.height; 
+                
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.moveTo(w * 0.1, h * 0.3); ctx.lineTo(w * 0.5, 0); ctx.lineTo(w * 0.9, h * 0.3); 
+                ctx.lineTo(w, h * 0.8); ctx.lineTo(w * 0.5, h); ctx.lineTo(0, h * 0.8); ctx.closePath();
+                ctx.fill();
+                
+                if (this.isBoss) {
+                     ctx.fillStyle = '#333'; ctx.fillRect(0, -12, this.width, 6); 
+                     ctx.fillStyle = '#4caf50'; ctx.fillRect(0, -12, this.width * (this.hp / this.maxHp), 6);
+                }
+                ctx.restore();
+                return; 
+            }
+
+            // --- РИСУЕМ АНИМИРОВАННЫЙ СПРАЙТ ---
+            ctx.drawImage(
+                goblinSprite, 
+                this.frameX * this.baseSize, 
+                0, 
+                this.baseSize, 
+                this.baseSize, 
+                this.x, 
+                this.y, 
+                this.width,   // Используем правильный width
+                this.height   // Используем правильный height
+            );
+        }
+    }
 
         update() {
             this.y += this.speed;
