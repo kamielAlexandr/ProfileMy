@@ -465,7 +465,7 @@ h1 {
     /* background-color: #000; Убрали черный цвет */
     
     /* Добавили фоновую картинку (ЗАМЕНИ ИМЯ ФАЙЛА НА СВОЕ!) */
-    background-image: url('img/map_bg.jpg'); 
+    background-image: url('img/BG.png'); 
     background-size: cover; /* Идеально вписывает карту */
     background-position: center;
     background-repeat: no-repeat;
@@ -638,3 +638,4 @@ h1 {
         font-size: 1rem;
     }
 }
+
