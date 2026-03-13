@@ -25,8 +25,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let enemies = [];
     let particles = [];
     let repairItems = [];
-    let damageNumbers = []; 
-    let slashes = []; // НОВОЕ: Массив для следов от ударов мечом
+    let damageNumbers = []; // Массив для всплывающих цифр
+    let slashes = []; // Массив для следов от ударов мечом
     
     let spawnTimer = 0;
     let spawnInterval = 60;
@@ -276,14 +276,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- КЛАСС ДЛЯ ВСПЛЫВАЮЩИХ ЦИФР УРОНА ---
     class DamageNumber {
         constructor(x, y, text, color) {
             this.x = x;
             this.y = y;
             this.text = text;
             this.color = color;
-            this.life = 1.0; 
-            this.speedY = -2; 
+            this.life = 1.0; // Время жизни (от 1.0 до 0)
+            this.speedY = -2; // Скорость всплывания вверх
         }
         update() {
             this.y += this.speedY; 
@@ -300,7 +301,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // НОВОЕ: КЛАСС СЛЕДА ОТ МЕЧА
+    // --- КЛАСС СЛЕДА ОТ МЕЧА ---
     class SlashMark {
         constructor(x, y) {
             this.x = x;
@@ -309,7 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
             this.angle = Math.random() * Math.PI * 2; // Случайный угол наклона удара
         }
         update() {
-            this.life -= 0.04; // Исчезает довольно быстро (за четверть секунды)
+            this.life -= 0.04; // Исчезает довольно быстро
         }
         draw() {
             ctx.save();
@@ -338,8 +339,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         score = 0; lives = maxLives; isGameOver = false;
         enemies = []; particles = []; repairItems = []; 
-        damageNumbers = []; 
-        slashes = []; // Очищаем следы при рестарте
+        damageNumbers = []; // Очищаем старые цифры
+        slashes = []; // Очищаем следы
         spawnTimer = 0; spawnInterval = 60; repairTimer = 0; gameSpeedMultiplier = 1;
         
         overlay.style.display = 'none';
@@ -379,6 +380,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (particles[i].life <= 0) particles.splice(i, 1);
         }
 
+        // Обновление всплывающих цифр
         for (let i = damageNumbers.length - 1; i >= 0; i--) {
             damageNumbers[i].update();
             if (damageNumbers[i].life <= 0) damageNumbers.splice(i, 1); 
@@ -409,8 +411,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function draw() {
-        ctx.fillStyle = '#1a1a1a';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // --- ИСПРАВЛЕНО ДЛЯ ФОНА ---
+        // ctx.fillStyle = '#1a1a1a'; Убрали, чтобы видеть фон через CSS
+        // ctx.fillRect(0, 0, canvas.width, canvas.height); Убрали, чтобы видеть фон через CSS
+        
+        // НОВОЕ: Вместо полной заливки, очищаем холст (делаем его прозрачным)
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // --------------------------
 
         let wallColor = lives > 3 ? '#4caf50' : (lives > 1 ? '#ff9800' : '#f44336');
         
@@ -487,7 +494,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const clickX = (clientX - rect.left) * scaleX;
         const clickY = (clientY - rect.top) * scaleY;
         
-        // НОВОЕ: Оставляем след от удара ПРИ КАЖДОМ КЛИКЕ, даже если промазали
+        // Оставляем след от удара ПРИ КАЖДОМ КЛИКЕ
         slashes.push(new SlashMark(clickX, clickY));
         
         let hitSomething = false;
@@ -498,6 +505,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (lives < maxLives) lives++; 
                 createExplosion(item.x + item.width/2, item.y + item.height/2, '#00E676', 20);
                 
+                // Бонус к здоровью - зеленая всплывающая надпись
                 damageNumbers.push(new DamageNumber(item.x + item.width/2, item.y, '+1 HP', '#00E676'));
                 
                 repairItems.splice(i, 1);
@@ -513,12 +521,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 enemy.hp--; 
                 createExplosion(clickX, clickY, '#fff', 5);
                 
+                // Всплывающая цифра урона (красная)
                 damageNumbers.push(new DamageNumber(clickX, clickY, '-1', '#ff5252'));
 
                 if (enemy.hp <= 0) {
                     createExplosion(enemy.x + enemy.width/2, enemy.y + enemy.height/2, enemy.color, enemy.isBoss ? 50 : 15);
                     score += enemy.isBoss ? 5 : 1; 
                     
+                    // Золотая цифра при убийстве врага
                     const bonusText = enemy.isBoss ? '+5' : '+1';
                     damageNumbers.push(new DamageNumber(enemy.x + enemy.width/2, enemy.y + enemy.height/2, bonusText, '#ffd700'));
                     
