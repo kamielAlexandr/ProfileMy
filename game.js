@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let enemies = [];
     let particles = [];
     let repairItems = [];
+    let damageNumbers = []; // НОВОЕ: Массив для всплывающих цифр урона
     
     let spawnTimer = 0;
     let spawnInterval = 60;
@@ -275,11 +276,37 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // НОВОЕ: КЛАСС ДЛЯ ВСПЛЫВАЮЩИХ ЦИФР УРОНА
+    class DamageNumber {
+        constructor(x, y, text, color) {
+            this.x = x;
+            this.y = y;
+            this.text = text;
+            this.color = color;
+            this.life = 1.0; // Время жизни (от 1.0 до 0)
+            this.speedY = -2; // Скорость всплывания вверх
+        }
+        update() {
+            this.y += this.speedY; 
+            this.life -= 0.02; 
+        }
+        draw() {
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, this.life); 
+            ctx.fillStyle = this.color;
+            ctx.font = 'bold 20px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(this.text, this.x, this.y);
+            ctx.restore();
+        }
+    }
+
     function initGame() {
         console.log("Кнопка нажата! Игра начинается...");
         
         score = 0; lives = maxLives; isGameOver = false;
-        enemies = []; particles = []; repairItems = [];
+        enemies = []; particles = []; repairItems = []; 
+        damageNumbers = []; // Очищаем старые цифры при рестарте
         spawnTimer = 0; spawnInterval = 60; repairTimer = 0; gameSpeedMultiplier = 1;
         
         overlay.style.display = 'none';
@@ -319,6 +346,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (particles[i].life <= 0) particles.splice(i, 1);
         }
 
+        // Обновление всплывающих цифр
+        for (let i = damageNumbers.length - 1; i >= 0; i--) {
+            damageNumbers[i].update();
+            if (damageNumbers[i].life <= 0) damageNumbers.splice(i, 1); 
+        }
+
         for (let i = repairItems.length - 1; i >= 0; i--) {
             repairItems[i].update();
             if (repairItems[i].y > canvas.height) repairItems.splice(i, 1);
@@ -351,6 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
         repairItems.forEach(item => item.draw());
         enemies.forEach(enemy => enemy.draw());
         particles.forEach(p => p.draw());
+        damageNumbers.forEach(dn => dn.draw()); // Рисуем все цифры
 
         ctx.fillStyle = '#fff';
         ctx.font = '20px Arial';
@@ -421,6 +455,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (clickX >= item.x && clickX <= item.x + item.width && clickY >= item.y && clickY <= item.y + item.height) {
                 if (lives < maxLives) lives++; 
                 createExplosion(item.x + item.width/2, item.y + item.height/2, '#00E676', 20);
+                
+                // Бонус к здоровью - зеленая всплывающая надпись
+                damageNumbers.push(new DamageNumber(item.x + item.width/2, item.y, '+1 HP', '#00E676'));
+                
                 repairItems.splice(i, 1);
                 hitSomething = true;
                 break;
@@ -433,9 +471,18 @@ document.addEventListener('DOMContentLoaded', () => {
             if (clickX >= enemy.x && clickX <= enemy.x + enemy.width && clickY >= enemy.y && clickY <= enemy.y + enemy.height) {
                 enemy.hp--; 
                 createExplosion(clickX, clickY, '#fff', 5);
+                
+                // Всплывающая цифра урона (красная)
+                damageNumbers.push(new DamageNumber(clickX, clickY, '-1', '#ff5252'));
+
                 if (enemy.hp <= 0) {
                     createExplosion(enemy.x + enemy.width/2, enemy.y + enemy.height/2, enemy.color, enemy.isBoss ? 50 : 15);
                     score += enemy.isBoss ? 5 : 1; 
+                    
+                    // Золотая цифра при убийстве врага
+                    const bonusText = enemy.isBoss ? '+5' : '+1';
+                    damageNumbers.push(new DamageNumber(enemy.x + enemy.width/2, enemy.y + enemy.height/2, bonusText, '#ffd700'));
+                    
                     enemies.splice(i, 1);
                 }
                 break; 
@@ -451,27 +498,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     draw(); 
+    
     // --- ПОЛНОЭКРАННЫЙ РЕЖИМ ---
     const fullscreenBtn = document.getElementById('fullscreenBtn');
     const gameContainer = document.getElementById('gameContainer');
 
     if (fullscreenBtn && gameContainer) {
         fullscreenBtn.addEventListener('click', () => {
-            // Проверяем, открыт ли уже полный экран
             if (!document.fullscreenElement) {
-                // Если нет — открываем
                 gameContainer.requestFullscreen().catch(err => {
                     console.warn(`Ошибка при переходе в полноэкранный режим: ${err.message}`);
                 });
-                fullscreenBtn.textContent = "✖"; // Меняем иконку на крестик
+                fullscreenBtn.textContent = "✖"; 
             } else {
-                // Если да — закрываем
                 document.exitFullscreen();
-                fullscreenBtn.textContent = "⛶"; // Возвращаем иконку
+                fullscreenBtn.textContent = "⛶"; 
             }
         });
 
-        // Слушаем изменение режима (если игрок нажал Esc на клавиатуре)
         document.addEventListener('fullscreenchange', () => {
             if (!document.fullscreenElement) {
                 fullscreenBtn.textContent = "⛶";
