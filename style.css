@@ -356,6 +356,7 @@ h1 {
     height: auto;
     /* Убираем сглаживание пикселей для эффекта ретро/пиксель-арта, если потребуется */
     image-rendering: pixelated; 
+    touch-action: none;
 }
 
 .game-overlay {
@@ -613,3 +614,4 @@ h1 {
         font-size: 1rem;
     }
 }
+
