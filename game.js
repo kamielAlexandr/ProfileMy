@@ -451,4 +451,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     draw(); 
+    // --- ПОЛНОЭКРАННЫЙ РЕЖИМ ---
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const gameContainer = document.getElementById('gameContainer');
+
+    if (fullscreenBtn && gameContainer) {
+        fullscreenBtn.addEventListener('click', () => {
+            // Проверяем, открыт ли уже полный экран
+            if (!document.fullscreenElement) {
+                // Если нет — открываем
+                gameContainer.requestFullscreen().catch(err => {
+                    console.warn(`Ошибка при переходе в полноэкранный режим: ${err.message}`);
+                });
+                fullscreenBtn.textContent = "✖"; // Меняем иконку на крестик
+            } else {
+                // Если да — закрываем
+                document.exitFullscreen();
+                fullscreenBtn.textContent = "⛶"; // Возвращаем иконку
+            }
+        });
+
+        // Слушаем изменение режима (если игрок нажал Esc на клавиатуре)
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) {
+                fullscreenBtn.textContent = "⛶";
+            }
+        });
+    }
 });
