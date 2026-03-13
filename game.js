@@ -11,10 +11,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const goblinSprite = new Image(); 
     // Указываем путь к картинке
     goblinSprite.src = 'img/gob_go.png'; // Твоя картинка гоблина, которую ты скачал
-    
+
     // Переменная, чтобы знать, загрузилась ли картинка, иначе игра будет выдавать ошибку
     let isSpriteLoaded = false;
-    goblinSprite.onload = () => { isSpriteLoaded = true; };
+    
+    // Функция onload сработает только тогда, когда картинка полностью скачается
+    goblinSprite.onload = () => { 
+        isSpriteLoaded = true; 
+        
+        // Как только картинка загрузилась — включаем кнопку старта!
+        if (isGameOver && startBtn) {
+            startBtn.textContent = "Начать игру";
+            startBtn.disabled = false;
+            overlayTitle.textContent = "Готовы к битве?";
+        }
+    };
     
     const localScoreDisplay = document.getElementById('localScoreDisplay');
     const globalScoreDisplay = document.getElementById('globalScoreDisplay');
