@@ -157,8 +157,8 @@ document.addEventListener('DOMContentLoaded', () => {
     class Enemy {
         constructor(isBoss = false) {
             this.isBoss = isBoss;
-            this.width = isBoss ? 80 : 40;
-            this.height = isBoss ? 80 : 40;
+            this.width = isBoss ? 100 : 60;
+            this.height = isBoss ? 100 : 60;
             this.x = Math.random() * (canvas.width - this.width);
             this.y = -this.height;
             this.hp = isBoss ? 5 : 1; 
@@ -202,7 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     class RepairItem {
         constructor() {
-            this.width = 35; this.height = 35;
+            this.width = 50; this.height = 50;
             this.x = Math.random() * (canvas.width - this.width); this.y = -this.height;
             this.speed = (1.5 + Math.random()) * gameSpeedMultiplier;
         }
@@ -255,9 +255,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function update() {
-        gameSpeedMultiplier += 0.0005;
-        spawnInterval = Math.max(20, 60 - score * 0.4);
-
+        gameSpeedMultiplier = Math.min(3.5, 1 + (score * 0.015));
+        
+        // Спавн тоже ограничен (минимум 25 кадров, чтобы экран не заливало врагами)
+        spawnInterval = Math.max(25, 60 - score * 0.3);
         spawnTimer++;
         if (spawnTimer >= spawnInterval) {
             let spawnBoss = (score > 10 && Math.random() < 0.1);
@@ -352,16 +353,34 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- УПРАВЛЕНИЕ ---
-    canvas.addEventListener('mousedown', (e) => {
+    // --- УПРАВЛЕНИЕ (Мышь + Сенсор) ---
+    function handleInput(e) {
         if (isGameOver) return;
+        
+        // Предотвращаем стандартное поведение браузера (скролл/зум при тапе)
+        e.preventDefault(); 
+
         const rect = canvas.getBoundingClientRect();
         const scaleX = canvas.width / rect.width;
         const scaleY = canvas.height / rect.height;
-        const clickX = (e.clientX - rect.left) * scaleX;
-        const clickY = (e.clientY - rect.top) * scaleY;
+        
+        let clientX, clientY;
+        
+        // Проверяем, это палец или мышка
+        if (e.type === 'touchstart') {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+
+        const clickX = (clientX - rect.left) * scaleX;
+        const clickY = (clientY - rect.top) * scaleY;
         
         let hitSomething = false;
 
+        // Проверка по ящикам
         for (let i = repairItems.length - 1; i >= 0; i--) {
             const item = repairItems[i];
             if (clickX >= item.x && clickX <= item.x + item.width && clickY >= item.y && clickY <= item.y + item.height) {
@@ -374,6 +393,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (hitSomething) return; 
 
+        // Проверка по врагам
         for (let i = enemies.length - 1; i >= 0; i--) {
             const enemy = enemies[i];
             if (clickX >= enemy.x && clickX <= enemy.x + enemy.width && clickY >= enemy.y && clickY <= enemy.y + enemy.height) {
@@ -387,12 +407,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 break; 
             }
         }
-    });
+    }
+
+    // Слушаем и мышку (ПК), и тапы (Телефоны). 
+    // passive: false нужно для того, чтобы e.preventDefault() сработал.
+    canvas.addEventListener('mousedown', handleInput);
+    canvas.addEventListener('touchstart', handleInput, { passive: false });
 
     if(startBtn) {
         startBtn.addEventListener('click', initGame);
-    } else {
-        console.error("Кнопка startGameBtn не найдена в HTML!");
     }
     
     draw(); 
