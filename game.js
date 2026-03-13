@@ -6,26 +6,33 @@ document.addEventListener('DOMContentLoaded', () => {
     const overlay = document.getElementById('gameOverlay');
     const startBtn = document.getElementById('startGameBtn');
     const overlayTitle = document.getElementById('overlayTitle');
-// --- НОВОЕ: ЗАГРУЗКА СПРАЙТ-ЛИСТА ---
-    // Создаем объект картинки
+// --- ЗАГРУЗКА СПРАЙТ-ЛИСТА ---
     const goblinSprite = new Image(); 
-    // Указываем путь к картинке
-    goblinSprite.src = 'img/gob_go.png'; // Твоя картинка гоблина, которую ты скачал
-
-    // Переменная, чтобы знать, загрузилась ли картинка, иначе игра будет выдавать ошибку
     let isSpriteLoaded = false;
     
-    // Функция onload сработает только тогда, когда картинка полностью скачается
+    // 1. СНАЧАЛА говорим, что делать при успешной загрузке
     goblinSprite.onload = () => { 
         isSpriteLoaded = true; 
-        
-        // Как только картинка загрузилась — включаем кнопку старта!
         if (isGameOver && startBtn) {
             startBtn.textContent = "Начать игру";
             startBtn.disabled = false;
             overlayTitle.textContent = "Готовы к битве?";
         }
     };
+
+    // 2. ЗАЩИТА: Что делать, если картинка не найдена (например, ошибка в пути)
+    goblinSprite.onerror = () => {
+        console.error("Не удалось загрузить картинку гоблина. Включаем запасной режим!");
+        if (isGameOver && startBtn) {
+            startBtn.textContent = "Начать игру (Классика)";
+            startBtn.disabled = false;
+            overlayTitle.textContent = "Готовы к битве?";
+        }
+    };
+
+    // 3. И ТОЛЬКО ПОТОМ даем команду браузеру начать скачивать картинку!
+    goblinSprite.src = 'img/gob_go.png';
+
     
     const localScoreDisplay = document.getElementById('localScoreDisplay');
     const globalScoreDisplay = document.getElementById('globalScoreDisplay');
