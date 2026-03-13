@@ -614,4 +614,42 @@ h1 {
         font-size: 1rem;
     }
 }
+/* =========================================
+   КНОПКА ПОЛНОГО ЭКРАНА
+   ========================================= */
+.fullscreen-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    border: 1px solid #555;
+    border-radius: 5px;
+    padding: 5px 10px;
+    font-size: 1.5rem;
+    cursor: pointer;
+    z-index: 100; /* Чтобы кнопка всегда была поверх игры */
+    transition: background 0.3s, transform 0.2s;
+}
+
+.fullscreen-btn:hover {
+    background: rgba(0, 0, 0, 0.9);
+    transform: scale(1.1);
+}
+
+/* Стили, которые браузер применит ТОЛЬКО в полноэкранном режиме */
+#gameContainer:fullscreen {
+    background-color: #000; /* Заливаем весь экран черным */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#gameContainer:fullscreen canvas {
+    /* Чтобы игра не растягивалась криво, а сохраняла пропорции */
+    max-height: 100vh;
+    max-width: 100vw;
+    height: 100%;
+    width: auto;
+}
 
