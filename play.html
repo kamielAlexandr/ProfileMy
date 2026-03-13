@@ -25,14 +25,14 @@
 
         
         
-<div class="game-container">
+<div class="game-container" id="gameContainer">
             <div class="game-scoreboard">
                 <div>🏆 Ваш рекорд: <span id="localScoreDisplay">0</span></div>
                 <div>🌍 Рекорд сайта: <span id="globalScoreDisplay">Загрузка...</span></div>
             </div>
 
             <canvas id="gameCanvas" width="800" height="450"></canvas>
-            
+            <button id="fullscreenBtn" class="fullscreen-btn" title="На весь экран">⛶</button>
            <div id="gameOverlay" class="game-overlay">
                 <h2 id="overlayTitle">Загрузка магии...</h2>
                 <button id="startGameBtn" class="game-btn" disabled>Пожалуйста, подождите</button>
