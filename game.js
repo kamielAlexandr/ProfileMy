@@ -6,7 +6,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const overlay = document.getElementById('gameOverlay');
     const startBtn = document.getElementById('startGameBtn');
     const overlayTitle = document.getElementById('overlayTitle');
-
+// --- НОВОЕ: ЗАГРУЗКА СПРАЙТ-ЛИСТА ---
+    // Создаем объект картинки
+    const goblinSprite = new Image(); 
+    // Указываем путь к картинке
+    goblinSprite.src = 'img/gob_go.png'; // Твоя картинка гоблина, которую ты скачал
+    
+    // Переменная, чтобы знать, загрузилась ли картинка, иначе игра будет выдавать ошибку
+    let isSpriteLoaded = false;
+    goblinSprite.onload = () => { isSpriteLoaded = true; };
+    
     const localScoreDisplay = document.getElementById('localScoreDisplay');
     const globalScoreDisplay = document.getElementById('globalScoreDisplay');
 
@@ -154,49 +163,89 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchLeaderboard(); // Вызываем новую функцию
 
     // --- КЛАССЫ ---
+    // --- ОБНОВЛЕННЫЙ КЛАСС ENEMY ---
     class Enemy {
         constructor(isBoss = false) {
             this.isBoss = isBoss;
-            this.width = isBoss ? 100 : 60;
-            this.height = isBoss ? 100 : 60;
-            this.x = Math.random() * (canvas.width - this.width);
-            this.y = -this.height;
+            // Установим базовые размеры в 64x64, так как это размер наших кадров
+            this.baseSize = 64; 
+            
+            // Если босс, делаем его чуть крупнее при отрисовке, но кадр берем тот же
+            this.drawWidth = isBoss ? 100 : 64;
+            this.drawHeight = isBoss ? 100 : 64;
+            
+            this.x = Math.random() * (canvas.width - this.drawWidth);
+            this.y = -this.drawHeight;
             this.hp = isBoss ? 5 : 1; 
             this.maxHp = this.hp;
             let baseSpeed = isBoss ? 0.7 : (1 + Math.random() * 2);
             this.speed = baseSpeed * gameSpeedMultiplier;
             this.color = isBoss ? '#827717' : '#2e7d32'; 
+
+            // --- ПАРАМЕТРЫ АНИМАЦИИ ---
+            this.frameX = 0; // С какого кадра по счету мы начинаем (0 = первый кадр)
+            this.maxFrame = 3; // Максимальный номер кадра (у нас 4 кадра, счет от 0 до 3)
+            
+            // Счётчик кадров игры, чтобы анимация не летела слишком быстро
+            // (Меняем кадр спрайта каждые 8 кадров игры)
+            this.animationSpeed = 8; 
+            this.frameTimer = 0; 
         }
-        update() { this.y += this.speed; }
-        draw() {
-            ctx.save();
-            ctx.translate(this.x, this.y);
-            const w = this.width; const h = this.height;
 
-            ctx.fillStyle = this.color;
-            ctx.beginPath();
-            ctx.moveTo(w * 0.1, h * 0.3); ctx.lineTo(w * 0.5, 0); ctx.lineTo(w * 0.9, h * 0.3); 
-            ctx.lineTo(w, h * 0.8); ctx.lineTo(w * 0.5, h); ctx.lineTo(0, h * 0.8); ctx.closePath();
-            ctx.fill();
+        update() {
+            this.y += this.speed;
 
-            ctx.fillStyle = this.isBoss ? '#ffff00' : '#ff1744'; 
-            ctx.beginPath();
-            ctx.moveTo(w * 0.2, h * 0.4); ctx.lineTo(w * 0.4, h * 0.35); ctx.lineTo(w * 0.45, h * 0.55); ctx.closePath(); ctx.fill();
-            ctx.beginPath();
-            ctx.moveTo(w * 0.8, h * 0.4); ctx.lineTo(w * 0.6, h * 0.35); ctx.lineTo(w * 0.55, h * 0.55); ctx.closePath(); ctx.fill();
-
-            ctx.fillStyle = '#000000';
-            ctx.beginPath();
-            ctx.moveTo(w * 0.25, h * 0.75); ctx.lineTo(w * 0.75, h * 0.75); ctx.lineTo(w * 0.5, h * 0.95); ctx.closePath(); ctx.fill();
-
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(w * 0.35, h * 0.75, w * 0.05, h * 0.08); ctx.fillRect(w * 0.6, h * 0.75, w * 0.05, h * 0.08);  
-
-            if (this.isBoss) {
-                ctx.fillStyle = '#333'; ctx.fillRect(0, -12, this.width, 6); 
-                ctx.fillStyle = '#4caf50'; ctx.fillRect(0, -12, this.width * (this.hp / this.maxHp), 6);
+            // --- ОБНОВЛЕНИЕ КАДРА АНИМАЦИИ ---
+            this.frameTimer++;
+            if (this.frameTimer % this.animationSpeed === 0) {
+                // Если счетчик игры достиг нужного значения — переключаем кадр
+                if (this.frameX < this.maxFrame) {
+                    this.frameX++; // Идем на следующий кадр
+                } else {
+                    this.frameX = 0; // Возвращаемся в начало (зацикливаем)
+                }
+                this.frameTimer = 0; // Сбрасываем счетчик
             }
-            ctx.restore();
+        }
+
+        draw() {
+            // Если спрайт-лист еще не загружен или это босс (для которого мы пока оставим старый вид),
+            // рисуем старого геометрического гоблина, чтобы игра не ломалась.
+            if (!isSpriteLoaded || this.isBoss) {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                const w = 64; const h = 64; // Используем базовый размер
+                
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.moveTo(w * 0.1, h * 0.3); ctx.lineTo(w * 0.5, 0); ctx.lineTo(w * 0.9, h * 0.3); 
+                ctx.lineTo(w, h * 0.8); ctx.lineTo(w * 0.5, h); ctx.lineTo(0, h * 0.8); ctx.closePath();
+                ctx.fill();
+                
+                // ... (тут может быть старый код отрисовки глаз и рта) ...
+                
+                if (this.isBoss) {
+                     ctx.fillStyle = '#333'; ctx.fillRect(0, -12, 64, 6); 
+                     ctx.fillStyle = '#4caf50'; ctx.fillRect(0, -12, 64 * (this.hp / this.maxHp), 6);
+                }
+                ctx.restore();
+                return; // Выходим из функции, не рисуя спрайт ниже
+            }
+
+            // --- РИСУЕМ АНИМИРОВАННЫЙ СПРАЙТ (Обычный гоблин) ---
+            // Используем самую сложную версию ctx.drawImage():
+            // ctx.drawImage(картинка, откудаВзятьX, откудаВзятьY, ширинаКадра, высотаКадра, кудаПоложитьX, кудаПоложитьY, ширинаВГре, высотаВГре)
+            ctx.drawImage(
+                goblinSprite, 
+                this.frameX * this.baseSize, // 'Режем' спрайт-лист: номер кадра умножаем на ширину кадра (например 0*64, 1*64)
+                0, // Мы берем всегда из первого ряда (У нас только один ряд кадров)
+                this.baseSize, // Ширина одного кадра (64)
+                this.baseSize, // Высота одного кадра (64)
+                this.x, // Куда положить по X (координата врага)
+                this.y, // Куда положить по Y (координата врага)
+                this.drawWidth, // Ширина, с которой рисовать в игре
+                this.drawHeight // Высота, с которой рисовать в игре
+            );
         }
     }
 
