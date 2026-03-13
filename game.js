@@ -6,42 +6,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const overlay = document.getElementById('gameOverlay');
     const startBtn = document.getElementById('startGameBtn');
     const overlayTitle = document.getElementById('overlayTitle');
-// --- ЗАГРУЗКА СПРАЙТ-ЛИСТА ---
-    const goblinSprite = new Image(); 
-    let isSpriteLoaded = false;
-    
-    // 1. СНАЧАЛА говорим, что делать при успешной загрузке
-    goblinSprite.onload = () => { 
-        isSpriteLoaded = true; 
-        if (isGameOver && startBtn) {
-            startBtn.textContent = "Начать игру";
-            startBtn.disabled = false;
-            overlayTitle.textContent = "Готовы к битве?";
-        }
-    };
 
-    // 2. ЗАЩИТА: Что делать, если картинка не найдена (например, ошибка в пути)
-    goblinSprite.onerror = () => {
-        console.error("Не удалось загрузить картинку гоблина. Включаем запасной режим!");
-        if (isGameOver && startBtn) {
-            startBtn.textContent = "Начать игру (Классика)";
-            startBtn.disabled = false;
-            overlayTitle.textContent = "Готовы к битве?";
-        }
-    };
-
-    // 3. И ТОЛЬКО ПОТОМ даем команду браузеру начать скачивать картинку!
-    goblinSprite.src = 'img/gob_go.png';
-
-    
     const localScoreDisplay = document.getElementById('localScoreDisplay');
     const globalScoreDisplay = document.getElementById('globalScoreDisplay');
 
-    // Настройки игры
+    // 1. СНАЧАЛА ОБЪЯВЛЯЕМ ВСЕ ПЕРЕМЕННЫЕ
     let score = 0;
     const maxLives = 5;
     let lives = maxLives;
-    let isGameOver = true; 
+    let isGameOver = true; // Вот она! Теперь скрипт о ней знает до загрузки картинки
     let animationId;
     
     let localHighScore = parseInt(localStorage.getItem('citadelHighScore')) || 0; 
@@ -58,6 +31,33 @@ document.addEventListener('DOMContentLoaded', () => {
     let gameSpeedMultiplier = 1;
     let repairTimer = 0;
     let repairInterval = 500; 
+
+    // 2. И ТОЛЬКО ТЕПЕРЬ ЗАГРУЖАЕМ КАРТИНКУ
+    const goblinSprite = new Image(); 
+    let isSpriteLoaded = false;
+    
+    goblinSprite.onload = () => { 
+        isSpriteLoaded = true; 
+        if (isGameOver && startBtn) {
+            startBtn.textContent = "Начать игру";
+            startBtn.disabled = false;
+            overlayTitle.textContent = "Готовы к битве?";
+        }
+    };
+
+    goblinSprite.onerror = () => {
+        console.error("Не удалось загрузить картинку гоблина. Включаем запасной режим!");
+        if (isGameOver && startBtn) {
+            startBtn.textContent = "Начать игру (Классика)";
+            startBtn.disabled = false;
+            overlayTitle.textContent = "Готовы к битве?";
+        }
+    };
+
+    // Даем команду браузеру скачать картинку
+    goblinSprite.src = 'img/gob_go.png'; 
+
+   // --- ДАЛЬШЕ ИДЕТ СЕТЕВАЯ ЛОГИКА (API SUPABASE) И ВЕСЬ ОСТАЛЬНОЙ КОД ---
 
    // --- СЕТЕВАЯ ЛОГИКА (API SUPABASE) ---
     const SUPABASE_URL = 'https://bgzxdpjfsodndxroieay.supabase.co'; 
