@@ -208,57 +208,9 @@ document.addEventListener('DOMContentLoaded', () => {
             this.frameTimer = 0; 
         }
 
-        update() {
-            this.y += this.speed;
 
-            // --- ОБНОВЛЕНИЕ КАДРА АНИМАЦИИ ---
-            this.frameTimer++;
-            if (this.frameTimer % this.animationSpeed === 0) {
-                if (this.frameX < this.maxFrame) {
-                    this.frameX++; 
-                } else {
-                    this.frameX = 0; 
-                }
-                this.frameTimer = 0; 
-            }
-        }
 
-        draw() {
-            // Если картинка не загрузилась или это босс
-            if (!isSpriteLoaded || this.isBoss) {
-                ctx.save();
-                ctx.translate(this.x, this.y);
-                const w = this.width; const h = this.height; 
-                
-                ctx.fillStyle = this.color;
-                ctx.beginPath();
-                ctx.moveTo(w * 0.1, h * 0.3); ctx.lineTo(w * 0.5, 0); ctx.lineTo(w * 0.9, h * 0.3); 
-                ctx.lineTo(w, h * 0.8); ctx.lineTo(w * 0.5, h); ctx.lineTo(0, h * 0.8); ctx.closePath();
-                ctx.fill();
-                
-                if (this.isBoss) {
-                     ctx.fillStyle = '#333'; ctx.fillRect(0, -12, this.width, 6); 
-                     ctx.fillStyle = '#4caf50'; ctx.fillRect(0, -12, this.width * (this.hp / this.maxHp), 6);
-                }
-                ctx.restore();
-                return; 
-            }
-
-            // --- РИСУЕМ АНИМИРОВАННЫЙ СПРАЙТ ---
-            ctx.drawImage(
-                goblinSprite, 
-                this.frameX * this.baseSize, 
-                0, 
-                this.baseSize, 
-                this.baseSize, 
-                this.x, 
-                this.y, 
-                this.width,   // Используем правильный width
-                this.height   // Используем правильный height
-            );
-        }
-    }
-
+       
         update() {
             this.y += this.speed;
 
