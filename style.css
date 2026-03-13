@@ -526,3 +526,90 @@ h1 {
     color: #ffd700;
     text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
 }
+/* =========================================
+   АДАПТИВНЫЙ ДИЗАЙН (MOBILE FRIENDLY)
+   ========================================= */
+
+/* Делаем холст гибким, чтобы он не вылезал за края экрана */
+#gameCanvas {
+    width: 100%;
+    max-width: 800px;
+    height: auto; /* Сохраняет правильные пропорции 16:9 */
+    display: block;
+    margin: 0 auto;
+}
+
+/* Ограничиваем ширину контейнера игры */
+.game-container {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    position: relative; /* Чтобы окно "Старт" центрировалось правильно */
+}
+
+/* Настройки для мобильных телефонов (экраны уже 768px) */
+@media (max-width: 768px) {
+    /* 1. Перестраиваем верхнее меню в столбик */
+    .navbar {
+        flex-direction: column;
+        padding: 15px;
+        gap: 15px;
+    }
+    
+    .nav-links {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    /* 2. Складываем табло рекордов друг под друга */
+    .game-scoreboard {
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        font-size: 1rem;
+        text-align: center;
+    }
+
+    /* 3. Уменьшаем заголовки и отступы */
+    .container h1 {
+        font-size: 1.5rem;
+    }
+    
+    .container p {
+        font-size: 0.9rem;
+    }
+
+    /* 4. Компактная таблица лидеров */
+    .leaderboard-container {
+        margin: 20px 10px;
+        padding: 15px;
+    }
+
+    .leaderboard-list li {
+        font-size: 0.95rem;
+        padding: 10px 5px;
+    }
+
+    .leaderboard-list li span.rank {
+        width: 30px;
+        font-size: 1.1rem;
+    }
+
+    /* 5. Уменьшаем шрифт внутри окна старта */
+    .game-overlay h2 {
+        font-size: 1.5rem;
+    }
+}
+
+/* Для совсем маленьких экранов (уже 480px) */
+@media (max-width: 480px) {
+    .nav-links li a {
+        font-size: 0.9rem;
+        padding: 5px 10px;
+    }
+    
+    .leaderboard-list li span.score {
+        font-size: 1rem;
+    }
+}
