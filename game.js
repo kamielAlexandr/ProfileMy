@@ -25,8 +25,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let enemies = [];
     let particles = [];
     let repairItems = [];
-    let damageNumbers = []; // Массив для всплывающих цифр
-    let slashes = []; // Массив для следов от ударов мечом
+    let damageNumbers = []; 
+    let slashes = []; 
+    let footprints = []; // НОВОЕ: Массив для следов на земле
     
     let spawnTimer = 0;
     let spawnInterval = 60;
@@ -212,6 +213,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.frameX = 0; 
                 }
                 this.frameTimer = 0; 
+                
+                // НОВОЕ: Оставляем след в момент смены кадра (шага)
+                // x: центр гоблина, y: самый низ картинки (под ногами)
+                footprints.push(new Footprint(this.x + this.width / 2, this.y + this.height - 5));
             }
         }
 
@@ -276,15 +281,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- КЛАСС ДЛЯ ВСПЛЫВАЮЩИХ ЦИФР УРОНА ---
     class DamageNumber {
         constructor(x, y, text, color) {
             this.x = x;
             this.y = y;
             this.text = text;
             this.color = color;
-            this.life = 1.0; // Время жизни (от 1.0 до 0)
-            this.speedY = -2; // Скорость всплывания вверх
+            this.life = 1.0; 
+            this.speedY = -2; 
         }
         update() {
             this.y += this.speedY; 
@@ -301,35 +305,56 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- КЛАСС СЛЕДА ОТ МЕЧА ---
     class SlashMark {
         constructor(x, y) {
             this.x = x;
             this.y = y;
             this.life = 1.0; 
-            this.angle = Math.random() * Math.PI * 2; // Случайный угол наклона удара
+            this.angle = Math.random() * Math.PI * 2; 
         }
         update() {
-            this.life -= 0.04; // Исчезает довольно быстро
+            this.life -= 0.04; 
         }
         draw() {
             ctx.save();
             ctx.globalAlpha = Math.max(0, this.life);
             ctx.translate(this.x, this.y);
-            ctx.rotate(this.angle); // Поворачиваем холст на наш случайный угол
+            ctx.rotate(this.angle); 
             
             ctx.beginPath();
-            ctx.moveTo(-30, 0); // Рисуем линию длиной 60 пикселей
+            ctx.moveTo(-30, 0); 
             ctx.lineTo(30, 0);
             
-            ctx.strokeStyle = '#ffffff'; // Белый след меча
-            ctx.lineWidth = 4 * this.life; // Линия становится тоньше, когда исчезает
-            
-            // Добавляем красивое свечение
+            ctx.strokeStyle = '#ffffff'; 
+            ctx.lineWidth = 4 * this.life; 
             ctx.shadowColor = '#00E676'; 
             ctx.shadowBlur = 10;
-            
             ctx.stroke();
+            ctx.restore();
+        }
+    }
+
+    // НОВОЕ: КЛАСС СЛЕДА ОТ ШАГОВ
+    class Footprint {
+        constructor(x, y) {
+            this.x = x;
+            this.y = y;
+            this.life = 1.0; 
+            // Смещение по X, чтобы имитировать левую/правую ногу
+            this.offsetX = (Math.random() - 0.5) * 15;
+        }
+        update() {
+            this.life -= 0.005; // Следы исчезают очень медленно
+        }
+        draw() {
+            ctx.save();
+            // Полупрозрачный черный/коричневый цвет для имитации тени/грязи
+            ctx.globalAlpha = Math.max(0, this.life * 0.4); 
+            ctx.fillStyle = '#111111'; 
+            ctx.beginPath();
+            // Рисуем приплюснутый овал (эллипс), чтобы он лежал на земле в перспективе
+            ctx.ellipse(this.x + this.offsetX, this.y, 8, 4, 0, 0, Math.PI * 2);
+            ctx.fill();
             ctx.restore();
         }
     }
@@ -339,8 +364,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         score = 0; lives = maxLives; isGameOver = false;
         enemies = []; particles = []; repairItems = []; 
-        damageNumbers = []; // Очищаем старые цифры
-        slashes = []; // Очищаем следы
+        damageNumbers = []; 
+        slashes = []; 
+        footprints = []; // Очищаем следы при рестарте
         spawnTimer = 0; spawnInterval = 60; repairTimer = 0; gameSpeedMultiplier = 1;
         
         overlay.style.display = 'none';
@@ -375,18 +401,22 @@ document.addEventListener('DOMContentLoaded', () => {
             repairInterval = Math.floor(Math.random() * 400) + 400; 
         }
 
+        // Обновляем следы от шагов
+        for (let i = footprints.length - 1; i >= 0; i--) {
+            footprints[i].update();
+            if (footprints[i].life <= 0) footprints.splice(i, 1);
+        }
+
         for (let i = particles.length - 1; i >= 0; i--) {
             particles[i].update();
             if (particles[i].life <= 0) particles.splice(i, 1);
         }
 
-        // Обновление всплывающих цифр
         for (let i = damageNumbers.length - 1; i >= 0; i--) {
             damageNumbers[i].update();
             if (damageNumbers[i].life <= 0) damageNumbers.splice(i, 1); 
         }
 
-        // Обновляем следы от меча
         for (let i = slashes.length - 1; i >= 0; i--) {
             slashes[i].update();
             if (slashes[i].life <= 0) slashes.splice(i, 1); 
@@ -411,13 +441,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function draw() {
-        // --- ИСПРАВЛЕНО ДЛЯ ФОНА ---
-        // ctx.fillStyle = '#1a1a1a'; Убрали, чтобы видеть фон через CSS
-        // ctx.fillRect(0, 0, canvas.width, canvas.height); Убрали, чтобы видеть фон через CSS
-        
-        // НОВОЕ: Вместо полной заливки, очищаем холст (делаем его прозрачным)
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        // --------------------------
+
+        // Рисуем следы в самом низу (под гоблинами)
+        footprints.forEach(fp => fp.draw());
 
         let wallColor = lives > 3 ? '#4caf50' : (lives > 1 ? '#ff9800' : '#f44336');
         
@@ -430,7 +457,7 @@ document.addEventListener('DOMContentLoaded', () => {
         enemies.forEach(enemy => enemy.draw());
         particles.forEach(p => p.draw());
         damageNumbers.forEach(dn => dn.draw()); 
-        slashes.forEach(slash => slash.draw()); // Рисуем следы
+        slashes.forEach(slash => slash.draw()); 
 
         ctx.fillStyle = '#fff';
         ctx.font = '20px Arial';
@@ -494,7 +521,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const clickX = (clientX - rect.left) * scaleX;
         const clickY = (clientY - rect.top) * scaleY;
         
-        // Оставляем след от удара ПРИ КАЖДОМ КЛИКЕ
         slashes.push(new SlashMark(clickX, clickY));
         
         let hitSomething = false;
@@ -505,7 +531,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (lives < maxLives) lives++; 
                 createExplosion(item.x + item.width/2, item.y + item.height/2, '#00E676', 20);
                 
-                // Бонус к здоровью - зеленая всплывающая надпись
                 damageNumbers.push(new DamageNumber(item.x + item.width/2, item.y, '+1 HP', '#00E676'));
                 
                 repairItems.splice(i, 1);
@@ -521,14 +546,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 enemy.hp--; 
                 createExplosion(clickX, clickY, '#fff', 5);
                 
-                // Всплывающая цифра урона (красная)
                 damageNumbers.push(new DamageNumber(clickX, clickY, '-1', '#ff5252'));
 
                 if (enemy.hp <= 0) {
                     createExplosion(enemy.x + enemy.width/2, enemy.y + enemy.height/2, enemy.color, enemy.isBoss ? 50 : 15);
                     score += enemy.isBoss ? 5 : 1; 
                     
-                    // Золотая цифра при убийстве врага
                     const bonusText = enemy.isBoss ? '+5' : '+1';
                     damageNumbers.push(new DamageNumber(enemy.x + enemy.width/2, enemy.y + enemy.height/2, bonusText, '#ffd700'));
                     
