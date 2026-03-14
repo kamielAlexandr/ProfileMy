@@ -566,7 +566,7 @@ h1 {
 }
 
 /* Прячем всё лишнее (рекорды, заголовки), оставляем только игру и окна */
-#gameContainer:fullscreen > *:not(canvas):not(#fullscreenBtn):not(#gameOverlay) {
+#gameContainer:fullscreen > *:not(canvas):not(#fullscreenBtn):not(#gameOverlay):not(.shop-btn) {
     display: none !important;
 }
 
@@ -638,4 +638,28 @@ h1 {
         font-size: 1rem;
     }
 }
+/* =========================================
+   КНОПКА МАГАЗИНА (ЛУЧНИКИ)
+   ========================================= */
+.shop-btn {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, #ffd700, #b8860b);
+    color: #000;
+    border: 2px solid #fff;
+    border-radius: 8px;
+    padding: 8px 15px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    z-index: 100;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    transition: transform 0.2s, opacity 0.2s;
+    text-shadow: none;
+    line-height: 1.2;
+}
 
+.shop-btn:hover {
+    transform: scale(1.05);
+}
