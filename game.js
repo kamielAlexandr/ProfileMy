@@ -375,7 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             enemy.update();
 
-            if (enemy.y + (enemy.height * 0.85) >= canvas.height - 20) {
+           if (enemy.y + (enemy.height * 0.5) >= canvas.height - 20) {
                 lives -= enemy.isBoss ? 3 : 1; 
                 createExplosion(enemy.x + enemy.width/2, enemy.y + enemy.height, '#ff9800', 30);
                 enemies.splice(i, 1);
