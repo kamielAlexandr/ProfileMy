@@ -142,3 +142,73 @@ h1 { color: var(--accent-color); border-bottom: 2px solid var(--accent-color); p
     .shop-btn span { font-size: 0.7rem; }
     .fullscreen-btn { padding: 6px 10px; font-size: 0.9rem; }
 }
+/* =========================================
+   ДОСТИЖЕНИЯ (ВСПЛЫВАЮЩЕЕ ОКНО В ИГРЕ)
+   ========================================= */
+.achievement-popup {
+    position: fixed;
+    top: -100px; /* Спрятано за верхним краем экрана */
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #1f1f1f, #333);
+    color: #fff;
+    padding: 15px 30px;
+    border-radius: 8px;
+    border-bottom: 4px solid #ffd700;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+    z-index: 9999; /* Поверх вообще всего */
+    text-align: center;
+    font-size: 1.1rem;
+    transition: top 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    pointer-events: none;
+}
+
+.achievement-popup.show {
+    top: 20px; /* Выезжает сверху */
+}
+
+/* =========================================
+   СТРАНИЦА ПРОФИЛЯ ИГРОКА (СЕТКА ДОСТИЖЕНИЙ)
+   ========================================= */
+.profile-achievements {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.achievement-card {
+    background: var(--card-bg);
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    transition: 0.3s;
+    filter: grayscale(100%); /* По умолчанию серое (не разблокировано) */
+    opacity: 0.6;
+}
+
+/* Класс для полученного достижения */
+.achievement-card.unlocked {
+    filter: grayscale(0%);
+    opacity: 1;
+    border-color: #ffd700;
+    background: linear-gradient(135deg, #1f1f1f, #2a2510);
+}
+
+.achievement-icon {
+    font-size: 2.5rem;
+}
+
+.achievement-info h4 {
+    margin-bottom: 5px;
+    color: #fff;
+}
+
+.achievement-info p {
+    font-size: 0.9rem;
+    color: #aaa;
+    margin: 0;
+}
