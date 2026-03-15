@@ -1,387 +1,506 @@
-:root {
-    --bg-color: #121212;
-    --text-color: #e0e0e0;
-    --accent-color: #4CAF50;
-    --nav-bg: #1e1e1e;
-    --card-bg: #1f1f1f;
-}
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("Скрипт игры успешно загружен!");
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const overlay = document.getElementById('gameOverlay');
+    const startBtn = document.getElementById('startGameBtn');
+    const overlayTitle = document.getElementById('overlayTitle');
 
-body {
-    background-color: var(--bg-color);
-    color: var(--text-color);
-    line-height: 1.6;
-}
+    const localScoreDisplay = document.getElementById('localScoreDisplay');
+    const globalScoreDisplay = document.getElementById('globalScoreDisplay');
 
-/* =========================================
-   НАВИГАЦИЯ И БАЗОВЫЕ КОНТЕЙНЕРЫ
-   ========================================= */
-.navbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: var(--nav-bg);
-    padding: 1rem 5%;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-}
-
-.logo {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: var(--accent-color);
-}
-
-.nav-links {
-    list-style: none;
-    display: flex;
-    gap: 20px;
-}
-
-.nav-links a {
-    color: var(--text-color);
-    text-decoration: none;
-    font-weight: 500;
-    transition: color 0.3s ease;
-}
-
-.nav-links a:hover, .nav-links a.active {
-    color: var(--accent-color);
-}
-
-.container {
-    max-width: 1000px;
-    margin: 0 auto;
-    padding: 40px 20px;
-}
-
-h1, h2, h3 { margin-bottom: 15px; }
-
-h1 {
-    color: var(--accent-color);
-    border-bottom: 2px solid var(--accent-color);
-    padding-bottom: 10px;
-    margin-bottom: 30px;
-}
-
-.divider {
-    border: none;
-    height: 1px;
-    background-color: #333;
-    margin: 40px 0;
-}
-
-.contact-btn, .game-btn {
-    background-color: var(--accent-color);
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    font-size: 1rem;
-    cursor: pointer;
-    border-radius: 5px;
-    transition: background-color 0.3s;
-}
-
-.contact-btn:hover, .game-btn:hover { background-color: #45a049; }
-
-/* =========================================
-   БЛОК "ОБО МНЕ" И НАВЫКИ
-   ========================================= */
-.about-content {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 40px;
-    margin-bottom: 30px;
-}
-
-.about-text { flex: 1; }
-.about-text p { margin-bottom: 15px; font-size: 1.1rem; }
-
-.about-photo { flex-shrink: 0; }
-.about-photo img {
-    width: 250px;
-    height: 250px;
-    object-fit: cover;
-    border-radius: 50%;
-    border: 4px solid var(--accent-color);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-.about-photo img:hover {
-    transform: scale(1.05) rotate(2deg);
-    box-shadow: 0 15px 30px rgba(76, 175, 80, 0.4);
-}
-
-.skills-title {
-    margin-top: 30px;
-    margin-bottom: 20px;
-    font-size: 1.4rem;
-    color: var(--accent-color);
-}
-
-.skills-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
-    margin-top: 10px;
-}
-
-.skill-card {
-    background-color: var(--card-bg);
-    padding: 20px;
-    border-radius: 8px;
-    border-left: 4px solid var(--accent-color);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-    transition: transform 0.3s ease;
-}
-
-.skill-card:hover { transform: translateY(-5px); }
-.skill-card h4 { margin-bottom: 15px; color: #fff; font-size: 1.1rem; }
-.skill-card ul { list-style: none; }
-.skill-card ul li { margin-bottom: 8px; position: relative; padding-left: 20px; color: #ccc; }
-.skill-card ul li::before { content: "▹"; position: absolute; left: 0; color: var(--accent-color); }
-
-/* =========================================
-   СКРИНШОТЫ И ЛАЙТБОКС
-   ========================================= */
-.screenshots-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
-    gap: 20px;
-    margin-top: 20px;
-}
-
-.screenshot-placeholder {
-    background-color: var(--card-bg);
-    border: 1px solid #333;
-    border-radius: 8px;
-    padding: 15px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 300px; 
-}
-.screenshot-placeholder img {
-    max-width: 100%; max-height: 100%; object-fit: contain; display: block; cursor: zoom-in; transition: transform 0.3s ease;
-}
-.screenshot-placeholder:hover img { transform: scale(1.05); }
-
-/* =========================================
-   ПОДВАЛ (FOOTER)
-   ========================================= */
-.footer {
-    background-color: var(--nav-bg);
-    color: #888;
-    padding: 30px 20px;
-    margin-top: 60px;
-    border-top: 1px solid #333;
-}
-.footer-content { max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 15px; }
-.social-links { display: flex; gap: 20px; }
-.social-links a { color: #bbb; text-decoration: none; font-size: 0.95rem; font-weight: 500; transition: color 0.3s ease, transform 0.3s ease; }
-.social-links a:hover { color: var(--accent-color); transform: translateY(-3px); }
-
-/* =========================================
-   АВТОРИЗАЦИЯ И ТАБЛИЦА ЛИДЕРОВ
-   ========================================= */
-.auth-container, .leaderboard-container {
-    max-width: 400px;
-    margin: 60px auto;
-    background-color: var(--card-bg);
-    padding: 30px;
-    border-radius: 8px;
-    border: 1px solid #333;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
-}
-.leaderboard-container { max-width: 800px; margin: 30px auto; }
-.leaderboard-container h3 { text-align: center; color: #ffd700; margin-top: 0; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
-.leaderboard-list { list-style: none; padding: 0; margin: 0; }
-.leaderboard-list li { display: flex; justify-content: space-between; padding: 12px 15px; border-bottom: 1px solid #222; font-size: 1.1rem; align-items: center; }
-.leaderboard-list li:last-child { border-bottom: none; }
-.leaderboard-list li span.rank { width: 40px; font-size: 1.3rem; text-align: center; }
-.leaderboard-list li span.name { flex-grow: 1; color: #fff; font-weight: bold; padding-left: 15px; }
-.leaderboard-list li span.score { color: #00E676; font-weight: bold; font-size: 1.2rem; }
-.leaderboard-list li:first-child span.name { color: #ffd700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
-
-/* =========================================
-   ИГРОВОЙ ИНТЕРФЕЙС (UI) ВНЕ ХОЛСТА
-   ========================================= */
-.game-wrapper {
-    width: 100%;
-    max-width: 800px;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    position: relative; /* Важно для полноэкранного режима */
-}
-
-.external-ui {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    margin: 15px 0;
-    flex-wrap: wrap;
-    z-index: 50; 
-}
-
-/* Плашки статистики */
-.stat-badge {
-    background: #1f1f1f;
-    color: white;
-    padding: 8px 20px;
-    border-radius: 8px;
-    font-size: 1.1rem;
-    font-weight: bold;
-    border: 2px solid #444;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-}
-
-/* Кнопка магазина */
-.shop-btn {
-    background: linear-gradient(135deg, #ffd700, #b8860b);
-    color: #000;
-    border: 2px solid #fff;
-    border-radius: 8px;
-    padding: 10px 20px;
-    font-size: 1.1rem;
-    font-weight: bold;
-    cursor: pointer;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-    transition: transform 0.2s, opacity 0.2s;
-    line-height: 1.2;
-}
-.shop-btn:hover { transform: scale(1.05); }
-
-/* =========================================
-   БРАУЗЕРНАЯ ИГРА: ХОЛСТ
-   ========================================= */
-.game-container {
-    width: 100%;
-    max-width: 800px;
-    margin: 0 auto;
-    position: relative;
-    background-image: url('img/BG.png'); 
-    background-size: cover; 
-    background-position: center;
-    background-repeat: no-repeat;
-    border: 4px solid var(--accent-color);
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-}
-
-#gameCanvas {
-    width: 100%;
-    max-width: 100%;
-    height: auto;
-    aspect-ratio: 4 / 3; 
-    display: block;
-    margin: 0 auto;
-    touch-action: none;
-    image-rendering: pixelated; 
-    cursor: url('img/sword.png') 0 0, crosshair; 
-}
-
-.game-overlay {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background-color: rgba(18, 18, 18, 0.85);
-    display: flex; flex-direction: column; justify-content: center; align-items: center;
-    z-index: 10;
-}
-#overlayTitle { color: #fff; font-size: 2rem; margin-bottom: 20px; text-shadow: 2px 2px 4px #000; text-align: center; }
-
-.fullscreen-btn {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: rgba(0, 0, 0, 0.6);
-    color: #fff;
-    border: 1px solid #555;
-    border-radius: 5px;
-    padding: 5px 10px;
-    font-size: 1.5rem;
-    cursor: pointer;
-    z-index: 100;
-    transition: background 0.3s, transform 0.2s;
-}
-.fullscreen-btn:hover { background: rgba(0, 0, 0, 0.9); transform: scale(1.1); }
-
-/* =========================================
-   ПОЛНОЭКРАННЫЙ РЕЖИМ (FULLSCREEN)
-   ========================================= */
-/* Когда мы в полном экране, коробка занимает всё пространство */
-#gameWrapper:fullscreen {
-    background-color: #000;
-    max-width: none;
-    width: 100vw;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    padding: 0;
-    margin: 0;
-}
-
-/* В полном экране открепляем интерфейс, чтобы он парил сверху и снизу */
-#gameWrapper:fullscreen .top-ui {
-    position: absolute;
-    top: 20px;
-    left: 0;
-    margin: 0;
-}
-
-#gameWrapper:fullscreen .bottom-ui {
-    position: absolute;
-    bottom: 20px;
-    left: 0;
-    margin: 0;
-}
-
-/* Контейнер игры в полном экране сбрасывает рамки */
-#gameWrapper:fullscreen .game-container {
-    border: none;
-    border-radius: 0;
-    width: 100vw;
-    height: 100vh;
-}
-
-/* Холст идеально вписывается в экран (сохраняя пропорции) */
-#gameWrapper:fullscreen #gameCanvas {
-    width: 100vw !important;
-    height: 100vh !important;
-    max-height: none !important;
-    max-width: none !important;
-    object-fit: contain !important;
-}
-
-/* АДАПТИВНОСТЬ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ */
-@media (max-width: 768px) {
-    .navbar { flex-direction: column; padding: 15px; gap: 15px; }
-    .nav-links { flex-wrap: wrap; justify-content: center; gap: 10px; }
-    .about-content { flex-direction: column-reverse; text-align: center; }
-    .about-photo img { width: 200px; height: 200px; }
-    .container h1 { font-size: 1.5rem; }
-    .leaderboard-container { margin: 20px 10px; padding: 15px; }
-    .game-overlay h2 { font-size: 1.5rem; }
+    // 1. ОБЪЯВЛЯЕМ ВСЕ ПЕРЕМЕННЫЕ
+    let score = 0;
+    const maxLives = 5;
+    let lives = maxLives;
+    let isGameOver = true; 
+    let animationId;
     
-    .external-ui { gap: 10px; margin: 10px 0; }
-    .stat-badge { font-size: 0.95rem; padding: 6px 15px; }
-    .shop-btn { font-size: 1rem; padding: 8px 15px; }
-}
+    let localHighScore = parseInt(localStorage.getItem('citadelHighScore')) || 0; 
+    if (localScoreDisplay) localScoreDisplay.textContent = localHighScore;
+    let globalHighScore = 0; 
+    
+    let enemies = [];
+    let particles = [];
+    let repairItems = [];
+    let damageNumbers = []; 
+    let slashes = []; 
+    let footprints = []; 
+    
+    let coins = 0;
+    let archers = 0;
+    let archerCost = 15; 
+    let archerTimer = 0;
+    let arrows = []; 
+    
+    let spawnTimer = 0;
+    let spawnInterval = 60;
+    let gameSpeedMultiplier = 1;
+    let repairTimer = 0;
+    let repairInterval = 500; 
 
-@media (max-width: 480px) {
-    .nav-links li a { font-size: 0.9rem; padding: 5px 10px; }
-    .external-ui { gap: 5px; margin: 5px 0; }
-    .stat-badge { font-size: 0.8rem; padding: 4px 8px; border-width: 1px;}
-    .shop-btn { font-size: 0.85rem; padding: 6px 10px; }
-}
+    // --- НАХОДИМ ИНТЕРФЕЙС ИЗ HTML ---
+    const statsContainer = document.getElementById('statsContainer');
+    const scoreUI = document.getElementById('scoreUI');
+    const goldUI = document.getElementById('goldUI');
+    const livesUI = document.getElementById('livesUI');
+    const shopBtn = document.getElementById('buyArcherBtn');
+    const shopContainer = document.getElementById('shopContainer'); 
+    
+    let lastScore = -1, lastCoins = -1, lastLives = -1, lastArchers = -1;
+
+    function updateUI() {
+        if (!statsContainer || !scoreUI || !goldUI || !livesUI || !shopBtn) return;
+
+        if (lastScore !== score || lastCoins !== coins || lastLives !== lives || lastArchers !== archers) {
+            scoreUI.innerHTML = `💀 Убито: ${score}`;
+            goldUI.innerHTML = `🪙 Монеты: <span style="color:#ffd700">${coins}</span>`;
+            let wallColor = lives > 3 ? '#4caf50' : (lives > 1 ? '#ff9800' : '#f44336');
+            livesUI.innerHTML = `🛡️ Прочность: <span style="color:${wallColor}">${Math.max(0, lives)}/${maxLives}</span>`;
+
+            shopBtn.innerHTML = `🏹 Лучник (${archerCost} 🪙)<br><span style="font-size: 0.8rem">На стене: ${archers}</span>`;
+            
+            if (coins >= archerCost && !isGameOver) {
+                shopBtn.style.opacity = '1';
+                shopBtn.style.pointerEvents = 'auto';
+                shopBtn.style.boxShadow = '0 0 15px rgba(255, 215, 0, 0.8)'; 
+            } else {
+                shopBtn.style.opacity = '0.5';
+                shopBtn.style.pointerEvents = 'none';
+                shopBtn.style.boxShadow = '0 4px 10px rgba(0,0,0,0.5)';
+            }
+
+            lastScore = score; lastCoins = coins; lastLives = lives; lastArchers = archers;
+        }
+    }
+
+    if (shopBtn) {
+        shopBtn.addEventListener('mousedown', (e) => e.stopPropagation());
+        shopBtn.addEventListener('touchstart', (e) => e.stopPropagation());
+        shopBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); 
+            if (coins >= archerCost) {
+                coins -= archerCost;
+                archers++;
+                archerCost = Math.floor(archerCost * 1.5); 
+                updateUI(); 
+                damageNumbers.push(new DamageNumber(canvas.width / 2, canvas.height - 100, 'Лучник нанят!', '#00E676'));
+            }
+        });
+    }
+
+    // 2. ЗАГРУЗКА ОТДЕЛЬНЫХ КАДРОВ АНИМАЦИИ
+    const goblinFrames = []; 
+    let isSpriteLoaded = false;
+    let loadedImagesCount = 0;
+    
+    const frameNames = ['img/gob1.png', 'img/gob2.png', 'img/gob3.png', 'img/gob4.png'];
+
+    frameNames.forEach((src) => {
+        const img = new Image();
+        img.onload = () => {
+            loadedImagesCount++;
+            if (loadedImagesCount === frameNames.length) {
+                isSpriteLoaded = true;
+                if (isGameOver && startBtn) {
+                    startBtn.textContent = "Начать игру";
+                    startBtn.disabled = false;
+                    overlayTitle.textContent = "Готовы к битве?";
+                }
+            }
+        };
+        img.onerror = () => {
+            if (isGameOver && startBtn) {
+                startBtn.textContent = "Начать (Без анимации)";
+                startBtn.disabled = false;
+            }
+        };
+        img.src = src;
+        goblinFrames.push(img); 
+    });
+
+    // 3. СЕТЕВАЯ ЛОГИКА (API SUPABASE)
+    const SUPABASE_URL = 'https://bgzxdpjfsodndxroieay.supabase.co'; 
+    const SUPABASE_ANON_KEY = 'sb_publishable_7lewcPQCbnoXmkcMLu_Hlw_dnfCXZka';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    let currentPlayerName = "Аноним";
+    const leaderboardList = document.getElementById('leaderboardList'); 
+
+    async function checkCurrentPlayer() {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) currentPlayerName = user.email.split('@')[0]; 
+    }
+
+    async function fetchGlobalHighScore() {
+        try {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard?select=score,nickname&order=score.desc&limit=1`, {
+                method: 'GET', headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+            });
+            const data = await response.json();
+            if (data && data.length > 0) {
+                globalHighScore = data[0].score;
+                if (globalScoreDisplay) globalScoreDisplay.textContent = `${globalHighScore} (${data[0].nickname || "Неизвестный"})`;
+            }
+        } catch (e) {}
+    }
+
+    async function fetchLeaderboard() {
+        try {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard?select=score,nickname&order=score.desc&limit=5`, {
+                method: 'GET', headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+            });
+            const data = await response.json();
+            if (data && data.length > 0 && leaderboardList) {
+                leaderboardList.innerHTML = ''; 
+                data.forEach((entry, index) => {
+                    const li = document.createElement('li');
+                    let medal = `${index + 1}.`;
+                    if (index === 0) medal = '🥇'; if (index === 1) medal = '🥈'; if (index === 2) medal = '🥉';
+                    li.innerHTML = `<span class="rank">${medal}</span> <span class="name">${entry.nickname || "Аноним"}</span> <span class="score">${entry.score}</span>`;
+                    leaderboardList.appendChild(li);
+                });
+            }
+        } catch (e) {}
+    }
+
+    async function saveGlobalHighScore(newScore) {
+        try {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard`, {
+                method: 'POST', headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+                body: JSON.stringify({ score: newScore, nickname: currentPlayerName })
+            });
+            if(response.ok) {
+                globalHighScore = newScore;
+                if(globalScoreDisplay) globalScoreDisplay.textContent = `${globalHighScore} (${currentPlayerName})`;
+                fetchLeaderboard();
+            }
+        } catch (e) {}
+    }
+
+    checkCurrentPlayer(); fetchGlobalHighScore(); fetchLeaderboard(); 
+
+    // 4. КЛАССЫ
+    class Enemy {
+        constructor(isBoss = false) {
+            this.isBoss = isBoss;
+            this.width = isBoss ? 100 : 64; this.height = isBoss ? 100 : 64;
+            this.x = Math.random() * (canvas.width - this.width); this.y = -this.height;
+            this.hp = isBoss ? 5 : 1; this.maxHp = this.hp;
+            this.speed = (isBoss ? 0.7 : (1 + Math.random() * 2)) * gameSpeedMultiplier;
+            this.color = isBoss ? '#827717' : '#2e7d32'; 
+            this.frameX = 0; this.maxFrame = 3; this.animationSpeed = 8; this.frameTimer = 0; 
+        }
+        update() {
+            this.y += this.speed;
+            this.frameTimer++;
+            if (this.frameTimer % this.animationSpeed === 0) {
+                this.frameX = this.frameX < this.maxFrame ? this.frameX + 1 : 0; 
+                this.frameTimer = 0; 
+                footprints.push(new Footprint(this.x + this.width / 2, this.y + this.height - 5));
+            }
+        }
+        draw() {
+            if (!isSpriteLoaded || this.isBoss) {
+                ctx.save(); ctx.translate(this.x, this.y);
+                ctx.fillStyle = this.color;
+                ctx.beginPath(); ctx.moveTo(this.width * 0.1, this.height * 0.3); ctx.lineTo(this.width * 0.5, 0); ctx.lineTo(this.width * 0.9, this.height * 0.3); ctx.lineTo(this.width, this.height * 0.8); ctx.lineTo(this.width * 0.5, this.height); ctx.lineTo(0, this.height * 0.8); ctx.closePath(); ctx.fill();
+                if (this.isBoss) { ctx.fillStyle = '#333'; ctx.fillRect(0, -12, this.width, 6); ctx.fillStyle = '#4caf50'; ctx.fillRect(0, -12, this.width * (this.hp / this.maxHp), 6); }
+                ctx.restore(); return; 
+            }
+            ctx.drawImage(goblinFrames[this.frameX], this.x, this.y, this.width, this.height);
+        }
+    }
+
+    class RepairItem {
+        constructor() {
+            this.width = 50; this.height = 50;
+            this.x = Math.random() * (canvas.width - this.width); this.y = -this.height;
+            this.speed = (1.5 + Math.random()) * gameSpeedMultiplier;
+        }
+        update() { this.y += this.speed; }
+        draw() {
+            ctx.save(); ctx.translate(this.x, this.y); ctx.fillStyle = '#8D6E63'; ctx.fillRect(0, 0, this.width, this.height); ctx.strokeStyle = '#4E342E'; ctx.lineWidth = 3; ctx.strokeRect(0, 0, this.width, this.height); ctx.fillStyle = '#00E676'; ctx.fillRect(this.width * 0.4, this.height * 0.15, this.width * 0.2, this.height * 0.7); ctx.fillRect(this.width * 0.15, this.height * 0.4, this.width * 0.7, this.height * 0.2); ctx.restore();
+        }
+    }
+
+    class Particle {
+        constructor(x, y, color) {
+            this.x = x; this.y = y; this.size = Math.random() * 5 + 2;
+            this.speedX = (Math.random() - 0.5) * 8; this.speedY = (Math.random() - 0.5) * 8;
+            this.color = color; this.life = 1.0;
+        }
+        update() { this.x += this.speedX; this.y += this.speedY; this.life -= 0.05; }
+        draw() { ctx.globalAlpha = Math.max(0, this.life); ctx.fillStyle = this.color; ctx.fillRect(this.x, this.y, this.size, this.size); ctx.globalAlpha = 1.0; }
+    }
+
+    class DamageNumber {
+        constructor(x, y, text, color) {
+            this.x = x; this.y = y; this.text = text; this.color = color;
+            this.life = 1.0; this.speedY = -2; 
+        }
+        update() { this.y += this.speedY; this.life -= 0.02; }
+        draw() { ctx.save(); ctx.globalAlpha = Math.max(0, this.life); ctx.fillStyle = this.color; ctx.font = 'bold 20px Arial'; ctx.textAlign = 'center'; ctx.fillText(this.text, this.x, this.y); ctx.restore(); }
+    }
+
+    class SlashMark {
+        constructor(x, y) {
+            this.x = x; this.y = y; this.life = 1.0; this.angle = Math.random() * Math.PI * 2; 
+        }
+        update() { this.life -= 0.04; }
+        draw() { ctx.save(); ctx.globalAlpha = Math.max(0, this.life); ctx.translate(this.x, this.y); ctx.rotate(this.angle); ctx.beginPath(); ctx.moveTo(-30, 0); ctx.lineTo(30, 0); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 4 * this.life; ctx.shadowColor = '#00E676'; ctx.shadowBlur = 10; ctx.stroke(); ctx.restore(); }
+    }
+
+    class Footprint {
+        constructor(x, y) { this.x = x; this.y = y; this.life = 1.0; this.offsetX = (Math.random() - 0.5) * 15; }
+        update() { this.life -= 0.005; }
+        draw() { ctx.save(); ctx.globalAlpha = Math.max(0, this.life * 0.4); ctx.fillStyle = '#111'; ctx.beginPath(); ctx.ellipse(this.x + this.offsetX, this.y, 8, 4, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+    }
+
+    class Arrow {
+        constructor(startX, startY, targetEnemy) {
+            this.x = startX; this.y = startY; this.target = targetEnemy;
+            this.speed = 12; this.active = true;
+        }
+        update() {
+            if (!this.target || this.target.hp <= 0) { this.active = false; return; }
+            let dx = (this.target.x + this.target.width/2) - this.x;
+            let dy = (this.target.y + this.target.height/2) - this.y;
+            let dist = Math.hypot(dx, dy);
+
+            if (dist < this.speed) {
+                this.target.hp -= 1; 
+                createExplosion(this.x, this.y, '#fff', 5);
+                damageNumbers.push(new DamageNumber(this.x, this.y, '-1', '#ff5252'));
+                this.active = false;
+            } else {
+                this.angle = Math.atan2(dy, dx);
+                this.x += Math.cos(this.angle) * this.speed;
+                this.y += Math.sin(this.angle) * this.speed;
+            }
+        }
+        draw() {
+            ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle);
+            ctx.fillStyle = '#ccc'; ctx.fillRect(-8, -1, 16, 2); 
+            ctx.fillStyle = '#ff3333'; ctx.fillRect(8, -2, 4, 4); 
+            ctx.restore();
+        }
+    }
+
+    // --- ИГРОВАЯ ЛОГИКА ---
+    function initGame() {
+        console.log("Кнопка нажата! Игра начинается...");
+        
+        if (animationId) {
+            cancelAnimationFrame(animationId);
+        }
+
+        score = 0; lives = maxLives; isGameOver = false;
+        enemies = []; particles = []; repairItems = []; damageNumbers = []; slashes = []; footprints = []; arrows = [];
+        
+        coins = 0; archers = 0; archerCost = 15;
+        
+        lastScore = -1; lastCoins = -1; lastLives = -1; lastArchers = -1;
+        
+        if (shopContainer) shopContainer.style.display = 'flex';
+        if (statsContainer) statsContainer.style.display = 'flex'; 
+        updateUI();
+
+        spawnTimer = 0; spawnInterval = 60; repairTimer = 0; gameSpeedMultiplier = 1;
+        overlay.style.display = 'none';
+        
+        if(localScoreDisplay) localScoreDisplay.textContent = localHighScore;
+        if(globalScoreDisplay && globalScoreDisplay.textContent === "Загрузка...") globalScoreDisplay.textContent = globalHighScore;
+        
+        gameLoop();
+    }
+
+    function createExplosion(x, y, color, count = 15) {
+        for (let i = 0; i < count; i++) particles.push(new Particle(x, y, color));
+    }
+
+    function update() {
+        gameSpeedMultiplier = Math.min(3.5, 1 + (score * 0.015));
+        
+        if (archers > 0 && enemies.length > 0) {
+            archerTimer++;
+            let fireRate = Math.max(15, 100 - (archers * 10)); 
+            
+            if (archerTimer >= fireRate) {
+                archerTimer = 0;
+                let target = enemies.reduce((lowest, current) => (current.y > lowest.y ? current : lowest), enemies[0]);
+                arrows.push(new Arrow(canvas.width / 2, canvas.height - 20, target));
+            }
+        }
+
+        spawnInterval = Math.max(25, 60 - score * 0.3);
+        spawnTimer++;
+        if (spawnTimer >= spawnInterval) {
+            enemies.push(new Enemy(score > 10 && Math.random() < 0.1));
+            spawnTimer = 0;
+        }
+
+        repairTimer++;
+        if (repairTimer >= repairInterval) {
+            repairItems.push(new RepairItem());
+            repairTimer = 0; repairInterval = Math.floor(Math.random() * 400) + 400; 
+        }
+
+        for (let i = footprints.length - 1; i >= 0; i--) { footprints[i].update(); if (footprints[i].life <= 0) footprints.splice(i, 1); }
+        for (let i = particles.length - 1; i >= 0; i--) { particles[i].update(); if (particles[i].life <= 0) particles.splice(i, 1); }
+        for (let i = damageNumbers.length - 1; i >= 0; i--) { damageNumbers[i].update(); if (damageNumbers[i].life <= 0) damageNumbers.splice(i, 1); }
+        for (let i = slashes.length - 1; i >= 0; i--) { slashes[i].update(); if (slashes[i].life <= 0) slashes.splice(i, 1); }
+        for (let i = arrows.length - 1; i >= 0; i--) { arrows[i].update(); if (!arrows[i].active) arrows.splice(i, 1); }
+        
+        for (let i = repairItems.length - 1; i >= 0; i--) {
+            repairItems[i].update();
+            if (repairItems[i].y > canvas.height) repairItems.splice(i, 1);
+        }
+
+        for (let i = enemies.length - 1; i >= 0; i--) {
+            let enemy = enemies[i];
+
+            if (enemy.hp <= 0) {
+                createExplosion(enemy.x + enemy.width/2, enemy.y + enemy.height/2, enemy.color, enemy.isBoss ? 50 : 15);
+                score += enemy.isBoss ? 5 : 1; 
+                
+                let coinReward = enemy.isBoss ? 5 : 1;
+                coins += coinReward; 
+                damageNumbers.push(new DamageNumber(enemy.x + enemy.width/2, enemy.y + enemy.height/2, `+${coinReward} 🪙`, '#ffd700'));
+                
+                enemies.splice(i, 1);
+                continue; 
+            }
+
+            enemy.update();
+
+            // ВАЖНОЕ ИСПРАВЛЕНИЕ: теперь ждем, пока центр гоблина коснется стены
+            if (enemy.y + (enemy.height * 0.5) >= canvas.height - 20) {
+                lives -= enemy.isBoss ? 3 : 1; 
+                createExplosion(enemy.x + enemy.width/2, enemy.y + enemy.height, '#ff9800', 30);
+                enemies.splice(i, 1);
+                if (lives <= 0) isGameOver = true;
+            }
+        }
+        
+        updateUI();
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        footprints.forEach(fp => fp.draw());
+
+        let wallColor = lives > 3 ? '#4caf50' : (lives > 1 ? '#ff9800' : '#f44336');
+        ctx.fillStyle = '#333'; ctx.fillRect(0, canvas.height - 20, canvas.width, 20);
+        ctx.fillStyle = wallColor; ctx.fillRect(0, canvas.height - 20, canvas.width * (Math.max(0, lives) / maxLives), 3); 
+
+        for (let i = 0; i < archers; i++) {
+            let ax = 30 + i * 25;
+            if (ax > canvas.width - 30) break; 
+            ctx.fillStyle = '#827717'; ctx.fillRect(ax, canvas.height - 25, 10, 10); 
+            ctx.fillStyle = '#fff'; ctx.fillRect(ax + 2, canvas.height - 30, 2, 8); 
+        }
+
+        repairItems.forEach(item => item.draw());
+        enemies.forEach(enemy => enemy.draw());
+        arrows.forEach(arrow => arrow.draw()); 
+        particles.forEach(p => p.draw());
+        damageNumbers.forEach(dn => dn.draw()); 
+        slashes.forEach(slash => slash.draw()); 
+    }
+
+    function gameLoop() {
+        if (isGameOver) {
+            endGame();
+            return;
+        }
+        update(); draw();
+        animationId = requestAnimationFrame(gameLoop);
+    }
+
+    function endGame() {
+        cancelAnimationFrame(animationId);
+        if (shopContainer) shopContainer.style.display = 'none'; 
+        if (statsContainer) statsContainer.style.display = 'none'; 
+        
+        let recordMessage = "";
+        if (score > localHighScore) {
+            localHighScore = score;
+            localStorage.setItem('citadelHighScore', localHighScore); 
+            if (localScoreDisplay) localScoreDisplay.textContent = localHighScore; 
+            recordMessage += `<br><span style="font-size:1.1rem; color:#aaa;">Вы побили свой рекорд!</span>`;
+        }
+        if (!isNaN(globalHighScore) && score > globalHighScore) {
+            saveGlobalHighScore(score); 
+            recordMessage += `<br><span style="font-size:1.3rem; color:#00E676; text-shadow: 0 0 10px #00E676;">👑 ВЫ ПОБИЛИ РЕКОРД САЙТА! 👑</span>`;
+        }
+
+        overlayTitle.innerHTML = `Ворота пробиты!<br><span style="font-size:1.5rem; color:#ff5252;">Счет: ${score}</span>${recordMessage}`;
+        startBtn.textContent = 'Держать оборону снова';
+        overlay.style.display = 'flex';
+        draw(); 
+    }
+
+    function handleInput(e) {
+        if (isGameOver) return;
+        e.preventDefault(); 
+
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        
+        let clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+        let clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+
+        const clickX = (clientX - rect.left) * scaleX;
+        const clickY = (clientY - rect.top) * scaleY;
+        
+        slashes.push(new SlashMark(clickX, clickY));
+        let hitSomething = false;
+
+        for (let i = repairItems.length - 1; i >= 0; i--) {
+            const item = repairItems[i];
+            if (clickX >= item.x && clickX <= item.x + item.width && clickY >= item.y && clickY <= item.y + item.height) {
+                if (lives < maxLives) lives++; 
+                createExplosion(item.x + item.width/2, item.y + item.height/2, '#00E676', 20);
+                damageNumbers.push(new DamageNumber(item.x + item.width/2, item.y, '+1 HP', '#00E676'));
+                repairItems.splice(i, 1);
+                hitSomething = true;
+                break;
+            }
+        }
+        if (hitSomething) return; 
+
+        for (let i = enemies.length - 1; i >= 0; i--) {
+            const enemy = enemies[i];
+            if (clickX >= enemy.x && clickX <= enemy.x + enemy.width && clickY >= enemy.y && clickY <= enemy.y + enemy.height) {
+                enemy.hp--; 
+                createExplosion(clickX, clickY, '#fff', 5);
+                damageNumbers.push(new DamageNumber(clickX, clickY, '-1', '#ff5252'));
+                break; 
+            }
+        }
+    }
+
+    canvas.addEventListener('mousedown', handleInput);
+    canvas.addEventListener('touchstart', handleInput, { passive: false });
+    if(startBtn) startBtn.addEventListener('click', initGame);
+    
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const gameWrapper = document.getElementById('gameWrapper'); // ИСПРАВЛЕНО
+    
+    if (fullscreenBtn && gameWrapper) {
+        fullscreenBtn.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                gameWrapper.requestFullscreen().catch(e => console.warn(e.message)); 
+                fullscreenBtn.textContent = "✖"; 
+            } else {
+                document.exitFullscreen();
+                fullscreenBtn.textContent = "⛶"; 
+            }
+        });
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) fullscreenBtn.textContent = "⛶";
+        });
+    }
+});
