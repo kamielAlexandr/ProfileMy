@@ -340,40 +340,50 @@ if (window.gameInitialized) {
             
             let recordMessage = "";
             
-            // Защита от падения LocalStorage
+            // 1. ЛОКАЛЬНЫЙ РЕКОРД (Для конкретного игрока)
             try {
-                if (score > localHighScore) {
+                if (score > localHighScore && score > 0) {
                     localHighScore = score; 
                     localStorage.setItem('citadelHighScore', localHighScore); 
-                    recordMessage += `<br><span style="font-size:1.1rem; color:#aaa;">Вы побили свой рекорд!</span>`;
+                    recordMessage += `<br><span style="font-size:1.1rem; color:#aaa;">Вы побили свой личный рекорд!</span>`;
                 }
             } catch(e) { console.error("Ошибка сохранения рекорда в кэш:", e); }
             
-            // Защита от падения Supabase
+            // 2. ГЛОБАЛЬНЫЙ РЕКОРД (Защита от ложных срабатываний)
             try {
-                if (!isNaN(globalHighScore) && score > globalHighScore) {
-                    // Асинхронное сохранение не заблокирует вывод экрана
-                    fetch(`${SUPABASE_URL}/rest/v1/leaderboard`, { method: 'POST', headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, body: JSON.stringify({ score: score, nickname: currentPlayerName }) })
-                    .then(res => { if(res.ok) console.log("Рекорд успешно улетел в БД"); })
-                    .catch(err => console.error("Ошибка отправки рекорда:", err));
+                // Кричим о рекорде ТОЛЬКО если старый рекорд был больше нуля
+                if (score > globalHighScore && globalHighScore > 0) {
+                    fetch(`${SUPABASE_URL}/rest/v1/leaderboard`, { 
+                        method: 'POST', 
+                        headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, 
+                        body: JSON.stringify({ score: score, nickname: currentPlayerName }) 
+                    }).catch(err => console.error("Ошибка:", err));
                     
                     recordMessage += `<br><span style="font-size:1.3rem; color:#00E676; text-shadow: 0 0 10px #00E676;">👑 ВЫ ПОБИЛИ РЕКОРД САЙТА! 👑</span>`;
+                } 
+                // Если база пустая (рекорд 0), просто тихо сохраняем первый результат
+                else if (score > 0 && globalHighScore === 0) {
+                    fetch(`${SUPABASE_URL}/rest/v1/leaderboard`, { 
+                        method: 'POST', 
+                        headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, 
+                        body: JSON.stringify({ score: score, nickname: currentPlayerName }) 
+                    }).catch(err => {});
                 }
             } catch(e) { console.error("Ошибка глобального рекорда:", e); }
 
-            // Жестко гарантируем появление окна
+            // Выводим финальное окно
             if (overlayTitle) {
                 overlayTitle.innerHTML = `Ворота пробиты!<br><span style="font-size:1.5rem; color:#ff5252;">Счет: ${score}</span>${recordMessage}`;
             }
             if (startBtn) {
                 startBtn.textContent = 'Держать оборону снова'; 
-                startBtn.disabled = false; // Принудительно разблокируем кнопку
+                startBtn.disabled = false; 
             }
             if (overlay) {
                 overlay.style.display = 'flex'; 
-                overlay.style.zIndex = '9999'; // Жестко выводим поверх всего интерфейса и холста
+                overlay.style.zIndex = '9999'; 
             }
-            draw(); // Последняя отрисовка кадра
+            draw(); 
         }
 
         function handleInput(e) {
