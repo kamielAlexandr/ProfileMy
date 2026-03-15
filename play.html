@@ -23,25 +23,30 @@
         <h1>Мини-игра: Защита Цитадели</h1>
         <p>Небольшой интерактив прямо в браузере. Нажмите "Старт", чтобы начать.</p><br>
 
-        <div class="game-container" id="gameContainer">
-            <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <div id="gameWrapper" class="game-wrapper">
             
-            <div id="statsContainer" class="game-stats-ui" style="display: none;">
+            <div id="topUI" class="ui-panel" style="display: none;">
                 <div id="scoreUI" class="stat-badge">💀 Убито: 0</div>
                 <div id="goldUI" class="stat-badge">🪙 Монеты: <span style="color:#ffd700">0</span></div>
                 <div id="livesUI" class="stat-badge">🛡️ Прочность: <span style="color:#4caf50">5/5</span></div>
             </div>
 
-            <button id="buyArcherBtn" class="shop-btn" style="display: none;">
-                🏹 Лучник (15 🪙)<br><span style="font-size: 0.8rem">На стене: 0</span>
-            </button>
-
-            <button id="fullscreenBtn" class="fullscreen-btn" title="На весь экран">⛶</button>
-            
-            <div id="gameOverlay" class="game-overlay">
-                <h2 id="overlayTitle">Загрузка магии...</h2>
-                <button id="startGameBtn" class="game-btn" disabled>Пожалуйста, подождите</button>
+            <div class="canvas-container">
+                <canvas id="gameCanvas" width="800" height="600"></canvas>
+                
+                <div id="gameOverlay" class="game-overlay">
+                    <h2 id="overlayTitle">Загрузка магии...</h2>
+                    <button id="startGameBtn" class="game-btn" disabled>Пожалуйста, подождите</button>
+                </div>
             </div>
+
+            <div id="bottomUI" class="ui-panel" style="display: none;">
+                <button id="buyArcherBtn" class="shop-btn">
+                    🏹 Нанять Лучника (15 🪙)<br><span>На стене: 0</span>
+                </button>
+                <button id="fullscreenBtn" class="fullscreen-btn" title="На весь экран">⛶ Полный экран</button>
+            </div>
+
         </div>
 
         <div class="leaderboard-container">
@@ -55,16 +60,11 @@
     <footer class="footer">
         <div class="footer-content">
             <p>&copy; 2026 Aethelforge Все права защищены.</p>
-            <div class="social-links">
-                <a href="https://t.me/@kamielalex" target="_blank">Telegram</a>
-                <a href="https://github.com/kamielAlexandr" target="_blank">GitHub</a>
-            </div>
         </div>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="auth.js"></script>
     <script src="main.js"></script>
-    <script src="game.js?v=200"></script>
-</body>
+    <script src="game.js?v=999"></script> </body>
 </html>
