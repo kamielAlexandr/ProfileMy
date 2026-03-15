@@ -26,14 +26,21 @@
         
         
 <div class="game-container" id="gameContainer">
-            <div class="game-scoreboard">
-                <div>🏆 Ваш рекорд: <span id="localScoreDisplay">0</span></div>
-                <div>🌍 Рекорд сайта: <span id="globalScoreDisplay">Загрузка...</span></div>
+            <canvas id="gameCanvas" width="800" height="600"></canvas>
+            
+            <div id="statsContainer" class="game-stats-ui" style="display: none;">
+                <div id="scoreUI" class="stat-badge">💀 Убито: 0</div>
+                <div id="goldUI" class="stat-badge">🪙 Монеты: <span style="color:#ffd700">0</span></div>
+                <div id="livesUI" class="stat-badge">🛡️ Прочность: <span style="color:#4caf50">5/5</span></div>
             </div>
 
-            <canvas id="gameCanvas" width="800" height="450"></canvas>
+            <button id="buyArcherBtn" class="shop-btn" style="display: none;">
+                🏹 Лучник (15 🪙)<br><span style="font-size: 0.8rem">На стене: 0</span>
+            </button>
+
             <button id="fullscreenBtn" class="fullscreen-btn" title="На весь экран">⛶</button>
-           <div id="gameOverlay" class="game-overlay">
+
+            <div id="gameOverlay" class="game-overlay">
                 <h2 id="overlayTitle">Загрузка магии...</h2>
                 <button id="startGameBtn" class="game-btn" disabled>Пожалуйста, подождите</button>
             </div>
