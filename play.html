@@ -4,7 +4,97 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aethelforge | Играть онлайн</title>
+    
     <link rel="stylesheet" href="style.css">
+
+    <style>
+        .game-wrapper {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .game-stats-ui {
+            position: absolute;
+            top: 15px; left: 15px;
+            display: flex; flex-direction: column; gap: 8px;
+            z-index: 50; pointer-events: none;
+        }
+
+        .stat-badge {
+            background: rgba(0, 0, 0, 0.8);
+            color: white; padding: 6px 15px;
+            border-radius: 8px; font-size: 1.1rem;
+            font-weight: bold; border: 1px solid #555;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+            display: inline-block; width: fit-content;
+        }
+
+        .game-container {
+            width: 100%; max-width: 800px; margin: 0 auto;
+            position: relative;
+            background-image: url('img/BG.png'); 
+            background-size: cover; background-position: center; background-repeat: no-repeat;
+            border: 4px solid #4CAF50; border-radius: 8px;
+            overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+
+        #gameCanvas {
+            width: 100%; max-width: 100%; height: auto;
+            aspect-ratio: 4 / 3; display: block; margin: 0 auto;
+            touch-action: none; image-rendering: pixelated; 
+            cursor: url('img/sword.png') 0 0, crosshair; 
+        }
+
+        .game-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(18, 18, 18, 0.85);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 200;
+        }
+
+        #overlayTitle { color: #fff; font-size: 2rem; margin-bottom: 20px; text-shadow: 2px 2px 4px #000; text-align: center; }
+
+        .shop-btn {
+            position: absolute; bottom: 15px; right: 15px;
+            background: linear-gradient(135deg, #ffd700, #b8860b);
+            color: #000; border: 2px solid #fff; border-radius: 8px;
+            padding: 10px 20px; font-size: 1rem; font-weight: bold;
+            cursor: pointer; z-index: 100; box-shadow: 0 4px 10px rgba(0,0,0,0.8);
+            line-height: 1.2; transition: transform 0.2s;
+        }
+        .shop-btn:hover { transform: scale(1.05); }
+
+        .fullscreen-btn {
+            position: absolute; top: 15px; right: 15px;
+            background: rgba(0, 0, 0, 0.6); color: #fff;
+            border: 1px solid #555; border-radius: 5px;
+            padding: 5px 10px; font-size: 1.5rem; cursor: pointer;
+            z-index: 100; transition: transform 0.2s;
+        }
+        .fullscreen-btn:hover { background: rgba(0, 0, 0, 0.9); transform: scale(1.1); }
+
+        /* ПОЛНОЭКРАННЫЙ РЕЖИМ */
+        #gameWrapper:fullscreen {
+            background-color: #000; width: 100vw; height: 100vh;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            max-width: none; padding: 0; margin: 0;
+        }
+        #gameWrapper:fullscreen .game-container { border: none; border-radius: 0; width: 100vw; height: 100vh; }
+        #gameWrapper:fullscreen #gameCanvas { width: 100vw !important; height: 100vh !important; max-height: none !important; object-fit: contain !important; }
+        
+        /* АДАПТИВНОСТЬ МЕНЮ ИГРЫ */
+        @media (max-width: 600px) {
+            .game-stats-ui { top: 10px; left: 10px; gap: 5px; }
+            .stat-badge { font-size: 0.85rem; padding: 5px 10px; }
+            .shop-btn { bottom: 10px; right: 10px; padding: 8px 12px; font-size: 0.85rem; }
+            .fullscreen-btn { top: 10px; right: 10px; padding: 4px 8px; font-size: 1.2rem; }
+        }
+    </style>
 </head>
 <body>
     <nav class="navbar">
@@ -23,24 +113,26 @@
         <h1>Мини-игра: Защита Цитадели</h1>
         <p>Небольшой интерактив прямо в браузере. Нажмите "Старт", чтобы начать.</p><br>
 
-        <div class="game-container" id="gameContainer">
-            <canvas id="gameCanvas" width="800" height="600"></canvas>
-            
-            <div id="statsContainer" class="game-stats-ui" style="display: none;">
-                <div id="scoreUI" class="stat-badge">💀 Убито: 0</div>
-                <div id="goldUI" class="stat-badge">🪙 Монеты: <span style="color:#ffd700">0</span></div>
-                <div id="livesUI" class="stat-badge">🛡️ Прочность: <span style="color:#4caf50">5/5</span></div>
-            </div>
+        <div id="gameWrapper" class="game-wrapper">
+            <div class="game-container" id="gameContainer">
+                <canvas id="gameCanvas" width="800" height="600"></canvas>
+                
+                <div id="statsContainer" class="game-stats-ui" style="display: none;">
+                    <div id="scoreUI" class="stat-badge">💀 Убито: 0</div>
+                    <div id="goldUI" class="stat-badge">🪙 Монеты: <span style="color:#ffd700">0</span></div>
+                    <div id="livesUI" class="stat-badge">🛡️ Прочность: <span style="color:#4caf50">5/5</span></div>
+                </div>
 
-            <button id="buyArcherBtn" class="shop-btn" style="display: none;">
-                🏹 Лучник (15 🪙)<br><span style="font-size: 0.8rem">На стене: 0</span>
-            </button>
+                <button id="buyArcherBtn" class="shop-btn" style="display: none;">
+                    🏹 Лучник (15 🪙)<br><span style="font-size: 0.8rem">На стене: 0</span>
+                </button>
 
-            <button id="fullscreenBtn" class="fullscreen-btn" title="На весь экран">⛶</button>
-            
-            <div id="gameOverlay" class="game-overlay">
-                <h2 id="overlayTitle">Загрузка магии...</h2>
-                <button id="startGameBtn" class="game-btn" disabled>Пожалуйста, подождите</button>
+                <button id="fullscreenBtn" class="fullscreen-btn" title="На весь экран">⛶</button>
+                
+                <div id="gameOverlay" class="game-overlay">
+                    <h2 id="overlayTitle">Загрузка магии...</h2>
+                    <button id="startGameBtn" class="game-btn" disabled>Пожалуйста, подождите</button>
+                </div>
             </div>
         </div>
 
@@ -65,6 +157,296 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="auth.js"></script>
     <script src="main.js"></script>
-    <script src="game.js?v=112"></script> 
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('gameCanvas');
+            if (!canvas) return; 
+
+            const ctx = canvas.getContext('2d');
+            const overlay = document.getElementById('gameOverlay');
+            const startBtn = document.getElementById('startGameBtn');
+            const overlayTitle = document.getElementById('overlayTitle');
+
+            // Переменные
+            let score = 0, coins = 0, archers = 0, archerCost = 15;
+            const maxLives = 5; let lives = maxLives;
+            let isGameOver = true, animationId;
+            let spawnTimer = 0, spawnInterval = 60, gameSpeedMultiplier = 1;
+            let repairTimer = 0, repairInterval = 500, archerTimer = 0;
+            
+            let enemies = [], particles = [], repairItems = [], damageNumbers = [], slashes = [], footprints = [], arrows = [];
+            
+            let localHighScore = parseInt(localStorage.getItem('citadelHighScore')) || 0; 
+            let globalHighScore = 0; 
+
+            // Надежное обновление интерфейса
+            function updateUI() {
+                const scoreUI = document.getElementById('scoreUI');
+                const goldUI = document.getElementById('goldUI');
+                const livesUI = document.getElementById('livesUI');
+                const shopBtn = document.getElementById('buyArcherBtn');
+                
+                if (scoreUI) scoreUI.innerHTML = `💀 Убито: ${score}`;
+                if (goldUI) goldUI.innerHTML = `🪙 Монеты: <span style="color:#ffd700">${coins}</span>`;
+                let wallColor = lives > 3 ? '#4caf50' : (lives > 1 ? '#ff9800' : '#f44336');
+                if (livesUI) livesUI.innerHTML = `🛡️ Прочность: <span style="color:${wallColor}">${Math.max(0, lives)}/${maxLives}</span>`;
+
+                if (shopBtn) {
+                    shopBtn.innerHTML = `🏹 Лучник (${archerCost} 🪙)<br><span style="font-size: 0.8rem">На стене: ${archers}</span>`;
+                    if (coins >= archerCost && !isGameOver) {
+                        shopBtn.style.opacity = '1'; shopBtn.style.pointerEvents = 'auto';
+                        shopBtn.style.boxShadow = '0 0 15px rgba(255, 215, 0, 0.8)';
+                    } else {
+                        shopBtn.style.opacity = '0.5'; shopBtn.style.pointerEvents = 'none';
+                        shopBtn.style.boxShadow = '0 4px 10px rgba(0,0,0,0.5)';
+                    }
+                }
+            }
+
+            // Магазин
+            const shopBtn = document.getElementById('buyArcherBtn');
+            if (shopBtn) {
+                shopBtn.addEventListener('mousedown', (e) => e.stopPropagation());
+                shopBtn.addEventListener('touchstart', (e) => e.stopPropagation());
+                shopBtn.addEventListener('click', (e) => {
+                    e.stopPropagation(); 
+                    if (coins >= archerCost) {
+                        coins -= archerCost; archers++; archerCost = Math.floor(archerCost * 1.5); updateUI(); 
+                        damageNumbers.push(new DamageNumber(canvas.width - 150, canvas.height - 100, 'Лучник!', '#00E676'));
+                    }
+                });
+            }
+
+            // Загрузка графики
+            const goblinFrames = []; let isSpriteLoaded = false, loadedImagesCount = 0;
+            const frameNames = ['img/gob1.png', 'img/gob2.png', 'img/gob3.png', 'img/gob4.png'];
+            frameNames.forEach((src) => {
+                const img = new Image();
+                img.onload = () => {
+                    loadedImagesCount++;
+                    if (loadedImagesCount === frameNames.length) {
+                        isSpriteLoaded = true;
+                        if (isGameOver && startBtn) { startBtn.textContent = "Начать игру"; startBtn.disabled = false; overlayTitle.textContent = "Готовы к битве?"; }
+                    }
+                };
+                img.onerror = () => { if (isGameOver && startBtn) { startBtn.textContent = "Играть (Без Анимации)"; startBtn.disabled = false; } };
+                img.src = src; goblinFrames.push(img); 
+            });
+
+            // Классы игры
+            class Enemy {
+                constructor(isBoss = false) {
+                    this.isBoss = isBoss; this.width = isBoss ? 100 : 64; this.height = isBoss ? 100 : 64;
+                    this.x = Math.random() * (canvas.width - this.width); this.y = -this.height;
+                    this.hp = isBoss ? 5 : 1; this.maxHp = this.hp;
+                    this.speed = (isBoss ? 0.7 : (1 + Math.random() * 2)) * gameSpeedMultiplier;
+                    this.color = isBoss ? '#827717' : '#2e7d32'; 
+                    this.frameX = 0; this.maxFrame = 3; this.animationSpeed = 8; this.frameTimer = 0; 
+                }
+                update() {
+                    this.y += this.speed; this.frameTimer++;
+                    if (this.frameTimer % this.animationSpeed === 0) {
+                        this.frameX = this.frameX < this.maxFrame ? this.frameX + 1 : 0; this.frameTimer = 0; 
+                        footprints.push(new Footprint(this.x + this.width / 2, this.y + this.height - 5));
+                    }
+                }
+                draw() {
+                    if (!isSpriteLoaded || this.isBoss) {
+                        ctx.save(); ctx.translate(this.x, this.y); ctx.fillStyle = this.color;
+                        ctx.beginPath(); ctx.moveTo(this.width*0.1, this.height*0.3); ctx.lineTo(this.width*0.5, 0); ctx.lineTo(this.width*0.9, this.height*0.3); ctx.lineTo(this.width, this.height*0.8); ctx.lineTo(this.width*0.5, this.height); ctx.lineTo(0, this.height*0.8); ctx.closePath(); ctx.fill();
+                        if (this.isBoss) { ctx.fillStyle = '#333'; ctx.fillRect(0, -12, this.width, 6); ctx.fillStyle = '#4caf50'; ctx.fillRect(0, -12, this.width * (this.hp/this.maxHp), 6); }
+                        ctx.restore(); return; 
+                    }
+                    ctx.drawImage(goblinFrames[this.frameX], this.x, this.y, this.width, this.height);
+                }
+            }
+
+            class RepairItem {
+                constructor() { this.width = 50; this.height = 50; this.x = Math.random() * (canvas.width - this.width); this.y = -this.height; this.speed = (1.5 + Math.random()) * gameSpeedMultiplier; }
+                update() { this.y += this.speed; }
+                draw() { ctx.save(); ctx.translate(this.x, this.y); ctx.fillStyle = '#8D6E63'; ctx.fillRect(0,0,this.width,this.height); ctx.strokeStyle = '#4E342E'; ctx.lineWidth = 3; ctx.strokeRect(0,0,this.width,this.height); ctx.fillStyle = '#00E676'; ctx.fillRect(this.width*0.4, this.height*0.15, this.width*0.2, this.height*0.7); ctx.fillRect(this.width*0.15, this.height*0.4, this.width*0.7, this.height*0.2); ctx.restore(); }
+            }
+
+            class Particle {
+                constructor(x, y, color) { this.x = x; this.y = y; this.size = Math.random() * 5 + 2; this.speedX = (Math.random() - 0.5) * 8; this.speedY = (Math.random() - 0.5) * 8; this.color = color; this.life = 1.0; }
+                update() { this.x += this.speedX; this.y += this.speedY; this.life -= 0.05; }
+                draw() { ctx.globalAlpha = Math.max(0, this.life); ctx.fillStyle = this.color; ctx.fillRect(this.x, this.y, this.size, this.size); ctx.globalAlpha = 1.0; }
+            }
+
+            class DamageNumber {
+                constructor(x, y, text, color) { this.x = x; this.y = y; this.text = text; this.color = color; this.life = 1.0; this.speedY = -2; }
+                update() { this.y += this.speedY; this.life -= 0.02; }
+                draw() { ctx.save(); ctx.globalAlpha = Math.max(0, this.life); ctx.fillStyle = this.color; ctx.font = 'bold 20px Arial'; ctx.textAlign = 'center'; ctx.fillText(this.text, this.x, this.y); ctx.restore(); }
+            }
+
+            class SlashMark {
+                constructor(x, y) { this.x = x; this.y = y; this.life = 1.0; this.angle = Math.random() * Math.PI * 2; }
+                update() { this.life -= 0.04; }
+                draw() { ctx.save(); ctx.globalAlpha = Math.max(0, this.life); ctx.translate(this.x, this.y); ctx.rotate(this.angle); ctx.beginPath(); ctx.moveTo(-30, 0); ctx.lineTo(30, 0); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 4 * this.life; ctx.shadowColor = '#00E676'; ctx.shadowBlur = 10; ctx.stroke(); ctx.restore(); }
+            }
+
+            class Footprint {
+                constructor(x, y) { this.x = x; this.y = y; this.life = 1.0; this.offsetX = (Math.random() - 0.5) * 15; }
+                update() { this.life -= 0.005; }
+                draw() { ctx.save(); ctx.globalAlpha = Math.max(0, this.life * 0.4); ctx.fillStyle = '#111'; ctx.beginPath(); ctx.ellipse(this.x + this.offsetX, this.y, 8, 4, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+            }
+
+            class Arrow {
+                constructor(startX, startY, targetEnemy) { this.x = startX; this.y = startY; this.target = targetEnemy; this.speed = 12; this.active = true; }
+                update() {
+                    if (!this.target || this.target.hp <= 0) { this.active = false; return; }
+                    let dx = (this.target.x + this.target.width/2) - this.x; let dy = (this.target.y + this.target.height/2) - this.y; let dist = Math.hypot(dx, dy);
+                    if (dist < this.speed) { this.target.hp -= 1; createExplosion(this.x, this.y, '#fff', 5); damageNumbers.push(new DamageNumber(this.x, this.y, '-1', '#ff5252')); this.active = false; } 
+                    else { this.angle = Math.atan2(dy, dx); this.x += Math.cos(this.angle) * this.speed; this.y += Math.sin(this.angle) * this.speed; }
+                }
+                draw() { ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle); ctx.fillStyle = '#ccc'; ctx.fillRect(-8, -1, 16, 2); ctx.fillStyle = '#ff3333'; ctx.fillRect(8, -2, 4, 4); ctx.restore(); }
+            }
+
+            // Основной цикл
+            function initGame() {
+                if (animationId) cancelAnimationFrame(animationId);
+                score = 0; lives = maxLives; isGameOver = false; coins = 0; archers = 0; archerCost = 15;
+                enemies = []; particles = []; repairItems = []; damageNumbers = []; slashes = []; footprints = []; arrows = [];
+                spawnTimer = 0; spawnInterval = 60; repairTimer = 0; gameSpeedMultiplier = 1;
+                
+                const sCont = document.getElementById('statsContainer');
+                if (sCont) sCont.style.display = 'flex';
+                if (shopBtn) shopBtn.style.display = 'block';
+                overlay.style.display = 'none';
+                
+                updateUI();
+                gameLoop();
+            }
+
+            function createExplosion(x, y, color, count = 15) { for (let i=0; i<count; i++) particles.push(new Particle(x, y, color)); }
+
+            function update() {
+                gameSpeedMultiplier = Math.min(3.5, 1 + (score * 0.015));
+                
+                if (archers > 0 && enemies.length > 0) {
+                    archerTimer++; let fireRate = Math.max(15, 100 - (archers * 10)); 
+                    if (archerTimer >= fireRate) {
+                        archerTimer = 0; let target = enemies.reduce((lowest, current) => (current.y > lowest.y ? current : lowest), enemies[0]);
+                        arrows.push(new Arrow(canvas.width / 2, canvas.height - 20, target));
+                    }
+                }
+
+                spawnInterval = Math.max(25, 60 - score * 0.3); spawnTimer++;
+                if (spawnTimer >= spawnInterval) { enemies.push(new Enemy(score > 10 && Math.random() < 0.1)); spawnTimer = 0; }
+
+                repairTimer++; if (repairTimer >= repairInterval) { repairItems.push(new RepairItem()); repairTimer = 0; repairInterval = Math.floor(Math.random() * 400) + 400; }
+
+                for (let i = footprints.length - 1; i >= 0; i--) { footprints[i].update(); if (footprints[i].life <= 0) footprints.splice(i, 1); }
+                for (let i = particles.length - 1; i >= 0; i--) { particles[i].update(); if (particles[i].life <= 0) particles.splice(i, 1); }
+                for (let i = damageNumbers.length - 1; i >= 0; i--) { damageNumbers[i].update(); if (damageNumbers[i].life <= 0) damageNumbers.splice(i, 1); }
+                for (let i = slashes.length - 1; i >= 0; i--) { slashes[i].update(); if (slashes[i].life <= 0) slashes.splice(i, 1); }
+                for (let i = arrows.length - 1; i >= 0; i--) { arrows[i].update(); if (!arrows[i].active) arrows.splice(i, 1); }
+                for (let i = repairItems.length - 1; i >= 0; i--) { repairItems[i].update(); if (repairItems[i].y > canvas.height) repairItems.splice(i, 1); }
+
+                // СМЕРТЬ ВРАГА И СТОЛКНОВЕНИЕ СО СТЕНОЙ (ПОФИКШЕНО)
+                for (let i = enemies.length - 1; i >= 0; i--) {
+                    let enemy = enemies[i];
+                    if (enemy.hp <= 0) {
+                        createExplosion(enemy.x + enemy.width/2, enemy.y + enemy.height/2, enemy.color, enemy.isBoss ? 50 : 15);
+                        score += enemy.isBoss ? 5 : 1; let coinReward = enemy.isBoss ? 5 : 1; coins += coinReward; 
+                        damageNumbers.push(new DamageNumber(enemy.x + enemy.width/2, enemy.y + enemy.height/2, `+${coinReward} 🪙`, '#ffd700'));
+                        enemies.splice(i, 1); continue; 
+                    }
+                    enemy.update();
+                    // Враг бьет стену только когда переступит её половиной своего тела
+                    if (enemy.y + (enemy.height * 0.5) >= canvas.height - 20) {
+                        lives -= enemy.isBoss ? 3 : 1; createExplosion(enemy.x + enemy.width/2, enemy.y + enemy.height, '#ff9800', 30);
+                        enemies.splice(i, 1); if (lives <= 0) isGameOver = true;
+                    }
+                }
+                updateUI();
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                footprints.forEach(fp => fp.draw());
+
+                let wallColor = lives > 3 ? '#4caf50' : (lives > 1 ? '#ff9800' : '#f44336');
+                ctx.fillStyle = '#333'; ctx.fillRect(0, canvas.height - 20, canvas.width, 20);
+                ctx.fillStyle = wallColor; ctx.fillRect(0, canvas.height - 20, canvas.width * (Math.max(0, lives) / maxLives), 3); 
+
+                for (let i = 0; i < archers; i++) {
+                    let ax = 30 + i * 25; if (ax > canvas.width - 30) break; 
+                    ctx.fillStyle = '#827717'; ctx.fillRect(ax, canvas.height - 25, 10, 10); ctx.fillStyle = '#fff'; ctx.fillRect(ax + 2, canvas.height - 30, 2, 8); 
+                }
+
+                repairItems.forEach(item => item.draw());
+                enemies.forEach(enemy => enemy.draw());
+                arrows.forEach(arrow => arrow.draw()); 
+                particles.forEach(p => p.draw());
+                damageNumbers.forEach(dn => dn.draw()); 
+                slashes.forEach(slash => slash.draw()); 
+            }
+
+            function gameLoop() {
+                if (isGameOver) { endGame(); return; }
+                update(); draw();
+                animationId = requestAnimationFrame(gameLoop);
+            }
+
+            function endGame() {
+                cancelAnimationFrame(animationId);
+                const sCont = document.getElementById('statsContainer');
+                if (sCont) sCont.style.display = 'none'; 
+                if (shopBtn) shopBtn.style.display = 'none'; 
+                
+                let recordMessage = "";
+                if (score > localHighScore) {
+                    localHighScore = score; localStorage.setItem('citadelHighScore', localHighScore); 
+                    recordMessage += `<br><span style="font-size:1.1rem; color:#aaa;">Вы побили свой рекорд!</span>`;
+                }
+                overlayTitle.innerHTML = `Ворота пробиты!<br><span style="font-size:1.5rem; color:#ff5252;">Счет: ${score}</span>${recordMessage}`;
+                startBtn.textContent = 'Держать оборону снова'; overlay.style.display = 'flex'; draw(); 
+            }
+
+            function handleInput(e) {
+                if (isGameOver) return;
+                e.preventDefault(); 
+                const rect = canvas.getBoundingClientRect(); const scaleX = canvas.width / rect.width; const scaleY = canvas.height / rect.height;
+                let clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX; 
+                let clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+                const clickX = (clientX - rect.left) * scaleX; const clickY = (clientY - rect.top) * scaleY;
+                
+                slashes.push(new SlashMark(clickX, clickY));
+                let hitSomething = false;
+
+                for (let i = repairItems.length - 1; i >= 0; i--) {
+                    const item = repairItems[i];
+                    if (clickX >= item.x && clickX <= item.x + item.width && clickY >= item.y && clickY <= item.y + item.height) {
+                        if (lives < maxLives) lives++; createExplosion(item.x + item.width/2, item.y + item.height/2, '#00E676', 20);
+                        damageNumbers.push(new DamageNumber(item.x + item.width/2, item.y, '+1 HP', '#00E676')); repairItems.splice(i, 1); hitSomething = true; break;
+                    }
+                }
+                if (hitSomething) return; 
+
+                for (let i = enemies.length - 1; i >= 0; i--) {
+                    const enemy = enemies[i];
+                    if (clickX >= enemy.x && clickX <= enemy.x + enemy.width && clickY >= enemy.y && clickY <= enemy.y + enemy.height) {
+                        enemy.hp--; createExplosion(clickX, clickY, '#fff', 5); damageNumbers.push(new DamageNumber(clickX, clickY, '-1', '#ff5252')); break; 
+                    }
+                }
+            }
+
+            canvas.addEventListener('mousedown', handleInput);
+            canvas.addEventListener('touchstart', handleInput, { passive: false });
+            if(startBtn) startBtn.addEventListener('click', initGame);
+            
+            const fullscreenBtn = document.getElementById('fullscreenBtn');
+            const gameWrapper = document.getElementById('gameWrapper'); 
+            if (fullscreenBtn && gameWrapper) {
+                fullscreenBtn.addEventListener('click', () => {
+                    if (!document.fullscreenElement) { gameWrapper.requestFullscreen(); fullscreenBtn.textContent = "✖"; } 
+                    else { document.exitFullscreen(); fullscreenBtn.textContent = "⛶"; }
+                });
+                document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) fullscreenBtn.textContent = "⛶"; });
+            }
+        });
+    </script>
 </body>
 </html>
