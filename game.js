@@ -15,8 +15,6 @@ if (window.gameInitialized) {
 
         let score = 0, lives = 5, maxLives = 5, isGameOver = true, animationId;
         let coins = 0, archers = 0, archerCost = 15, archerTimer = 0;
-        
-        // НОВЫЕ ПЕРЕМЕННЫЕ ДЛЯ РВА С ШИПАМИ
         let spikesLevel = 0, spikesCost = 20;
 
         let spawnTimer = 0, spawnInterval = 60, gameSpeedMultiplier = 1;
@@ -33,7 +31,7 @@ if (window.gameInitialized) {
         const goldUI = document.getElementById('goldUI');
         const livesUI = document.getElementById('livesUI');
         const shopBtn = document.getElementById('buyArcherBtn');
-        const spikesBtn = document.getElementById('buySpikesBtn'); // Нашли кнопку шипов
+        const spikesBtn = document.getElementById('buySpikesBtn');
         
         let lastScore = -1, lastCoins = -1, lastLives = -1, lastArchers = -1, lastSpikes = -1;
 
@@ -57,7 +55,6 @@ if (window.gameInitialized) {
                     }
                 }
 
-                // ОБНОВЛЯЕМ КНОПКУ ШИПОВ
                 if (spikesBtn) {
                     spikesBtn.innerHTML = `🗡️ Ров с шипами (${spikesCost} 🪙)<br><span>Уровень: ${spikesLevel}</span>`;
                     if (coins >= spikesCost && !isGameOver) {
@@ -83,7 +80,6 @@ if (window.gameInitialized) {
             });
         }
 
-        // ЛОГИКА ПОКУПКИ ШИПОВ
         if (spikesBtn) {
             spikesBtn.addEventListener('click', (e) => {
                 e.stopPropagation(); 
@@ -141,28 +137,42 @@ if (window.gameInitialized) {
                 this.color = isBoss ? '#827717' : '#2e7d32'; 
                 this.frameX = 0; this.maxFrame = 3; this.animationSpeed = 8; this.frameTimer = 0; 
             }
+            
             update() {
                 let currentSpeed = this.speed;
+                let currentAnimSpeed = this.animationSpeed;
+                let inMoat = false;
 
-                // --- ЛОГИКА ЗАМЕДЛЕНИЯ В РВУ С ШИПАМИ ---
-                let moatTop = canvas.height - 130; // Начало рва
-                let moatBottom = canvas.height - 60; // Конец рва
+                // Расширенные границы рва
+                let moatTop = canvas.height - 140; 
+                let moatBottom = canvas.height - 50;
 
-                // Если гоблин наступил в ров
+                // --- ЛОГИКА ЖЕСТКОГО ЗАМЕДЛЕНИЯ ---
                 if (spikesLevel > 0 && (this.y + this.height > moatTop) && (this.y < moatBottom)) {
-                    // Каждый уровень шипов замедляет на 20% (но не медленнее, чем до 20% от базы)
-                    let slowMultiplier = Math.max(0.2, 1 - (spikesLevel * 0.2));
+                    inMoat = true;
+                    // Ур. 1 = 40% от скорости. Ур. 2 = 25%. Ур. 3+ = 10%
+                    let slowMultiplier = Math.max(0.1, 0.55 - (spikesLevel * 0.15));
                     currentSpeed *= slowMultiplier;
+                    currentAnimSpeed *= 2; // Анимация шагов замедляется в 2 раза
                 }
 
                 this.y += currentSpeed; 
-                
                 this.frameTimer++;
-                if (this.frameTimer % this.animationSpeed === 0) {
-                    this.frameX = this.frameX < this.maxFrame ? this.frameX + 1 : 0; this.frameTimer = 0; 
+                
+                // Шаг гоблина
+                if (this.frameTimer >= currentAnimSpeed) {
+                    this.frameX = this.frameX < this.maxFrame ? this.frameX + 1 : 0; 
+                    this.frameTimer = 0; 
                     footprints.push(new Footprint(this.x + this.width / 2, this.y + this.height - 10));
+                    
+                    // Эффект хлюпающей грязи/крови при движении по рву
+                    if (inMoat) {
+                        let splashColor = spikesLevel > 1 ? '#8a0303' : '#4e342e'; // Кровь или грязь
+                        createExplosion(this.x + this.width / 2, this.y + this.height, splashColor, 3);
+                    }
                 }
             }
+            
             draw() {
                 if (!isSpriteLoaded || this.isBoss) {
                     ctx.save(); ctx.translate(this.x, this.y); ctx.fillStyle = this.color;
@@ -215,7 +225,7 @@ if (window.gameInitialized) {
             
             score = 0; lives = maxLives; isGameOver = false; 
             coins = 0; archers = 0; archerCost = 15;
-            spikesLevel = 0; spikesCost = 20; // Сбрасываем шипы
+            spikesLevel = 0; spikesCost = 20; 
             
             enemies = []; particles = []; repairItems = []; damageNumbers = []; slashes = []; footprints = []; arrows = [];
             spawnTimer = 0; spawnInterval = 60; repairTimer = 0; gameSpeedMultiplier = 1;
@@ -283,36 +293,33 @@ if (window.gameInitialized) {
             ctx.clearRect(0, 0, canvas.width, canvas.height); 
             footprints.forEach(fp => fp.draw());
 
-            // --- РИСУЕМ РОВ С ШИПАМИ ---
+            // --- БОЛЕЕ ШИРОКИЙ РОВ С ШИПАМИ ---
             if (spikesLevel > 0) {
-                let moatY = canvas.height - 110;
-                let moatHeight = 40;
+                let moatY = canvas.height - 130;
+                let moatHeight = 60;
                 
-                ctx.fillStyle = 'rgba(28, 55, 66, 0.6)'; // Мутная вода
+                ctx.fillStyle = 'rgba(28, 55, 66, 0.6)'; 
                 ctx.fillRect(0, moatY, canvas.width, moatHeight);
                 
-                ctx.fillStyle = '#4e342e'; // Дерево
-                for(let i = -10; i < canvas.width; i += 25) {
+                for(let i = -10; i < canvas.width; i += 20) {
+                    ctx.fillStyle = '#4e342e'; 
                     ctx.beginPath();
                     ctx.moveTo(i, moatY + moatHeight);
-                    ctx.lineTo(i + 12, moatY - 15);
-                    ctx.lineTo(i + 25, moatY + moatHeight);
+                    ctx.lineTo(i + 10, moatY - 10);
+                    ctx.lineTo(i + 20, moatY + moatHeight);
                     ctx.fill();
                     
-                    // Кровь на шипах (со 2 уровня)
                     if (spikesLevel > 1) {
                         ctx.fillStyle = '#8a0303';
                         ctx.beginPath();
-                        ctx.moveTo(i + 8, moatY + 5);
-                        ctx.lineTo(i + 12, moatY - 15);
-                        ctx.lineTo(i + 16, moatY + 5);
+                        ctx.moveTo(i + 6, moatY + 15);
+                        ctx.lineTo(i + 10, moatY - 10);
+                        ctx.lineTo(i + 14, moatY + 15);
                         ctx.fill();
-                        ctx.fillStyle = '#4e342e'; 
                     }
                 }
             }
 
-            // РИСУЕМ СТЕНУ
             let wallColor = lives > 3 ? '#4caf50' : (lives > 1 ? '#ff9800' : '#f44336');
             ctx.fillStyle = '#333'; ctx.fillRect(0, canvas.height - 20, canvas.width, 20);
             ctx.fillStyle = wallColor; ctx.fillRect(0, canvas.height - 20, canvas.width * (Math.max(0, lives) / maxLives), 3); 
@@ -345,6 +352,10 @@ if (window.gameInitialized) {
             if (score > localHighScore) {
                 localHighScore = score; localStorage.setItem('citadelHighScore', localHighScore); 
                 recordMessage += `<br><span style="font-size:1.1rem; color:#aaa;">Вы побили свой рекорд!</span>`;
+            }
+            if (!isNaN(globalHighScore) && score > globalHighScore) {
+                saveGlobalHighScore(score); 
+                recordMessage += `<br><span style="font-size:1.3rem; color:#00E676; text-shadow: 0 0 10px #00E676;">👑 ВЫ ПОБИЛИ РЕКОРД САЙТА! 👑</span>`;
             }
             overlayTitle.innerHTML = `Ворота пробиты!<br><span style="font-size:1.5rem; color:#ff5252;">Счет: ${score}</span>${recordMessage}`;
             startBtn.textContent = 'Держать оборону снова'; overlay.style.display = 'flex'; draw(); 
