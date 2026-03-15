@@ -126,3 +126,11 @@
 .shop-card button:hover { transform: scale(1.05); }
 .shop-card button:disabled { background: #555; color: #888; cursor: not-allowed; transform: none; }
 .shop-card.purchased { opacity: 0.5; border-color: #4caf50; }
+.room-content {
+    max-height: 500px;
+    overflow-y: auto;
+    padding-right: 10px;
+}
+/* Стилизуем ползунок (по желанию) */
+.room-content::-webkit-scrollbar { width: 8px; }
+.room-content::-webkit-scrollbar-thumb { background: #4caf50; border-radius: 4px; }
