@@ -639,64 +639,95 @@ h1 {
     }
 }
 /* =========================================
-   ИГРОВОЙ ИНТЕРФЕЙС ВНЕ ХОЛСТА (НОВЫЙ ДИЗАЙН)
+   БРАУЗЕРНАЯ ИГРА: ИНТЕРФЕЙС И ХОЛСТ
    ========================================= */
-.game-wrapper {
+.game-container {
     width: 100%;
     max-width: 800px;
     margin: 0 auto;
+    position: relative;
+    background-image: url('img/BG.png'); 
+    background-size: cover; 
+    background-position: center;
+    background-repeat: no-repeat;
+    border: 4px solid var(--accent-color);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+}
+
+#gameCanvas {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    aspect-ratio: 4 / 3; 
+    display: block;
+    margin: 0 auto;
+    touch-action: none;
+    image-rendering: pixelated; 
+    cursor: url('img/sword.png') 0 0, crosshair; 
+}
+
+.game-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(18, 18, 18, 0.85);
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    z-index: 200;
+}
+
+#overlayTitle { color: #fff; font-size: 2rem; margin-bottom: 20px; text-shadow: 2px 2px 4px #000; text-align: center; }
+
+/* ПЛАВАЮЩИЙ ИНТЕРФЕЙС */
+.game-stats-ui {
+    position: absolute;
+    top: 15px;
+    left: 15px;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    gap: 8px;
+    z-index: 50;
+    pointer-events: none;
 }
 
-.external-ui {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    margin: 15px 0;
-    flex-wrap: wrap;
-}
-
-/* Красивые плашки статистики вне игры */
 .stat-badge {
-    background: #1f1f1f;
+    background: rgba(0, 0, 0, 0.7);
     color: white;
-    padding: 8px 20px;
+    padding: 6px 15px;
     border-radius: 8px;
     font-size: 1.1rem;
     font-weight: bold;
-    border: 2px solid #444;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    border: 1px solid #555;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+    display: inline-block;
+    width: fit-content;
 }
 
-/* Кнопка магазина (теперь обычная кнопка на странице) */
 .shop-btn {
+    position: absolute;
+    bottom: 35px; /* Приподняли над стеной */
+    right: 15px;
     background: linear-gradient(135deg, #ffd700, #b8860b);
     color: #000;
     border: 2px solid #fff;
     border-radius: 8px;
     padding: 10px 20px;
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: bold;
     cursor: pointer;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    z-index: 100;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.8);
     transition: transform 0.2s, opacity 0.2s;
     line-height: 1.2;
 }
 
-.shop-btn:hover {
-    transform: scale(1.05);
-}
+.shop-btn:hover { transform: scale(1.05); }
 
-/* =========================================
-   ПОЛНОЭКРАННЫЙ РЕЖИМ И АДАПТИВНОСТЬ
-   ========================================= */
+/* Кнопка полного экрана */
 .fullscreen-btn {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 15px;
+    right: 15px;
     background: rgba(0, 0, 0, 0.6);
     color: #fff;
     border: 1px solid #555;
@@ -710,34 +741,46 @@ h1 {
 
 .fullscreen-btn:hover { background: rgba(0, 0, 0, 0.9); transform: scale(1.1); }
 
-/* Полный экран теперь применяется к ОБЩЕЙ КОРОБКЕ, а не только к игре */
-#gameWrapper:fullscreen {
+/* =========================================
+   ПОЛНОЭКРАННЫЙ РЕЖИМ (FULLSCREEN)
+   ========================================= */
+#gameContainer:fullscreen {
     background-color: #000;
-    max-width: none;
-    height: 100vh;
-    padding: 10px;
     display: flex;
-    flex-direction: column;
     justify-content: center;
-}
-
-#gameWrapper:fullscreen .game-container {
-    flex-grow: 1; /* Игра занимает всё свободное место между панелями */
-    display: flex;
     align-items: center;
-    border: none; 
+    width: 100vw;
+    height: 100vh;
+    border: none;
+    border-radius: 0;
 }
 
-#gameWrapper:fullscreen #gameCanvas {
+#gameContainer:fullscreen #gameCanvas {
     width: 100vw !important;
-    height: auto !important;
-    max-height: 75vh !important; /* Оставляем место для UI */
+    height: 100vh !important;
+    max-width: none !important;
+    max-height: none !important;
     object-fit: contain !important;
 }
 
-/* Адаптивность для мобилок */
-@media (max-width: 600px) {
-    .external-ui { gap: 8px; margin: 10px 0; }
-    .stat-badge { font-size: 0.9rem; padding: 6px 12px; }
-    .shop-btn { padding: 8px 15px; font-size: 0.95rem; }
+/* =========================================
+   АДАПТИВНОСТЬ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ
+   ========================================= */
+@media (max-width: 768px) {
+    .navbar { flex-direction: column; padding: 15px; gap: 15px; }
+    .nav-links { flex-wrap: wrap; justify-content: center; gap: 10px; }
+    .about-content { flex-direction: column-reverse; text-align: center; }
+    .about-photo img { width: 200px; height: 200px; }
+    .container h1 { font-size: 1.5rem; }
+    .leaderboard-container { margin: 20px 10px; padding: 15px; }
+    .game-overlay h2 { font-size: 1.5rem; }
+    
+    .game-stats-ui { top: 10px; left: 10px; gap: 5px; }
+    .stat-badge { font-size: 0.9rem; padding: 4px 10px; }
+    .shop-btn { bottom: 25px; right: 10px; padding: 8px 12px; font-size: 0.9rem; }
+    .fullscreen-btn { top: 10px; right: 10px; padding: 4px 8px; font-size: 1.2rem; }
+}
+
+@media (max-width: 480px) {
+    .nav-links li a { font-size: 0.9rem; padding: 5px 10px; }
 }
