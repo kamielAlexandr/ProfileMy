@@ -32,7 +32,6 @@ if (window.gameInitialized) {
         let unlockedAchievements = [];
         try { unlockedAchievements = JSON.parse(localStorage.getItem('citadelAchievements')) || []; } catch(e) {}
         
-        // Создаем HTML элемент для всплывающего окна
         const achievementPopup = document.createElement('div');
         achievementPopup.className = 'achievement-popup';
         document.body.appendChild(achievementPopup);
@@ -42,11 +41,8 @@ if (window.gameInitialized) {
                 unlockedAchievements.push(id);
                 try { localStorage.setItem('citadelAchievements', JSON.stringify(unlockedAchievements)); } catch(e) {}
                 
-                // Показываем всплывашку
                 achievementPopup.innerHTML = `🏆 Достижение получено!<br><b style="color:#ffd700">${title}</b>`;
                 achievementPopup.classList.add('show');
-                
-                // Прячем через 3.5 секунды
                 setTimeout(() => { achievementPopup.classList.remove('show'); }, 3500);
             }
         }
@@ -89,7 +85,6 @@ if (window.gameInitialized) {
                     }
                 }
 
-                // Ачивка на монеты
                 if (coins >= 100) unlockAchievement('wealthy', 'Толстосум');
 
                 lastScore = score; lastCoins = coins; lastLives = lives; lastArchers = archers; lastSpikes = spikesLevel;
@@ -103,7 +98,6 @@ if (window.gameInitialized) {
                     coins -= archerCost; archers++; archerCost = Math.floor(archerCost * 1.5); updateUI(); 
                     damageNumbers.push(new DamageNumber(canvas.width / 2, canvas.height - 50, 'Лучник нанят!', '#00E676'));
                     
-                    // Ачивки на лучников
                     unlockAchievement('first_archer', 'Острый глаз');
                     if (archers >= 5) unlockAchievement('arrow_storm', 'Шквальный огонь');
                 }
@@ -117,7 +111,6 @@ if (window.gameInitialized) {
                     coins -= spikesCost; spikesLevel++; spikesCost = Math.floor(spikesCost * 1.5); updateUI(); 
                     damageNumbers.push(new DamageNumber(canvas.width / 2, canvas.height - 120, 'Ров улучшен!', '#00E676'));
                     
-                    // Ачивки на ров
                     if (spikesLevel === 1) unlockAchievement('spikes_1', 'Шипы и боль');
                     if (spikesLevel === 2) unlockAchievement('bloodbath', 'Кровавая баня');
                 }
@@ -139,10 +132,24 @@ if (window.gameInitialized) {
             img.src = src; goblinFrames.push(img); 
         });
 
+        // --- СЕТЕВОЙ КОД И АВТОРИЗАЦИЯ ---
         const SUPABASE_URL = 'https://bgzxdpjfsodndxroieay.supabase.co'; 
         const SUPABASE_ANON_KEY = 'sb_publishable_7lewcPQCbnoXmkcMLu_Hlw_dnfCXZka';
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let currentPlayerName = "Аноним";
+        
+        // Улучшенная функция чтения профиля (быстрее и надежнее)
+        async function checkCurrentPlayer() {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session && session.user) {
+                    // Берем имя пользователя, если оно есть, иначе обрезаем email до знака @
+                    currentPlayerName = session.user.user_metadata?.username || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || "Аноним";
+                }
+            } catch (e) {
+                console.warn("Не удалось подгрузить имя профиля:", e);
+            }
+        }
         
         async function fetchLeaderboard() {
             try {
@@ -159,6 +166,9 @@ if (window.gameInitialized) {
                 }
             } catch (e) {}
         }
+        
+        // Запускаем проверки при загрузке страницы
+        checkCurrentPlayer();
         fetchLeaderboard();
 
         class Enemy {
@@ -342,13 +352,18 @@ if (window.gameInitialized) {
             animationId = requestAnimationFrame(gameLoop);
         }
 
-        function endGame() {
-            console.log("Игра окончена. Запускаю финальный экран...");
+        // АСИНХРОННАЯ ФУНКЦИЯ КОНЦА ИГРЫ (Ждем имя пользователя!)
+        async function endGame() {
+            console.log("Игра окончена. Проверяем профиль...");
             cancelAnimationFrame(animationId);
             
             if (topUI) topUI.style.display = 'none'; 
             if (bottomUI) bottomUI.style.display = 'none'; 
             
+            // ПРИНУДИТЕЛЬНО ждем, пока БД не отдаст имя пользователя
+            await checkCurrentPlayer(); 
+            console.log("Рекорд будет записан на имя:", currentPlayerName);
+
             let recordMessage = "";
             try {
                 if (score > localHighScore && score > 0) {
@@ -359,9 +374,11 @@ if (window.gameInitialized) {
             
             try {
                 if (score > globalHighScore && globalHighScore > 0) {
+                    // Отправляем рекорд с УЖЕ ОБНОВЛЕННЫМ именем
                     fetch(`${SUPABASE_URL}/rest/v1/leaderboard`, { method: 'POST', headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, body: JSON.stringify({ score: score, nickname: currentPlayerName }) }).catch(err => {});
                     recordMessage += `<br><span style="font-size:1.3rem; color:#00E676; text-shadow: 0 0 10px #00E676;">👑 ВЫ ПОБИЛИ РЕКОРД САЙТА! 👑</span>`;
                 } else if (score > 0 && globalHighScore === 0) {
+                    // Первое сохранение на пустой базе
                     fetch(`${SUPABASE_URL}/rest/v1/leaderboard`, { method: 'POST', headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, body: JSON.stringify({ score: score, nickname: currentPlayerName }) }).catch(err => {});
                 }
             } catch(e) {}
@@ -370,6 +387,9 @@ if (window.gameInitialized) {
             if (startBtn) { startBtn.textContent = 'Держать оборону снова'; startBtn.disabled = false; }
             if (overlay) { overlay.style.display = 'flex'; overlay.style.zIndex = '9999'; }
             draw(); 
+            
+            // Обновляем таблицу лидеров, чтобы сразу увидеть себя
+            setTimeout(fetchLeaderboard, 1000); 
         }
 
         function handleInput(e) {
@@ -388,7 +408,7 @@ if (window.gameInitialized) {
                 if (clickX >= item.x && clickX <= item.x + item.width && clickY >= item.y && clickY <= item.y + item.height) {
                     if (lives < maxLives) lives++; createExplosion(item.x + item.width/2, item.y + item.height/2, '#00E676', 20);
                     damageNumbers.push(new DamageNumber(item.x + item.width/2, item.y, '+1 HP', '#00E676')); repairItems.splice(i, 1); hitSomething = true; 
-                    unlockAchievement('repairman', 'Ремонтная бригада'); // Ачивка на хил
+                    unlockAchievement('repairman', 'Ремонтная бригада'); 
                     break;
                 }
             }
