@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const overlay = document.getElementById('gameOverlay');
     const startBtn = document.getElementById('startGameBtn');
     const overlayTitle = document.getElementById('overlayTitle');
-    const gameContainer = document.getElementById('gameContainer'); // Нашли контейнер игры
+    const gameContainer = document.getElementById('gameContainer');
 
     const localScoreDisplay = document.getElementById('localScoreDisplay');
     const globalScoreDisplay = document.getElementById('globalScoreDisplay');
@@ -29,12 +29,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let slashes = []; 
     let footprints = []; 
     
-    // --- НОВАЯ ЭКОНОМИКА И ЛУЧНИКИ ---
     let coins = 0;
     let archers = 0;
-    let archerCost = 15; // Начальная цена лучника
+    let archerCost = 15; 
     let archerTimer = 0;
-    let arrows = []; // Массив летящих стрел
+    let arrows = []; 
     
     let spawnTimer = 0;
     let spawnInterval = 60;
@@ -42,37 +41,54 @@ document.addEventListener('DOMContentLoaded', () => {
     let repairTimer = 0;
     let repairInterval = 500; 
 
-    // --- СОЗДАЕМ КНОПКУ МАГАЗИНА ---
-    const shopBtn = document.createElement('button');
-    shopBtn.id = 'buyArcherBtn';
-    shopBtn.className = 'shop-btn';
-    shopBtn.style.display = 'none'; // Скрыта до начала игры
-    gameContainer.appendChild(shopBtn);
+    // --- НАХОДИМ ИНТЕРФЕЙС ИЗ HTML ---
+    const statsContainer = document.getElementById('statsContainer');
+    const scoreUI = document.getElementById('scoreUI');
+    const goldUI = document.getElementById('goldUI');
+    const livesUI = document.getElementById('livesUI');
+    const shopBtn = document.getElementById('buyArcherBtn');
 
-    function updateShopBtn() {
-        shopBtn.innerHTML = `🏹 Лучник (${archerCost} 🪙)<br><span style="font-size: 0.8rem">На стене: ${archers}</span>`;
-        if (coins >= archerCost && !isGameOver) {
-            shopBtn.style.opacity = '1';
-            shopBtn.style.pointerEvents = 'auto';
-        } else {
-            shopBtn.style.opacity = '0.5';
-            shopBtn.style.pointerEvents = 'none';
+    let lastScore = -1, lastCoins = -1, lastLives = -1, lastArchers = -1;
+
+    function updateUI() {
+        if (!statsContainer || !scoreUI || !goldUI || !livesUI || !shopBtn) return; // Защита от ошибок
+
+        if (lastScore !== score || lastCoins !== coins || lastLives !== lives || lastArchers !== archers) {
+            scoreUI.innerHTML = `💀 Убито: ${score}`;
+            goldUI.innerHTML = `🪙 Монеты: <span style="color:#ffd700">${coins}</span>`;
+            let wallColor = lives > 3 ? '#4caf50' : (lives > 1 ? '#ff9800' : '#f44336');
+            livesUI.innerHTML = `🛡️ Прочность: <span style="color:${wallColor}">${Math.max(0, lives)}/${maxLives}</span>`;
+
+            shopBtn.innerHTML = `🏹 Лучник (${archerCost} 🪙)<br><span style="font-size: 0.8rem">На стене: ${archers}</span>`;
+            
+            if (coins >= archerCost && !isGameOver) {
+                shopBtn.style.opacity = '1';
+                shopBtn.style.pointerEvents = 'auto';
+                shopBtn.style.boxShadow = '0 0 15px rgba(255, 215, 0, 0.8)'; 
+            } else {
+                shopBtn.style.opacity = '0.5';
+                shopBtn.style.pointerEvents = 'none';
+                shopBtn.style.boxShadow = '0 4px 10px rgba(0,0,0,0.5)';
+            }
+
+            lastScore = score; lastCoins = coins; lastLives = lives; lastArchers = archers;
         }
     }
 
-    // Обработка покупки (останавливаем клик, чтобы он не прошел в игру)
-    shopBtn.addEventListener('mousedown', (e) => e.stopPropagation());
-    shopBtn.addEventListener('touchstart', (e) => e.stopPropagation());
-    shopBtn.addEventListener('click', (e) => {
-        e.stopPropagation(); 
-        if (coins >= archerCost) {
-            coins -= archerCost;
-            archers++;
-            archerCost = Math.floor(archerCost * 1.5); // Каждый следующий лучник дороже
-            updateShopBtn();
-            damageNumbers.push(new DamageNumber(canvas.width - 100, canvas.height - 80, 'Лучник нанят!', '#00E676'));
-        }
-    });
+    if (shopBtn) {
+        shopBtn.addEventListener('mousedown', (e) => e.stopPropagation());
+        shopBtn.addEventListener('touchstart', (e) => e.stopPropagation());
+        shopBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); 
+            if (coins >= archerCost) {
+                coins -= archerCost;
+                archers++;
+                archerCost = Math.floor(archerCost * 1.5); 
+                updateUI(); 
+                damageNumbers.push(new DamageNumber(canvas.width - 150, canvas.height - 100, 'Лучник нанят!', '#00E676'));
+            }
+        });
+    }
 
     // 2. ЗАГРУЗКА ОТДЕЛЬНЫХ КАДРОВ АНИМАЦИИ
     const goblinFrames = []; 
@@ -241,46 +257,32 @@ document.addEventListener('DOMContentLoaded', () => {
         draw() { ctx.save(); ctx.globalAlpha = Math.max(0, this.life * 0.4); ctx.fillStyle = '#111'; ctx.beginPath(); ctx.ellipse(this.x + this.offsetX, this.y, 8, 4, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
     }
 
-    // --- НОВЫЙ КЛАСС: СТРЕЛА ---
     class Arrow {
         constructor(startX, startY, targetEnemy) {
-            this.x = startX;
-            this.y = startY;
-            this.target = targetEnemy;
-            this.speed = 12; // Скорость полета стрелы
-            this.active = true;
+            this.x = startX; this.y = startY; this.target = targetEnemy;
+            this.speed = 12; this.active = true;
         }
         update() {
-            // Если цель уже мертва, стрела исчезает
-            if (!this.target || this.target.hp <= 0) {
-                this.active = false; 
-                return;
-            }
-            
-            // Наводимся на центр врага
+            if (!this.target || this.target.hp <= 0) { this.active = false; return; }
             let dx = (this.target.x + this.target.width/2) - this.x;
             let dy = (this.target.y + this.target.height/2) - this.y;
             let dist = Math.hypot(dx, dy);
 
-            // Если стрела долетела
             if (dist < this.speed) {
-                this.target.hp -= 1; // Наносим урон
+                this.target.hp -= 1; 
                 createExplosion(this.x, this.y, '#fff', 5);
                 damageNumbers.push(new DamageNumber(this.x, this.y, '-1', '#ff5252'));
                 this.active = false;
             } else {
-                // Летим дальше
                 this.angle = Math.atan2(dy, dx);
                 this.x += Math.cos(this.angle) * this.speed;
                 this.y += Math.sin(this.angle) * this.speed;
             }
         }
         draw() {
-            ctx.save();
-            ctx.translate(this.x, this.y);
-            ctx.rotate(this.angle);
-            ctx.fillStyle = '#ccc'; ctx.fillRect(-8, -1, 16, 2); // Древко
-            ctx.fillStyle = '#ff3333'; ctx.fillRect(8, -2, 4, 4); // Наконечник
+            ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle);
+            ctx.fillStyle = '#ccc'; ctx.fillRect(-8, -1, 16, 2); 
+            ctx.fillStyle = '#ff3333'; ctx.fillRect(8, -2, 4, 4); 
             ctx.restore();
         }
     }
@@ -288,13 +290,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- ИГРОВАЯ ЛОГИКА ---
     function initGame() {
         console.log("Кнопка нажата! Игра начинается...");
+        
+        // ВАЖНО: Защита от двойного запуска (гиперскорости)
+        if (animationId) {
+            cancelAnimationFrame(animationId);
+        }
+
         score = 0; lives = maxLives; isGameOver = false;
         enemies = []; particles = []; repairItems = []; damageNumbers = []; slashes = []; footprints = []; arrows = [];
         
-        // Сброс магазина
         coins = 0; archers = 0; archerCost = 15;
-        shopBtn.style.display = 'block'; // Показываем кнопку
-        updateShopBtn();
+        
+        lastScore = -1; lastCoins = -1; lastLives = -1; lastArchers = -1;
+        
+        if (shopBtn) shopBtn.style.display = 'block'; 
+        if (statsContainer) statsContainer.style.display = 'flex'; 
+        updateUI();
 
         spawnTimer = 0; spawnInterval = 60; repairTimer = 0; gameSpeedMultiplier = 1;
         overlay.style.display = 'none';
@@ -312,17 +323,13 @@ document.addEventListener('DOMContentLoaded', () => {
     function update() {
         gameSpeedMultiplier = Math.min(3.5, 1 + (score * 0.015));
         
-        // --- ЛОГИКА СТРЕЛЬБЫ ЛУЧНИКОВ ---
         if (archers > 0 && enemies.length > 0) {
             archerTimer++;
-            // Чем больше лучников, тем чаще стреляем (максимум 1 стрела в 15 кадров)
             let fireRate = Math.max(15, 100 - (archers * 10)); 
             
             if (archerTimer >= fireRate) {
                 archerTimer = 0;
-                // Находим самую низкую цель (ближайшую к стене)
                 let target = enemies.reduce((lowest, current) => (current.y > lowest.y ? current : lowest), enemies[0]);
-                // Создаем стрелу снизу по центру
                 arrows.push(new Arrow(canvas.width / 2, canvas.height - 20, target));
             }
         }
@@ -340,7 +347,6 @@ document.addEventListener('DOMContentLoaded', () => {
             repairTimer = 0; repairInterval = Math.floor(Math.random() * 400) + 400; 
         }
 
-        // Обновление массивов
         for (let i = footprints.length - 1; i >= 0; i--) { footprints[i].update(); if (footprints[i].life <= 0) footprints.splice(i, 1); }
         for (let i = particles.length - 1; i >= 0; i--) { particles[i].update(); if (particles[i].life <= 0) particles.splice(i, 1); }
         for (let i = damageNumbers.length - 1; i >= 0; i--) { damageNumbers[i].update(); if (damageNumbers[i].life <= 0) damageNumbers.splice(i, 1); }
@@ -355,23 +361,20 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = enemies.length - 1; i >= 0; i--) {
             let enemy = enemies[i];
 
-            // Проверяем смерть врага ЗДЕСЬ (и от клика, и от стрелы)
             if (enemy.hp <= 0) {
                 createExplosion(enemy.x + enemy.width/2, enemy.y + enemy.height/2, enemy.color, enemy.isBoss ? 50 : 15);
                 score += enemy.isBoss ? 5 : 1; 
                 
                 let coinReward = enemy.isBoss ? 5 : 1;
-                coins += coinReward; // Выдаем монеты
+                coins += coinReward; 
                 damageNumbers.push(new DamageNumber(enemy.x + enemy.width/2, enemy.y + enemy.height/2, `+${coinReward} 🪙`, '#ffd700'));
                 
                 enemies.splice(i, 1);
-                updateShopBtn(); // Обновляем кнопку магазина
                 continue; 
             }
 
             enemy.update();
 
-            // Если враг дошел до стены
             if (enemy.y + enemy.height >= canvas.height - 20) {
                 lives -= enemy.isBoss ? 3 : 1; 
                 createExplosion(enemy.x + enemy.width/2, enemy.y + enemy.height, '#ff9800', 30);
@@ -379,6 +382,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (lives <= 0) isGameOver = true;
             }
         }
+        
+        updateUI();
     }
 
     function draw() {
@@ -389,30 +394,19 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.fillStyle = '#333'; ctx.fillRect(0, canvas.height - 20, canvas.width, 20);
         ctx.fillStyle = wallColor; ctx.fillRect(0, canvas.height - 20, canvas.width * (Math.max(0, lives) / maxLives), 3); 
 
-        // Рисуем иконки лучников на стене
         for (let i = 0; i < archers; i++) {
             let ax = 30 + i * 25;
-            if (ax > canvas.width - 30) break; // Чтобы не вылезали за экран
-            ctx.fillStyle = '#827717'; ctx.fillRect(ax, canvas.height - 25, 10, 10); // Шлем
-            ctx.fillStyle = '#fff'; ctx.fillRect(ax + 2, canvas.height - 30, 2, 8); // Лук
+            if (ax > canvas.width - 30) break; 
+            ctx.fillStyle = '#827717'; ctx.fillRect(ax, canvas.height - 25, 10, 10); 
+            ctx.fillStyle = '#fff'; ctx.fillRect(ax + 2, canvas.height - 30, 2, 8); 
         }
 
         repairItems.forEach(item => item.draw());
         enemies.forEach(enemy => enemy.draw());
-        arrows.forEach(arrow => arrow.draw()); // Рисуем стрелы
+        arrows.forEach(arrow => arrow.draw()); 
         particles.forEach(p => p.draw());
         damageNumbers.forEach(dn => dn.draw()); 
         slashes.forEach(slash => slash.draw()); 
-
-        // ИНТЕРФЕЙС
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 20px Arial';
-        ctx.textAlign = 'left';
-        ctx.fillText(`💀 Убито: ${score}`, 20, 35);
-        ctx.fillStyle = '#ffd700'; // Золотой
-        ctx.fillText(`🪙 Монеты: ${coins}`, 20, 65);
-        ctx.fillStyle = wallColor;
-        ctx.fillText(`🛡️ Прочность: ${Math.max(0, lives)}/${maxLives}`, 20, 95);
     }
 
     function gameLoop() {
@@ -426,7 +420,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function endGame() {
         cancelAnimationFrame(animationId);
-        shopBtn.style.display = 'none'; // Прячем магазин при проигрыше
+        if (shopBtn) shopBtn.style.display = 'none'; 
+        if (statsContainer) statsContainer.style.display = 'none'; 
         
         let recordMessage = "";
         if (score > localHighScore) {
@@ -479,7 +474,7 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = enemies.length - 1; i >= 0; i--) {
             const enemy = enemies[i];
             if (clickX >= enemy.x && clickX <= enemy.x + enemy.width && clickY >= enemy.y && clickY <= enemy.y + enemy.height) {
-                enemy.hp--; // Просто отнимаем ХП, смерть обработает функция update()
+                enemy.hp--; 
                 createExplosion(clickX, clickY, '#fff', 5);
                 damageNumbers.push(new DamageNumber(clickX, clickY, '-1', '#ff5252'));
                 break; 
@@ -491,9 +486,6 @@ document.addEventListener('DOMContentLoaded', () => {
     canvas.addEventListener('touchstart', handleInput, { passive: false });
     if(startBtn) startBtn.addEventListener('click', initGame);
     
-    draw(); 
-    
-    // --- ПОЛНОЭКРАННЫЙ РЕЖИМ ---
     const fullscreenBtn = document.getElementById('fullscreenBtn');
     if (fullscreenBtn && gameContainer) {
         fullscreenBtn.addEventListener('click', () => {
