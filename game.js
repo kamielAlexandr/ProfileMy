@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const goldUI = document.getElementById('goldUI');
     const livesUI = document.getElementById('livesUI');
     const shopBtn = document.getElementById('buyArcherBtn');
-
+    const shopContainer = document.getElementById('shopContainer'); // Нашли нижнюю панель
     let lastScore = -1, lastCoins = -1, lastLives = -1, lastArchers = -1;
 
     function updateUI() {
@@ -303,7 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         lastScore = -1; lastCoins = -1; lastLives = -1; lastArchers = -1;
         
-        if (shopBtn) shopBtn.style.display = 'block'; 
+        if (shopContainer) shopContainer.style.display = 'flex';
         if (statsContainer) statsContainer.style.display = 'flex'; 
         updateUI();
 
@@ -375,7 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             enemy.update();
 
-            if (enemy.y + enemy.height >= canvas.height - 20) {
+            if (enemy.y + (enemy.height * 0.85) >= canvas.height - 20) {
                 lives -= enemy.isBoss ? 3 : 1; 
                 createExplosion(enemy.x + enemy.width/2, enemy.y + enemy.height, '#ff9800', 30);
                 enemies.splice(i, 1);
@@ -420,7 +420,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function endGame() {
         cancelAnimationFrame(animationId);
-        if (shopBtn) shopBtn.style.display = 'none'; 
+        if (shopContainer) shopContainer.style.display = 'none'; 
         if (statsContainer) statsContainer.style.display = 'none'; 
         
         let recordMessage = "";
@@ -487,10 +487,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if(startBtn) startBtn.addEventListener('click', initGame);
     
     const fullscreenBtn = document.getElementById('fullscreenBtn');
-    if (fullscreenBtn && gameContainer) {
+    const gameWrapper = document.getElementById('gameWrapper'); // Добавили!
+    
+    if (fullscreenBtn && gameWrapper) {
         fullscreenBtn.addEventListener('click', () => {
             if (!document.fullscreenElement) {
-                gameContainer.requestFullscreen().catch(e => console.warn(e.message));
+                gameWrapper.requestFullscreen().catch(e => console.warn(e.message)); // Меняем тут!
                 fullscreenBtn.textContent = "✖"; 
             } else {
                 document.exitFullscreen();
