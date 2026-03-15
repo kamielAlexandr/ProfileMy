@@ -1,1 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aethelforge | Моя Ферма</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="farm.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">Aethelforge</div>
+        <ul class="nav-links">
+            <li><a href="index.html">Обо мне</a></li>
+            <li><a href="games.html" class="active">Мои игры</a></li>
+            <li><a href="tutor.html">ОГЭ / ЕГЭ</a></li>
+            <li><a href="play.html">Защита Цитадели</a></li>
+            <li><a href="farm.html" class="active">Ферма</a></li>
+            <li id="authNavItem"><a href="login.html">Войти</a></li>
+        </ul>
+    </nav>
 
+    <main class="container">
+        <h1>Тихая Гавань: Ферма</h1>
+        <p>Сажайте семена, ждите урожай и зарабатывайте золото. Выберите семена внизу и кликните по пустой грядке.</p><br>
+
+        <div class="farm-wrapper">
+            <div class="farm-ui-top">
+                <div class="stat-badge">💰 Баланс: <span id="farmCoinsUI" style="color:#ffd700">20</span></div>
+                <div class="stat-badge">⭐ Уровень: <span id="farmLevelUI" style="color:#4caf50">1</span></div>
+            </div>
+
+            <div class="farm-canvas-container">
+                <canvas id="farmCanvas" width="600" height="400"></canvas>
+            </div>
+
+            <div class="farm-ui-bottom">
+                <button class="seed-btn active" data-seed="wheat">
+                    🌾 Пшеница<br><span>Покупка: 2 | Продажа: 5<br>Рост: 3 сек.</span>
+                </button>
+                <button class="seed-btn" data-seed="tomato">
+                    🍅 Томаты<br><span>Покупка: 5 | Продажа: 15<br>Рост: 6 сек.</span>
+                </button>
+                <button class="seed-btn" data-seed="pumpkin">
+                    🎃 Тыква<br><span>Покупка: 15 | Продажа: 50<br>Рост: 12 сек.</span>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2026 Aethelforge Все права защищены.</p>
+        </div>
+    </footer>
+
+    <script src="farm.js?v=100"></script>
+</body>
+</html>
