@@ -77,15 +77,48 @@
                 </ul>
             </div>
 
-            <div class="dashboard-card">
-                <h3>🏆 Достижения (Скоро)</h3>
-                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <div title="Первая кровь" style="width: 50px; height: 50px; background: #333; border-radius: 8px; border: 2px solid #555; display: flex; justify-content: center; align-items: center; opacity: 0.5;">🗡️</div>
-                    <div title="Убийца боссов" style="width: 50px; height: 50px; background: #333; border-radius: 8px; border: 2px solid #555; display: flex; justify-content: center; align-items: center; opacity: 0.5;">👹</div>
-                    <div title="Непробиваемая стена" style="width: 50px; height: 50px; background: #333; border-radius: 8px; border: 2px solid #555; display: flex; justify-content: center; align-items: center; opacity: 0.5;">🛡️</div>
-                </div>
-                <p style="font-size: 0.85em; color: #888; margin-top: 15px;">Выполняйте условия в играх, чтобы разблокировать значки.</p>
+<div class="container">
+    <h2>🏆 Ваши Достижения</h2>
+    <div id="achievementsContainer" class="profile-achievements">
+        </div>
+</div>
+
+<script>
+    // Массив всех возможных ачивок
+    const allAchievements = [
+        { id: 'first_blood', icon: '🩸', title: 'Первая кровь', desc: 'Убить 1 гоблина' },
+        { id: 'first_archer', icon: '🏹', title: 'Острый глаз', desc: 'Нанять первого лучника' },
+        { id: 'spikes_1', icon: '🗡️', title: 'Шипы и боль', desc: 'Построить ров 1 уровня' },
+        { id: 'bloodbath', icon: '☠️', title: 'Кровавая баня', desc: 'Улучшить ров до 2 уровня' },
+        { id: 'repairman', icon: '🧱', title: 'Ремонтная бригада', desc: 'Починить стену (поймать бонус)' },
+        { id: 'boss_slayer', icon: '👹', title: 'Убийца великанов', desc: 'Убить первого Босса' },
+        { id: 'arrow_storm', icon: '🌧️', title: 'Шквальный огонь', desc: 'Нанять 5 лучников' },
+        { id: 'wealthy', icon: '💰', title: 'Толстосум', desc: 'Накопить 100 монет' },
+        { id: 'hundred_skulls', icon: '💯', title: 'Сотня черепов', desc: 'Счет: 100 в одной игре' },
+        { id: 'impenetrable', icon: '🏰', title: 'Неприступная Цитадель', desc: 'Счет: 300 в одной игре' }
+    ];
+
+    // Достаем сохраненные достижения
+    let unlocked = [];
+    try { unlocked = JSON.parse(localStorage.getItem('citadelAchievements')) || []; } catch(e) {}
+
+    // Рисуем карточки
+    const container = document.getElementById('achievementsContainer');
+    allAchievements.forEach(ach => {
+        let isUnlocked = unlocked.includes(ach.id);
+        let card = document.createElement('div');
+        card.className = `achievement-card ${isUnlocked ? 'unlocked' : ''}`;
+        card.innerHTML = `
+            <div class="achievement-icon">${ach.icon}</div>
+            <div class="achievement-info">
+                <h4>${ach.title}</h4>
+                <p>${ach.desc}</p>
             </div>
+        `;
+        container.appendChild(card);
+    });
+</script>
+            
         </div>
     </main>
 
