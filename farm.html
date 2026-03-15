@@ -21,30 +21,43 @@
     </nav>
 
     <main class="container">
-        <h1>Тихая Гавань: Ферма</h1>
-        <p>Сажайте семена, ждите урожай и зарабатывайте золото. Выберите семена внизу и кликните по пустой грядке.</p><br>
+        <h1>Тихая Гавань: Поместье</h1>
+        <p>Выращивайте урожай, не забывайте его поливать, покупайте семена в Магазине и улучшайте поместье в Доме!</p><br>
 
         <div class="farm-wrapper">
             <div class="farm-ui-top">
-                <div class="stat-badge">💰 Баланс: <span id="farmCoinsUI" style="color:#ffd700">20</span></div>
-                <div class="stat-badge">⭐ Уровень: <span id="farmLevelUI" style="color:#4caf50">1</span></div>
+                <div class="stat-badge">💰 Золото: <span id="farmCoinsUI" style="color:#ffd700">50</span></div>
+                <div class="stat-badge">⭐ Опыт: <span id="farmXpUI" style="color:#4caf50">0</span></div>
             </div>
 
-            <div class="farm-canvas-container">
-                <canvas id="farmCanvas" width="600" height="400"></canvas>
+            <div class="farm-nav">
+                <button class="room-btn active" data-target="gardenRoom">Огород</button>
+                <button class="room-btn" data-target="greenhouseRoom" id="navGreenhouse">🔒 Теплица</button>
+                <button class="room-btn" data-target="shopRoom">🛒 Магазин</button>
+                <button class="room-btn" data-target="houseRoom">🏠 Дом</button>
             </div>
 
-            <div class="farm-ui-bottom">
-                <button class="seed-btn active" data-seed="wheat">
-                    🌾 Пшеница<br><span>Покупка: 2 | Продажа: 5<br>Рост: 3 сек.</span>
-                </button>
-                <button class="seed-btn" data-seed="tomato">
-                    🍅 Томаты<br><span>Покупка: 5 | Продажа: 15<br>Рост: 6 сек.</span>
-                </button>
-                <button class="seed-btn" data-seed="pumpkin">
-                    🎃 Тыква<br><span>Покупка: 15 | Продажа: 50<br>Рост: 12 сек.</span>
-                </button>
+            <div id="gardenRoom" class="room-content active">
+                <div class="farm-canvas-container">
+                    <canvas id="farmCanvas" width="600" height="400"></canvas>
+                </div>
+                <h4 style="margin-top: 15px; color: #aaa;">🎒 Ваш инвентарь (Выберите для посадки):</h4>
+                <div class="farm-inventory" id="inventoryUI">
+                    </div>
             </div>
+
+            <div id="shopRoom" class="room-content" style="display: none;">
+                <h2 style="color: #ffd700; text-align: center;">Торговая лавка</h2>
+                <div class="shop-grid" id="seedShopUI">
+                    </div>
+            </div>
+
+            <div id="houseRoom" class="room-content" style="display: none;">
+                <h2 style="color: #4caf50; text-align: center;">Улучшения поместья</h2>
+                <div class="shop-grid" id="upgradesUI">
+                    </div>
+            </div>
+
         </div>
     </main>
 
@@ -54,6 +67,6 @@
         </div>
     </footer>
 
-    <script src="farm.js?v=100"></script>
+    <script src="farm.js?v=200"></script>
 </body>
 </html>
