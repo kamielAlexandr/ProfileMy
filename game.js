@@ -28,6 +28,30 @@ if (window.gameInitialized) {
         try { localHighScore = parseInt(localStorage.getItem('citadelHighScore')) || 0; } catch(e) {}
         let globalHighScore = 0; 
 
+        // --- СИСТЕМА ДОСТИЖЕНИЙ ---
+        let unlockedAchievements = [];
+        try { unlockedAchievements = JSON.parse(localStorage.getItem('citadelAchievements')) || []; } catch(e) {}
+        
+        // Создаем HTML элемент для всплывающего окна
+        const achievementPopup = document.createElement('div');
+        achievementPopup.className = 'achievement-popup';
+        document.body.appendChild(achievementPopup);
+
+        function unlockAchievement(id, title) {
+            if (!unlockedAchievements.includes(id)) {
+                unlockedAchievements.push(id);
+                try { localStorage.setItem('citadelAchievements', JSON.stringify(unlockedAchievements)); } catch(e) {}
+                
+                // Показываем всплывашку
+                achievementPopup.innerHTML = `🏆 Достижение получено!<br><b style="color:#ffd700">${title}</b>`;
+                achievementPopup.classList.add('show');
+                
+                // Прячем через 3.5 секунды
+                setTimeout(() => { achievementPopup.classList.remove('show'); }, 3500);
+            }
+        }
+        // --------------------------
+
         const topUI = document.getElementById('topUI');
         const bottomUI = document.getElementById('bottomUI');
         const scoreUI = document.getElementById('scoreUI');
@@ -51,10 +75,8 @@ if (window.gameInitialized) {
                     shopBtn.innerHTML = `🏹 Нанять Лучника (${archerCost} 🪙)<br><span>На стене: ${archers}</span>`;
                     if (coins >= archerCost && !isGameOver) {
                         shopBtn.style.opacity = '1'; shopBtn.style.pointerEvents = 'auto';
-                        shopBtn.style.boxShadow = '0 0 15px rgba(255, 215, 0, 0.8)'; 
                     } else {
                         shopBtn.style.opacity = '0.5'; shopBtn.style.pointerEvents = 'none';
-                        shopBtn.style.boxShadow = '0 4px 10px rgba(0,0,0,0.5)';
                     }
                 }
 
@@ -62,12 +84,13 @@ if (window.gameInitialized) {
                     spikesBtn.innerHTML = `🗡️ Ров с шипами (${spikesCost} 🪙)<br><span>Уровень: ${spikesLevel}</span>`;
                     if (coins >= spikesCost && !isGameOver) {
                         spikesBtn.style.opacity = '1'; spikesBtn.style.pointerEvents = 'auto';
-                        spikesBtn.style.boxShadow = '0 0 15px rgba(255, 215, 0, 0.8)'; 
                     } else {
                         spikesBtn.style.opacity = '0.5'; spikesBtn.style.pointerEvents = 'none';
-                        spikesBtn.style.boxShadow = '0 4px 10px rgba(0,0,0,0.5)';
                     }
                 }
+
+                // Ачивка на монеты
+                if (coins >= 100) unlockAchievement('wealthy', 'Толстосум');
 
                 lastScore = score; lastCoins = coins; lastLives = lives; lastArchers = archers; lastSpikes = spikesLevel;
             }
@@ -79,6 +102,10 @@ if (window.gameInitialized) {
                 if (coins >= archerCost && !isGameOver) {
                     coins -= archerCost; archers++; archerCost = Math.floor(archerCost * 1.5); updateUI(); 
                     damageNumbers.push(new DamageNumber(canvas.width / 2, canvas.height - 50, 'Лучник нанят!', '#00E676'));
+                    
+                    // Ачивки на лучников
+                    unlockAchievement('first_archer', 'Острый глаз');
+                    if (archers >= 5) unlockAchievement('arrow_storm', 'Шквальный огонь');
                 }
             });
         }
@@ -89,6 +116,10 @@ if (window.gameInitialized) {
                 if (coins >= spikesCost && !isGameOver) {
                     coins -= spikesCost; spikesLevel++; spikesCost = Math.floor(spikesCost * 1.5); updateUI(); 
                     damageNumbers.push(new DamageNumber(canvas.width / 2, canvas.height - 120, 'Ров улучшен!', '#00E676'));
+                    
+                    // Ачивки на ров
+                    if (spikesLevel === 1) unlockAchievement('spikes_1', 'Шипы и боль');
+                    if (spikesLevel === 2) unlockAchievement('bloodbath', 'Кровавая баня');
                 }
             });
         }
@@ -108,7 +139,6 @@ if (window.gameInitialized) {
             img.src = src; goblinFrames.push(img); 
         });
 
-        // СЕТЕВОЙ КОД
         const SUPABASE_URL = 'https://bgzxdpjfsodndxroieay.supabase.co'; 
         const SUPABASE_ANON_KEY = 'sb_publishable_7lewcPQCbnoXmkcMLu_Hlw_dnfCXZka';
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -131,7 +161,6 @@ if (window.gameInitialized) {
         }
         fetchLeaderboard();
 
-        // КЛАССЫ ИГРЫ
         class Enemy {
             constructor(isBoss = false) {
                 this.isBoss = isBoss; this.width = isBoss ? 100 : 64; this.height = isBoss ? 100 : 64;
@@ -141,29 +170,19 @@ if (window.gameInitialized) {
                 this.color = isBoss ? '#827717' : '#2e7d32'; 
                 this.frameX = 0; this.maxFrame = 3; this.animationSpeed = 8; this.frameTimer = 0; 
             }
-            
             update() {
-                let currentSpeed = this.speed;
-                let currentAnimSpeed = this.animationSpeed;
-                let inMoat = false;
+                let currentSpeed = this.speed; let currentAnimSpeed = this.animationSpeed; let inMoat = false;
+                let moatTop = canvas.height - 140; let moatBottom = canvas.height - 50;
 
-                let moatTop = canvas.height - 140; 
-                let moatBottom = canvas.height - 50;
-
-                // ЧУВСТВИТЕЛЬНОЕ ЗАМЕДЛЕНИЕ (Режет скорость очень сильно)
                 if (spikesLevel > 0 && (this.y + this.height > moatTop) && (this.y < moatBottom)) {
-                    inMoat = true;
-                    let slowMultiplier = Math.max(0.15, 0.5 - (spikesLevel * 0.15));
-                    currentSpeed *= slowMultiplier;
-                    currentAnimSpeed *= 2; 
+                    inMoat = true; let slowMultiplier = Math.max(0.15, 0.5 - (spikesLevel * 0.15));
+                    currentSpeed *= slowMultiplier; currentAnimSpeed *= 2; 
                 }
 
-                this.y += currentSpeed; 
-                this.frameTimer++;
+                this.y += currentSpeed; this.frameTimer++;
                 
                 if (this.frameTimer >= currentAnimSpeed) {
-                    this.frameX = this.frameX < this.maxFrame ? this.frameX + 1 : 0; 
-                    this.frameTimer = 0; 
+                    this.frameX = this.frameX < this.maxFrame ? this.frameX + 1 : 0; this.frameTimer = 0; 
                     footprints.push(new Footprint(this.x + this.width / 2, this.y + this.height - 10));
                     
                     if (inMoat) {
@@ -172,11 +191,9 @@ if (window.gameInitialized) {
                     }
                 }
             }
-            
             draw() {
                 if (!isSpriteLoaded || this.isBoss) {
-                    ctx.save(); ctx.translate(this.x, this.y); ctx.fillStyle = this.color;
-                    ctx.fillRect(0, 0, this.width, this.height);
+                    ctx.save(); ctx.translate(this.x, this.y); ctx.fillStyle = this.color; ctx.fillRect(0, 0, this.width, this.height);
                     if (this.isBoss) { ctx.fillStyle = '#333'; ctx.fillRect(0, -12, this.width, 6); ctx.fillStyle = '#4caf50'; ctx.fillRect(0, -12, this.width * (this.hp/this.maxHp), 6); }
                     ctx.restore(); return; 
                 }
@@ -222,11 +239,7 @@ if (window.gameInitialized) {
 
         function initGame() {
             if (animationId) cancelAnimationFrame(animationId); 
-            
-            score = 0; lives = maxLives; isGameOver = false; 
-            coins = 0; archers = 0; archerCost = 15;
-            spikesLevel = 0; spikesCost = 20; 
-            
+            score = 0; lives = maxLives; isGameOver = false; coins = 0; archers = 0; archerCost = 15; spikesLevel = 0; spikesCost = 20; 
             enemies = []; particles = []; repairItems = []; damageNumbers = []; slashes = []; footprints = []; arrows = [];
             spawnTimer = 0; spawnInterval = 60; repairTimer = 0; gameSpeedMultiplier = 1;
             lastScore = -1; lastCoins = -1; lastLives = -1; lastArchers = -1; lastSpikes = -1;
@@ -235,8 +248,7 @@ if (window.gameInitialized) {
             if (bottomUI) bottomUI.style.display = 'flex';
             if (overlay) overlay.style.display = 'none';
             
-            updateUI();
-            gameLoop();
+            updateUI(); gameLoop();
         }
 
         function createExplosion(x, y, color, count = 15) { for (let i = 0; i < count; i++) particles.push(new Particle(x, y, color)); }
@@ -254,7 +266,6 @@ if (window.gameInitialized) {
 
             spawnInterval = Math.max(25, 60 - score * 0.3); spawnTimer++;
             if (spawnTimer >= spawnInterval) { enemies.push(new Enemy(score > 10 && Math.random() < 0.1)); spawnTimer = 0; }
-
             repairTimer++; if (repairTimer >= repairInterval) { repairItems.push(new RepairItem()); repairTimer = 0; repairInterval = Math.floor(Math.random() * 400) + 400; }
 
             for (let i = footprints.length - 1; i >= 0; i--) { footprints[i].update(); if (footprints[i].life <= 0) footprints.splice(i, 1); }
@@ -271,11 +282,17 @@ if (window.gameInitialized) {
                     createExplosion(enemy.x + enemy.width/2, enemy.y + enemy.height/2, enemy.color, enemy.isBoss ? 50 : 15);
                     score += enemy.isBoss ? 5 : 1; let coinReward = enemy.isBoss ? 5 : 1; coins += coinReward; 
                     damageNumbers.push(new DamageNumber(enemy.x + enemy.width/2, enemy.y + enemy.height/2, `+${coinReward} 🪙`, '#ffd700'));
+                    
+                    // Ачивки на убийства
+                    unlockAchievement('first_blood', 'Первая кровь');
+                    if (enemy.isBoss) unlockAchievement('boss_slayer', 'Убийца великанов');
+                    if (score >= 100) unlockAchievement('hundred_skulls', 'Сотня черепов');
+                    if (score >= 300) unlockAchievement('impenetrable', 'Неприступная Цитадель');
+
                     enemies.splice(i, 1); continue; 
                 }
                 enemy.update();
 
-                // ХИТБОКС СТЕНЫ
                 const spriteDeadSpace = 25; 
                 const actualBottomEdge = enemy.y + enemy.height - spriteDeadSpace; 
                 const wallY = canvas.height - 20;
@@ -295,10 +312,8 @@ if (window.gameInitialized) {
             footprints.forEach(fp => fp.draw());
 
             if (spikesLevel > 0) {
-                let moatY = canvas.height - 130;
-                let moatHeight = 60;
-                ctx.fillStyle = 'rgba(28, 55, 66, 0.6)'; 
-                ctx.fillRect(0, moatY, canvas.width, moatHeight);
+                let moatY = canvas.height - 130; let moatHeight = 60;
+                ctx.fillStyle = 'rgba(28, 55, 66, 0.6)'; ctx.fillRect(0, moatY, canvas.width, moatHeight);
                 for(let i = -10; i < canvas.width; i += 20) {
                     ctx.fillStyle = '#4e342e'; ctx.beginPath(); ctx.moveTo(i, moatY + moatHeight); ctx.lineTo(i + 10, moatY - 10); ctx.lineTo(i + 20, moatY + moatHeight); ctx.fill();
                     if (spikesLevel > 1) {
@@ -316,12 +331,9 @@ if (window.gameInitialized) {
                 ctx.fillStyle = '#827717'; ctx.fillRect(ax, canvas.height - 25, 10, 10); ctx.fillStyle = '#fff'; ctx.fillRect(ax + 2, canvas.height - 30, 2, 8); 
             }
 
-            repairItems.forEach(item => item.draw());
-            enemies.forEach(enemy => enemy.draw());
-            arrows.forEach(arrow => arrow.draw()); 
-            particles.forEach(p => p.draw());
-            damageNumbers.forEach(dn => dn.draw()); 
-            slashes.forEach(slash => slash.draw()); 
+            repairItems.forEach(item => item.draw()); enemies.forEach(enemy => enemy.draw());
+            arrows.forEach(arrow => arrow.draw()); particles.forEach(p => p.draw());
+            damageNumbers.forEach(dn => dn.draw()); slashes.forEach(slash => slash.draw()); 
         }
 
         function gameLoop() {
@@ -330,7 +342,6 @@ if (window.gameInitialized) {
             animationId = requestAnimationFrame(gameLoop);
         }
 
-        // БРОНЕБОЙНАЯ ФУНКЦИЯ КОНЦА ИГРЫ
         function endGame() {
             console.log("Игра окончена. Запускаю финальный экран...");
             cancelAnimationFrame(animationId);
@@ -339,50 +350,25 @@ if (window.gameInitialized) {
             if (bottomUI) bottomUI.style.display = 'none'; 
             
             let recordMessage = "";
-            
-            // 1. ЛОКАЛЬНЫЙ РЕКОРД (Для конкретного игрока)
             try {
                 if (score > localHighScore && score > 0) {
-                    localHighScore = score; 
-                    localStorage.setItem('citadelHighScore', localHighScore); 
+                    localHighScore = score; localStorage.setItem('citadelHighScore', localHighScore); 
                     recordMessage += `<br><span style="font-size:1.1rem; color:#aaa;">Вы побили свой личный рекорд!</span>`;
                 }
-            } catch(e) { console.error("Ошибка сохранения рекорда в кэш:", e); }
+            } catch(e) {}
             
-            // 2. ГЛОБАЛЬНЫЙ РЕКОРД (Защита от ложных срабатываний)
             try {
-                // Кричим о рекорде ТОЛЬКО если старый рекорд был больше нуля
                 if (score > globalHighScore && globalHighScore > 0) {
-                    fetch(`${SUPABASE_URL}/rest/v1/leaderboard`, { 
-                        method: 'POST', 
-                        headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, 
-                        body: JSON.stringify({ score: score, nickname: currentPlayerName }) 
-                    }).catch(err => console.error("Ошибка:", err));
-                    
+                    fetch(`${SUPABASE_URL}/rest/v1/leaderboard`, { method: 'POST', headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, body: JSON.stringify({ score: score, nickname: currentPlayerName }) }).catch(err => {});
                     recordMessage += `<br><span style="font-size:1.3rem; color:#00E676; text-shadow: 0 0 10px #00E676;">👑 ВЫ ПОБИЛИ РЕКОРД САЙТА! 👑</span>`;
-                } 
-                // Если база пустая (рекорд 0), просто тихо сохраняем первый результат
-                else if (score > 0 && globalHighScore === 0) {
-                    fetch(`${SUPABASE_URL}/rest/v1/leaderboard`, { 
-                        method: 'POST', 
-                        headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, 
-                        body: JSON.stringify({ score: score, nickname: currentPlayerName }) 
-                    }).catch(err => {});
+                } else if (score > 0 && globalHighScore === 0) {
+                    fetch(`${SUPABASE_URL}/rest/v1/leaderboard`, { method: 'POST', headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, body: JSON.stringify({ score: score, nickname: currentPlayerName }) }).catch(err => {});
                 }
-            } catch(e) { console.error("Ошибка глобального рекорда:", e); }
+            } catch(e) {}
 
-            // Выводим финальное окно
-            if (overlayTitle) {
-                overlayTitle.innerHTML = `Ворота пробиты!<br><span style="font-size:1.5rem; color:#ff5252;">Счет: ${score}</span>${recordMessage}`;
-            }
-            if (startBtn) {
-                startBtn.textContent = 'Держать оборону снова'; 
-                startBtn.disabled = false; 
-            }
-            if (overlay) {
-                overlay.style.display = 'flex'; 
-                overlay.style.zIndex = '9999'; 
-            }
+            if (overlayTitle) overlayTitle.innerHTML = `Ворота пробиты!<br><span style="font-size:1.5rem; color:#ff5252;">Счет: ${score}</span>${recordMessage}`;
+            if (startBtn) { startBtn.textContent = 'Держать оборону снова'; startBtn.disabled = false; }
+            if (overlay) { overlay.style.display = 'flex'; overlay.style.zIndex = '9999'; }
             draw(); 
         }
 
@@ -401,7 +387,9 @@ if (window.gameInitialized) {
                 const item = repairItems[i];
                 if (clickX >= item.x && clickX <= item.x + item.width && clickY >= item.y && clickY <= item.y + item.height) {
                     if (lives < maxLives) lives++; createExplosion(item.x + item.width/2, item.y + item.height/2, '#00E676', 20);
-                    damageNumbers.push(new DamageNumber(item.x + item.width/2, item.y, '+1 HP', '#00E676')); repairItems.splice(i, 1); hitSomething = true; break;
+                    damageNumbers.push(new DamageNumber(item.x + item.width/2, item.y, '+1 HP', '#00E676')); repairItems.splice(i, 1); hitSomething = true; 
+                    unlockAchievement('repairman', 'Ремонтная бригада'); // Ачивка на хил
+                    break;
                 }
             }
             if (hitSomething) return; 
