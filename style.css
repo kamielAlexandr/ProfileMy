@@ -670,8 +670,8 @@ h1 {
 /* Обновленная адаптивная кнопка магазина */
 .shop-btn {
     position: absolute;
-    bottom: 20%; /* Считаем в процентах от высоты экрана! Подняли выше замка */
-    right: 20px;
+    bottom: 15px; /* Вернули в самый низ! */
+    right: 15px;
     background: linear-gradient(135deg, #ffd700, #b8860b);
     color: #000;
     border: 2px solid #fff;
@@ -699,13 +699,13 @@ h1 {
         gap: 5px;
     }
     .stat-badge {
-        font-size: 0.85rem; /* Уменьшаем шрифт плашек */
+        font-size: 0.85rem; 
         padding: 5px 12px;
     }
     .shop-btn {
-        bottom: 25%; /* На мобилках поднимаем кнопку еще выше */
+        bottom: 10px; /* И на телефонах тоже в самом низу */
         right: 10px;
         padding: 8px 12px;
-        font-size: 0.85rem; /* Уменьшаем кнопку магазина */
+        font-size: 0.85rem; 
     }
 }
