@@ -5,6 +5,8 @@ if (window.gameInitialized) {
     window.gameInitialized = true;
 
     document.addEventListener('DOMContentLoaded', () => {
+        console.log("Скрипт игры запущен.");
+        
         const canvas = document.getElementById('gameCanvas');
         if (!canvas) return; 
 
@@ -22,7 +24,8 @@ if (window.gameInitialized) {
         
         let enemies = [], particles = [], repairItems = [], damageNumbers = [], slashes = [], footprints = [], arrows = [];
         
-        let localHighScore = parseInt(localStorage.getItem('citadelHighScore')) || 0; 
+        let localHighScore = 0;
+        try { localHighScore = parseInt(localStorage.getItem('citadelHighScore')) || 0; } catch(e) {}
         let globalHighScore = 0; 
 
         const topUI = document.getElementById('topUI');
@@ -105,6 +108,7 @@ if (window.gameInitialized) {
             img.src = src; goblinFrames.push(img); 
         });
 
+        // СЕТЕВОЙ КОД
         const SUPABASE_URL = 'https://bgzxdpjfsodndxroieay.supabase.co'; 
         const SUPABASE_ANON_KEY = 'sb_publishable_7lewcPQCbnoXmkcMLu_Hlw_dnfCXZka';
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -143,31 +147,27 @@ if (window.gameInitialized) {
                 let currentAnimSpeed = this.animationSpeed;
                 let inMoat = false;
 
-                // Расширенные границы рва
                 let moatTop = canvas.height - 140; 
                 let moatBottom = canvas.height - 50;
 
-                // --- ЛОГИКА ЖЕСТКОГО ЗАМЕДЛЕНИЯ ---
+                // ЧУВСТВИТЕЛЬНОЕ ЗАМЕДЛЕНИЕ (Режет скорость очень сильно)
                 if (spikesLevel > 0 && (this.y + this.height > moatTop) && (this.y < moatBottom)) {
                     inMoat = true;
-                    // Ур. 1 = 40% от скорости. Ур. 2 = 25%. Ур. 3+ = 10%
-                    let slowMultiplier = Math.max(0.1, 0.55 - (spikesLevel * 0.15));
+                    let slowMultiplier = Math.max(0.15, 0.5 - (spikesLevel * 0.15));
                     currentSpeed *= slowMultiplier;
-                    currentAnimSpeed *= 2; // Анимация шагов замедляется в 2 раза
+                    currentAnimSpeed *= 2; 
                 }
 
                 this.y += currentSpeed; 
                 this.frameTimer++;
                 
-                // Шаг гоблина
                 if (this.frameTimer >= currentAnimSpeed) {
                     this.frameX = this.frameX < this.maxFrame ? this.frameX + 1 : 0; 
                     this.frameTimer = 0; 
                     footprints.push(new Footprint(this.x + this.width / 2, this.y + this.height - 10));
                     
-                    // Эффект хлюпающей грязи/крови при движении по рву
                     if (inMoat) {
-                        let splashColor = spikesLevel > 1 ? '#8a0303' : '#4e342e'; // Кровь или грязь
+                        let splashColor = spikesLevel > 1 ? '#8a0303' : '#4e342e'; 
                         createExplosion(this.x + this.width / 2, this.y + this.height, splashColor, 3);
                     }
                 }
@@ -233,7 +233,7 @@ if (window.gameInitialized) {
             
             if (topUI) topUI.style.display = 'flex';
             if (bottomUI) bottomUI.style.display = 'flex';
-            overlay.style.display = 'none';
+            if (overlay) overlay.style.display = 'none';
             
             updateUI();
             gameLoop();
@@ -275,6 +275,7 @@ if (window.gameInitialized) {
                 }
                 enemy.update();
 
+                // ХИТБОКС СТЕНЫ
                 const spriteDeadSpace = 25; 
                 const actualBottomEdge = enemy.y + enemy.height - spriteDeadSpace; 
                 const wallY = canvas.height - 20;
@@ -293,29 +294,15 @@ if (window.gameInitialized) {
             ctx.clearRect(0, 0, canvas.width, canvas.height); 
             footprints.forEach(fp => fp.draw());
 
-            // --- БОЛЕЕ ШИРОКИЙ РОВ С ШИПАМИ ---
             if (spikesLevel > 0) {
                 let moatY = canvas.height - 130;
                 let moatHeight = 60;
-                
                 ctx.fillStyle = 'rgba(28, 55, 66, 0.6)'; 
                 ctx.fillRect(0, moatY, canvas.width, moatHeight);
-                
                 for(let i = -10; i < canvas.width; i += 20) {
-                    ctx.fillStyle = '#4e342e'; 
-                    ctx.beginPath();
-                    ctx.moveTo(i, moatY + moatHeight);
-                    ctx.lineTo(i + 10, moatY - 10);
-                    ctx.lineTo(i + 20, moatY + moatHeight);
-                    ctx.fill();
-                    
+                    ctx.fillStyle = '#4e342e'; ctx.beginPath(); ctx.moveTo(i, moatY + moatHeight); ctx.lineTo(i + 10, moatY - 10); ctx.lineTo(i + 20, moatY + moatHeight); ctx.fill();
                     if (spikesLevel > 1) {
-                        ctx.fillStyle = '#8a0303';
-                        ctx.beginPath();
-                        ctx.moveTo(i + 6, moatY + 15);
-                        ctx.lineTo(i + 10, moatY - 10);
-                        ctx.lineTo(i + 14, moatY + 15);
-                        ctx.fill();
+                        ctx.fillStyle = '#8a0303'; ctx.beginPath(); ctx.moveTo(i + 6, moatY + 15); ctx.lineTo(i + 10, moatY - 10); ctx.lineTo(i + 14, moatY + 15); ctx.fill();
                     }
                 }
             }
@@ -343,22 +330,50 @@ if (window.gameInitialized) {
             animationId = requestAnimationFrame(gameLoop);
         }
 
+        // БРОНЕБОЙНАЯ ФУНКЦИЯ КОНЦА ИГРЫ
         function endGame() {
+            console.log("Игра окончена. Запускаю финальный экран...");
             cancelAnimationFrame(animationId);
+            
             if (topUI) topUI.style.display = 'none'; 
             if (bottomUI) bottomUI.style.display = 'none'; 
             
             let recordMessage = "";
-            if (score > localHighScore) {
-                localHighScore = score; localStorage.setItem('citadelHighScore', localHighScore); 
-                recordMessage += `<br><span style="font-size:1.1rem; color:#aaa;">Вы побили свой рекорд!</span>`;
+            
+            // Защита от падения LocalStorage
+            try {
+                if (score > localHighScore) {
+                    localHighScore = score; 
+                    localStorage.setItem('citadelHighScore', localHighScore); 
+                    recordMessage += `<br><span style="font-size:1.1rem; color:#aaa;">Вы побили свой рекорд!</span>`;
+                }
+            } catch(e) { console.error("Ошибка сохранения рекорда в кэш:", e); }
+            
+            // Защита от падения Supabase
+            try {
+                if (!isNaN(globalHighScore) && score > globalHighScore) {
+                    // Асинхронное сохранение не заблокирует вывод экрана
+                    fetch(`${SUPABASE_URL}/rest/v1/leaderboard`, { method: 'POST', headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, body: JSON.stringify({ score: score, nickname: currentPlayerName }) })
+                    .then(res => { if(res.ok) console.log("Рекорд успешно улетел в БД"); })
+                    .catch(err => console.error("Ошибка отправки рекорда:", err));
+                    
+                    recordMessage += `<br><span style="font-size:1.3rem; color:#00E676; text-shadow: 0 0 10px #00E676;">👑 ВЫ ПОБИЛИ РЕКОРД САЙТА! 👑</span>`;
+                }
+            } catch(e) { console.error("Ошибка глобального рекорда:", e); }
+
+            // Жестко гарантируем появление окна
+            if (overlayTitle) {
+                overlayTitle.innerHTML = `Ворота пробиты!<br><span style="font-size:1.5rem; color:#ff5252;">Счет: ${score}</span>${recordMessage}`;
             }
-            if (!isNaN(globalHighScore) && score > globalHighScore) {
-                saveGlobalHighScore(score); 
-                recordMessage += `<br><span style="font-size:1.3rem; color:#00E676; text-shadow: 0 0 10px #00E676;">👑 ВЫ ПОБИЛИ РЕКОРД САЙТА! 👑</span>`;
+            if (startBtn) {
+                startBtn.textContent = 'Держать оборону снова'; 
+                startBtn.disabled = false; // Принудительно разблокируем кнопку
             }
-            overlayTitle.innerHTML = `Ворота пробиты!<br><span style="font-size:1.5rem; color:#ff5252;">Счет: ${score}</span>${recordMessage}`;
-            startBtn.textContent = 'Держать оборону снова'; overlay.style.display = 'flex'; draw(); 
+            if (overlay) {
+                overlay.style.display = 'flex'; 
+                overlay.style.zIndex = '9999'; // Жестко выводим поверх всего интерфейса и холста
+            }
+            draw(); // Последняя отрисовка кадра
         }
 
         function handleInput(e) {
