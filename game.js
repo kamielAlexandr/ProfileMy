@@ -6,11 +6,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const overlay = document.getElementById('gameOverlay');
     const startBtn = document.getElementById('startGameBtn');
     const overlayTitle = document.getElementById('overlayTitle');
+    const gameContainer = document.getElementById('gameContainer');
 
     const localScoreDisplay = document.getElementById('localScoreDisplay');
     const globalScoreDisplay = document.getElementById('globalScoreDisplay');
 
-    // 1. ОБЪЯВЛЯЕМ ВСЕ ПЕРЕМЕННЫЕ
+    // ОБЪЯВЛЯЕМ ВСЕ ПЕРЕМЕННЫЕ
     let score = 0;
     const maxLives = 5;
     let lives = maxLives;
@@ -40,18 +41,16 @@ document.addEventListener('DOMContentLoaded', () => {
     let repairTimer = 0;
     let repairInterval = 500; 
 
-    // --- НАХОДИМ ИНТЕРФЕЙС ИЗ HTML ---
+    // НАХОДИМ ИНТЕРФЕЙС
     const statsContainer = document.getElementById('statsContainer');
     const scoreUI = document.getElementById('scoreUI');
     const goldUI = document.getElementById('goldUI');
     const livesUI = document.getElementById('livesUI');
     const shopBtn = document.getElementById('buyArcherBtn');
-    const shopContainer = document.getElementById('shopContainer'); 
-    
     let lastScore = -1, lastCoins = -1, lastLives = -1, lastArchers = -1;
 
     function updateUI() {
-        if (!statsContainer || !scoreUI || !goldUI || !livesUI || !shopBtn) return;
+        if (!statsContainer || !scoreUI || !goldUI || !livesUI || !shopBtn) return; 
 
         if (lastScore !== score || lastCoins !== coins || lastLives !== lives || lastArchers !== archers) {
             scoreUI.innerHTML = `💀 Убито: ${score}`;
@@ -85,16 +84,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 archers++;
                 archerCost = Math.floor(archerCost * 1.5); 
                 updateUI(); 
-                damageNumbers.push(new DamageNumber(canvas.width / 2, canvas.height - 100, 'Лучник нанят!', '#00E676'));
+                damageNumbers.push(new DamageNumber(canvas.width - 150, canvas.height - 100, 'Лучник нанят!', '#00E676'));
             }
         });
     }
 
-    // 2. ЗАГРУЗКА ОТДЕЛЬНЫХ КАДРОВ АНИМАЦИИ
+    // ЗАГРУЗКА АНИМАЦИИ
     const goblinFrames = []; 
     let isSpriteLoaded = false;
     let loadedImagesCount = 0;
-    
     const frameNames = ['img/gob1.png', 'img/gob2.png', 'img/gob3.png', 'img/gob4.png'];
 
     frameNames.forEach((src) => {
@@ -120,7 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
         goblinFrames.push(img); 
     });
 
-    // 3. СЕТЕВАЯ ЛОГИКА (API SUPABASE)
+    // СЕТЕВАЯ ЛОГИКА (API SUPABASE)
     const SUPABASE_URL = 'https://bgzxdpjfsodndxroieay.supabase.co'; 
     const SUPABASE_ANON_KEY = 'sb_publishable_7lewcPQCbnoXmkcMLu_Hlw_dnfCXZka';
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -180,7 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     checkCurrentPlayer(); fetchGlobalHighScore(); fetchLeaderboard(); 
 
-    // 4. КЛАССЫ
+    // КЛАССЫ
     class Enemy {
         constructor(isBoss = false) {
             this.isBoss = isBoss;
@@ -287,22 +285,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- ИГРОВАЯ ЛОГИКА ---
+    // ИГРОВАЯ ЛОГИКА
     function initGame() {
         console.log("Кнопка нажата! Игра начинается...");
-        
-        if (animationId) {
-            cancelAnimationFrame(animationId);
-        }
+        if (animationId) { cancelAnimationFrame(animationId); }
 
         score = 0; lives = maxLives; isGameOver = false;
         enemies = []; particles = []; repairItems = []; damageNumbers = []; slashes = []; footprints = []; arrows = [];
-        
         coins = 0; archers = 0; archerCost = 15;
-        
         lastScore = -1; lastCoins = -1; lastLives = -1; lastArchers = -1;
         
-        if (shopContainer) shopContainer.style.display = 'flex';
+        if (shopBtn) shopBtn.style.display = 'block';
         if (statsContainer) statsContainer.style.display = 'flex'; 
         updateUI();
 
@@ -325,7 +318,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (archers > 0 && enemies.length > 0) {
             archerTimer++;
             let fireRate = Math.max(15, 100 - (archers * 10)); 
-            
             if (archerTimer >= fireRate) {
                 archerTimer = 0;
                 let target = enemies.reduce((lowest, current) => (current.y > lowest.y ? current : lowest), enemies[0]);
@@ -363,19 +355,18 @@ document.addEventListener('DOMContentLoaded', () => {
             if (enemy.hp <= 0) {
                 createExplosion(enemy.x + enemy.width/2, enemy.y + enemy.height/2, enemy.color, enemy.isBoss ? 50 : 15);
                 score += enemy.isBoss ? 5 : 1; 
-                
                 let coinReward = enemy.isBoss ? 5 : 1;
                 coins += coinReward; 
                 damageNumbers.push(new DamageNumber(enemy.x + enemy.width/2, enemy.y + enemy.height/2, `+${coinReward} 🪙`, '#ffd700'));
-                
                 enemies.splice(i, 1);
                 continue; 
             }
 
             enemy.update();
 
-            // ВАЖНОЕ ИСПРАВЛЕНИЕ: теперь ждем, пока центр гоблина коснется стены
-            if (enemy.y + (enemy.height * 0.5) >= canvas.height - 20) {
+            // ВАЖНОЕ ИСПРАВЛЕНИЕ ХИТБОКСА! 
+            // Теперь игра ждет, пока верхняя граница гоблина почти дойдет до стены (обрезаем 70% пустой высоты)
+            if (enemy.y + (enemy.height * 0.3) >= canvas.height - 20) {
                 lives -= enemy.isBoss ? 3 : 1; 
                 createExplosion(enemy.x + enemy.width/2, enemy.y + enemy.height, '#ff9800', 30);
                 enemies.splice(i, 1);
@@ -410,17 +401,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function gameLoop() {
-        if (isGameOver) {
-            endGame();
-            return;
-        }
+        if (isGameOver) { endGame(); return; }
         update(); draw();
         animationId = requestAnimationFrame(gameLoop);
     }
 
     function endGame() {
         cancelAnimationFrame(animationId);
-        if (shopContainer) shopContainer.style.display = 'none'; 
+        if (shopBtn) shopBtn.style.display = 'none'; 
         if (statsContainer) statsContainer.style.display = 'none'; 
         
         let recordMessage = "";
@@ -487,12 +475,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if(startBtn) startBtn.addEventListener('click', initGame);
     
     const fullscreenBtn = document.getElementById('fullscreenBtn');
-    const gameWrapper = document.getElementById('gameWrapper'); // ИСПРАВЛЕНО
-    
-    if (fullscreenBtn && gameWrapper) {
+    if (fullscreenBtn && gameContainer) {
         fullscreenBtn.addEventListener('click', () => {
             if (!document.fullscreenElement) {
-                gameWrapper.requestFullscreen().catch(e => console.warn(e.message)); 
+                gameContainer.requestFullscreen().catch(e => console.warn(e.message)); 
                 fullscreenBtn.textContent = "✖"; 
             } else {
                 document.exitFullscreen();
