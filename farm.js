@@ -1,4 +1,3 @@
-// ЖЕСТКАЯ ЗАЩИТА ОТ ДВОЙНОГО ЗАПУСКА
 if (window.farmInitialized) {
     console.warn("Ферма уже запущена.");
 } else {
@@ -11,6 +10,7 @@ if (window.farmInitialized) {
         const ctx = canvas.getContext('2d');
         let animationId;
 
+        // === БЕЗОПАСНАЯ ЗАГРУЗКА ===
         function safeLoad(key, defaultObj) {
             try {
                 let data = localStorage.getItem(key);
@@ -28,96 +28,15 @@ if (window.farmInitialized) {
             coins: parseInt(localStorage.getItem('farmCoins')) || 100, 
             xp: parseInt(localStorage.getItem('farmXp')) || 0,
             inventory: safeLoad('farmInventory', { wheat: 5 }),
-            upgrades: safeLoad('farmUpgrades', { 
-                exp1: false, exp2: false, exp3: false, // Расширения огорода
-                autoWater: false, greenhouse: false 
-            })
+            upgrades: safeLoad('farmUpgrades', { exp1: false, exp2: false, exp3: false, autoWater: false, greenhouse: false })
         };
-
         if (player.inventory.wheat === undefined) player.inventory.wheat = 5;
 
         let selectedSeed = 'wheat';
         let activeCanvasRoom = 'gardenRoom'; 
-// =========================================
-        // СЕТЕВОЙ КОД И ТАБЛИЦА ЛИДЕРОВ (SUPABASE)
-        // =========================================
-        const SUPABASE_URL = 'https://bgzxdpjfsodndxroieay.supabase.co'; 
-        const SUPABASE_ANON_KEY = 'sb_publishable_7lewcPQCbnoXmkcMLu_Hlw_dnfCXZka';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        let currentPlayerName = "Аноним";
-        
-        async function checkCurrentPlayer() {
-            try {
-                const { data: { session } } = await supabase.auth.getSession();
-                if (session && session.user) {
-                    currentPlayerName = session.user.user_metadata?.username || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || "Аноним";
-                }
-            } catch (e) { console.warn("Не удалось подгрузить имя профиля:", e); }
-        }
-        
-        async function fetchFarmLeaderboard() {
-            try {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/farm_leaderboard?select=coins,nickname&order=coins.desc&limit=5`, { 
-                    method: 'GET', 
-                    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } 
-                });
-                const data = await response.json();
-                const list = document.getElementById('farmLeaderboardList');
-                if (data && data.length > 0 && list) {
-                    list.innerHTML = ''; 
-                    data.forEach((entry, index) => {
-                        const li = document.createElement('li'); 
-                        let medal = `${index + 1}.`; if (index === 0) medal = '🥇'; if (index === 1) medal = '🥈'; if (index === 2) medal = '🥉';
-                        li.innerHTML = `<span class="rank">${medal}</span> <span class="name">${entry.nickname || "Аноним"}</span> <span class="score">${entry.coins.toLocaleString()} 🪙</span>`;
-                        list.appendChild(li);
-                    });
-                }
-            } catch (e) { console.error("Ошибка загрузки рекордов фермы:", e); }
-        }
 
-        async function syncFarmLeaderboard() {
-            const btn = document.getElementById('syncLeaderboardBtn');
-            if (btn) btn.textContent = "⏳ Сохранение...";
-            
-            try {
-                await checkCurrentPlayer(); // Убеждаемся, что знаем имя
-                await fetch(`${SUPABASE_URL}/rest/v1/farm_leaderboard`, { 
-                    method: 'POST', 
-                    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, 
-                    body: JSON.stringify({ coins: player.coins, nickname: currentPlayerName }) 
-                });
-                
-                if (btn) {
-                    btn.textContent = "✔️ Успешно!";
-                    btn.style.backgroundColor = "#4caf50"; // Зеленеет от успеха
-                }
-                setTimeout(() => { 
-                    if (btn) {
-                        btn.innerHTML = "🏆 Сохранить в Топ"; 
-                        btn.style.backgroundColor = ""; // Возвращаем цвет
-                    }
-                }, 2000);
-                
-                fetchFarmLeaderboard(); // Сразу обновляем доску, чтобы игрок увидел себя
-            } catch (e) { 
-                console.error(e); 
-                if (btn) btn.textContent = "❌ Ошибка";
-                setTimeout(() => { if (btn) btn.innerHTML = "🏆 Сохранить в Топ"; }, 2000);
-            }
-        }
-
-        // Привязываем кнопку
-        const syncBtn = document.getElementById('syncLeaderboardBtn');
-        if (syncBtn) syncBtn.addEventListener('click', syncFarmLeaderboard);
-
-        // При старте игры:
-        checkCurrentPlayer();
-        fetchFarmLeaderboard();
-        // =========================================
-        // --- БАЗА 20 СЕМЯН ---
-        // growTime - время роста в миллисекундах. waterNeeds - сколько раз попросит пить.
+        // --- БАЗА СЕМЯН ---
         const SEEDS = {
-            // БАЗОВЫЙ ОГОРОД
             wheat:      { id: 'wheat', name: 'Пшеница', icon: '🌾', cost: 5, reward: 15, growTime: 5000, witherTime: 15000, waterNeeds: 1 },
             carrot:     { id: 'carrot', name: 'Морковь', icon: '🥕', cost: 12, reward: 30, growTime: 8000, witherTime: 20000, waterNeeds: 1 },
             potato:     { id: 'potato', name: 'Картофель', icon: '🥔', cost: 25, reward: 60, growTime: 12000, witherTime: 30000, waterNeeds: 2 },
@@ -132,33 +51,31 @@ if (window.farmInitialized) {
             melon:      { id: 'melon', name: 'Дыня', icon: '🍈', cost: 4500, reward: 12000, growTime: 240000, witherTime: 400000, waterNeeds: 5 },
             watermelon: { id: 'watermelon', name: 'Арбуз', icon: '🍉', cost: 8000, reward: 22000, growTime: 300000, witherTime: 500000, waterNeeds: 5 },
             pumpkin:    { id: 'pumpkin', name: 'Тыква', icon: '🎃', cost: 15000, reward: 45000, growTime: 420000, witherTime: 600000, waterNeeds: 6 },
-            
-            // ТЕПЛИЦА (Магические травы)
-            magic_root:  { id: 'magic_root', name: 'Маг. Корень', icon: '🌺', cost: 25000, reward: 80000, growTime: 600000, witherTime: 900000, waterNeeds: 5, type: 'greenhouse' },
-            blood_rose:  { id: 'blood_rose', name: 'Роза Крови', icon: '🌹', cost: 50000, reward: 170000, growTime: 900000, witherTime: 1200000, waterNeeds: 6, type: 'greenhouse' },
-            void_berry:  { id: 'void_berry', name: 'Ягода Пустоты', icon: '🫐', cost: 100000, reward: 350000, growTime: 1200000, witherTime: 1800000, waterNeeds: 7, type: 'greenhouse' },
-            moon_flower: { id: 'moon_flower', name: 'Лунный Цвет', icon: '💮', cost: 250000, reward: 900000, growTime: 1800000, witherTime: 2400000, waterNeeds: 8, type: 'greenhouse' },
-            star_lotus:  { id: 'star_lotus', name: 'Звездный Лотос', icon: '🪷', cost: 600000, reward: 2200000, growTime: 2400000, witherTime: 3000000, waterNeeds: 10, type: 'greenhouse' },
+            magic_root: { id: 'magic_root', name: 'Маг. Корень', icon: '🌺', cost: 25000, reward: 80000, growTime: 600000, witherTime: 900000, waterNeeds: 5, type: 'greenhouse' },
+            blood_rose: { id: 'blood_rose', name: 'Роза Крови', icon: '🌹', cost: 50000, reward: 170000, growTime: 900000, witherTime: 1200000, waterNeeds: 6, type: 'greenhouse' },
+            void_berry: { id: 'void_berry', name: 'Ягода Пустоты', icon: '🫐', cost: 100000, reward: 350000, growTime: 1200000, witherTime: 1800000, waterNeeds: 7, type: 'greenhouse' },
+            moon_flower:{ id: 'moon_flower', name: 'Лунный Цвет', icon: '💮', cost: 250000, reward: 900000, growTime: 1800000, witherTime: 2400000, waterNeeds: 8, type: 'greenhouse' },
+            star_lotus: { id: 'star_lotus', name: 'Звездный Лотос', icon: '🪷', cost: 600000, reward: 2200000, growTime: 2400000, witherTime: 3000000, waterNeeds: 10, type: 'greenhouse' },
             dragon_fruit:{ id: 'dragon_fruit', name: 'Плод Дракона', icon: '🐉', cost: 1500000, reward: 6000000, growTime: 3600000, witherTime: 5000000, waterNeeds: 15, type: 'greenhouse' }
         };
 
-        // --- УЛУЧШЕНИЯ ДОМА ---
+        // --- УЛУЧШЕНИЯ ---
         const UPGRADES = {
             exp1:       { id: 'exp1', name: 'Расширение 4x2', icon: '📜', desc: 'Увеличивает огород до 8 грядок.', cost: 5000 },
             exp2:       { id: 'exp2', name: 'Расширение 4x3', icon: '📜', desc: 'Увеличивает огород до 12 грядок. (Нужно 4x2)', cost: 25000, req: 'exp1' },
             exp3:       { id: 'exp3', name: 'Расширение 5x4', icon: '📜', desc: 'Увеличивает огород до 20 грядок. (Нужно 4x3)', cost: 100000, req: 'exp2' },
             autoWater:  { id: 'autoWater', name: 'Автополив', icon: '🚿', desc: 'Автоматическая система орошения.', cost: 50000 },
-            greenhouse: { id: 'greenhouse', name: 'Теплица', icon: '🔑', desc: 'Открывает 4 элитные грядки для магических трав.', cost: 150000 }
+            greenhouse: { id: 'greenhouse', name: 'Теплица', icon: '🔑', desc: 'Открывает элитные грядки.', cost: 150000 }
         };
 
         let plots = safeLoad('farmPlots', []);
 
-        // --- ДИНАМИЧЕСКАЯ ГЕОМЕТРИЯ ОГОРОДА ---
+        // --- ДИНАМИЧЕСКАЯ СЕТКА ---
         function getGardenGrid() {
             if (player.upgrades.exp3) return { c: 5, r: 4 };
             if (player.upgrades.exp2) return { c: 4, r: 3 };
             if (player.upgrades.exp1) return { c: 4, r: 2 };
-            return { c: 3, r: 2 }; // Базовый размер
+            return { c: 3, r: 2 }; 
         }
 
         function rebuildGrid() {
@@ -166,18 +83,14 @@ if (window.farmInitialized) {
             const pw = canvas.width / grid.c;
             const ph = canvas.height / grid.r;
 
-            // 1. Создаем новые грядки, если их еще нет
             for(let r = 0; r < grid.r; r++) {
                 for(let c = 0; c < grid.c; c++) {
                     let id = `garden_${r}_${c}`;
                     let exists = plots.find(p => p.id === id);
-                    if (!exists) {
-                        plots.push({ id: id, room: 'gardenRoom', col: c, row: r, state: 'empty', seedId: null, plantTime: 0, lastWatered: 0, watersGiven: 0 });
-                    }
+                    if (!exists) plots.push({ id: id, room: 'gardenRoom', col: c, row: r, state: 'empty', seedId: null, plantTime: 0, lastWatered: 0, watersGiven: 0 });
                 }
             }
 
-            // Создаем теплицу (если вдруг её стерло кэшем)
             for(let r=0; r<2; r++) {
                 for(let c=0; c<2; c++) {
                     let id = `green_${r}_${c}`;
@@ -186,7 +99,6 @@ if (window.farmInitialized) {
                 }
             }
 
-            // 2. Пересчитываем координаты X, Y, Width, Height для всех
             plots.forEach(p => {
                 if(p.room === 'gardenRoom') {
                     p.width = pw; p.height = ph;
@@ -197,8 +109,6 @@ if (window.farmInitialized) {
                 }
             });
         }
-        
-        // Вызываем сразу при старте
         rebuildGrid();
 
         function saveData() {
@@ -211,7 +121,71 @@ if (window.farmInitialized) {
             } catch(e) {}
         }
 
-        // --- ИНТЕРФЕЙС ---
+        // =========================================
+        // СЕТЕВОЙ КОД SUPABASE
+        // =========================================
+        const SUPABASE_URL = 'https://bgzxdpjfsodndxroieay.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'sb_publishable_7lewcPQCbnoXmkcMLu_Hlw_dnfCXZka';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let currentPlayerName = "Аноним";
+        
+        async function checkCurrentPlayer() {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session && session.user) {
+                    currentPlayerName = session.user.user_metadata?.username || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || "Аноним";
+                }
+            } catch (e) { console.warn(e); }
+        }
+        
+        async function fetchFarmLeaderboard() {
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/farm_leaderboard?select=coins,nickname&order=coins.desc&limit=5`, { 
+                    method: 'GET', headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } 
+                });
+                const data = await response.json();
+                const list = document.getElementById('farmLeaderboardList');
+                if (data && data.length > 0 && list) {
+                    list.innerHTML = ''; 
+                    data.forEach((entry, index) => {
+                        const li = document.createElement('li'); 
+                        let medal = `${index + 1}.`; if (index === 0) medal = '🥇'; if (index === 1) medal = '🥈'; if (index === 2) medal = '🥉';
+                        li.innerHTML = `<span class="rank">${medal}</span> <span class="name">${entry.nickname || "Аноним"}</span> <span class="score">${entry.coins.toLocaleString()} 🪙</span>`;
+                        list.appendChild(li);
+                    });
+                }
+            } catch (e) {}
+        }
+
+        async function syncFarmLeaderboard() {
+            const btn = document.getElementById('syncLeaderboardBtn');
+            if (btn) btn.textContent = "⏳ Сохранение...";
+            
+            try {
+                await checkCurrentPlayer(); 
+                await fetch(`${SUPABASE_URL}/rest/v1/farm_leaderboard`, { 
+                    method: 'POST', 
+                    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, 
+                    body: JSON.stringify({ coins: player.coins, nickname: currentPlayerName }) 
+                });
+                
+                if (btn) {
+                    btn.textContent = "✔️ Успешно!";
+                    btn.style.backgroundColor = "#4caf50";
+                }
+                setTimeout(() => { if (btn) { btn.innerHTML = "🏆 Сохранить в Топ"; btn.style.backgroundColor = ""; } }, 2000);
+                fetchFarmLeaderboard(); 
+            } catch (e) { 
+                if (btn) btn.textContent = "❌ Ошибка";
+                setTimeout(() => { if (btn) btn.innerHTML = "🏆 Сохранить в Топ"; }, 2000);
+            }
+        }
+
+        const syncBtn = document.getElementById('syncLeaderboardBtn');
+        if (syncBtn) syncBtn.addEventListener('click', syncFarmLeaderboard);
+        checkCurrentPlayer(); fetchFarmLeaderboard();
+
+        // --- ИНТЕРФЕЙС И РЕНДЕР ---
         const uiCoins = document.getElementById('farmCoinsUI');
         const uiXp = document.getElementById('farmXpUI');
         const invContainer = document.getElementById('inventoryUI');
@@ -274,7 +248,6 @@ if (window.farmInitialized) {
                 for (let key in UPGRADES) {
                     const upg = UPGRADES[key];
                     const hasUpg = player.upgrades[key];
-                    // Если у апгрейда есть требования, и они не выполнены - скрываем его
                     if (upg.req && !player.upgrades[upg.req]) continue;
 
                     const card = document.createElement('div');
@@ -290,7 +263,7 @@ if (window.farmInitialized) {
                             if (player.coins >= upg.cost) {
                                 player.coins -= upg.cost;
                                 player.upgrades[key] = true;
-                                rebuildGrid(); // ПЕРЕСТРАИВАЕМ СЕТКУ ПРИ ПОКУПКЕ РАСШИРЕНИЯ!
+                                rebuildGrid(); 
                                 saveData(); renderUI();
                             }
                         };
@@ -304,7 +277,7 @@ if (window.farmInitialized) {
         class PopupText {
             constructor(x, y, text, color) { this.x = x; this.y = y; this.text = text; this.color = color; this.life = 1.0; }
             update() { this.y -= 1.5; this.life -= 0.02; }
-            draw() { ctx.save(); ctx.globalAlpha = Math.max(0, this.life); ctx.fillStyle = this.color; ctx.font = 'bold 22px Arial'; ctx.textAlign = 'center'; ctx.fillText(this.text, this.x, this.y); ctx.strokeStyle = '#000'; ctx.lineWidth = 3; ctx.strokeText(this.text, this.x, this.y); ctx.fillText(this.text, this.x, this.y); ctx.restore(); }
+            draw() { ctx.save(); ctx.globalAlpha = Math.max(0, this.life); ctx.fillStyle = this.color; ctx.font = 'bold 22px Arial'; ctx.textAlign = 'center'; ctx.fillText(this.text, this.x, this.y); ctx.strokeStyle = '#000'; ctx.lineWidth = 3; ctx.strokeText(this.text, this.x, this.y); ctx.restore(); }
         }
 
         const roomBtns = document.querySelectorAll('.room-btn');
@@ -327,7 +300,7 @@ if (window.farmInitialized) {
             });
         });
 
-        // --- ИГРОВОЙ ЦИКЛ CANVAS ---
+        // --- ЛОГИКА ХОЛСТА ---
         function updateCanvas() {
             const now = Date.now();
             plots.forEach(plot => {
@@ -413,7 +386,6 @@ if (window.farmInitialized) {
             animationId = requestAnimationFrame(gameLoop);
         }
 
-        // --- ВЗАИМОДЕЙСТВИЕ ---
         canvas.addEventListener('mousedown', (e) => {
             const rect = canvas.getBoundingClientRect();
             const clickX = (e.clientX - rect.left) * (canvas.width / rect.width);
@@ -459,6 +431,6 @@ if (window.farmInitialized) {
 
         renderUI();
         gameLoop();
-        setInterval(saveData, 5000);
+        setInterval(saveData, 3000);
     });
 }
