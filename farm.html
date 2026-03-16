@@ -22,12 +22,17 @@
 
     <main class="container">
         <h1>Тихая Гавань: Поместье</h1>
-        <p>Выращивайте урожай, не забывайте его поливать, покупайте семена в Магазине и улучшайте поместье в Доме!</p><br>
+        <p>Выращивайте урожай, покупайте семена в Магазине и улучшайте поместье! Жмите "Сохранить в Топ", чтобы попасть в Зал Славы.</p><br>
 
         <div class="farm-wrapper">
             <div class="farm-ui-top">
-                <div class="stat-badge">💰 Золото: <span id="farmCoinsUI" style="color:#ffd700">50</span></div>
-                <div class="stat-badge">⭐ Опыт: <span id="farmXpUI" style="color:#4caf50">0</span></div>
+                <div style="display:flex; gap:10px; align-items:center; flex-wrap: wrap;">
+                    <div class="stat-badge">💰 Золото: <span id="farmCoinsUI" style="color:#ffd700">100</span></div>
+                    <div class="stat-badge">⭐ Опыт: <span id="farmXpUI" style="color:#4caf50">0</span></div>
+                </div>
+                <button id="syncLeaderboardBtn" class="game-btn" style="padding: 8px 15px; font-size: 0.95rem; margin-top: 5px;">
+                    🏆 Сохранить в Топ
+                </button>
             </div>
 
             <div class="farm-nav">
@@ -58,6 +63,7 @@
                     </div>
             </div>
         </div>
+
         <div class="leaderboard-container">
             <h3>🏆 Самые богатые фермеры (Топ-5)</h3>
             <ul id="farmLeaderboardList" class="leaderboard-list">
@@ -72,6 +78,9 @@
         </div>
     </footer>
 
-    <script src="farm.js?v=400"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth.js"></script>
+    <script src="main.js"></script>
+    <script src="farm.js?v=999"></script>
 </body>
 </html>
