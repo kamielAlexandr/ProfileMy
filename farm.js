@@ -163,21 +163,38 @@ if (window.farmInitialized) {
             
             try {
                 await checkCurrentPlayer(); 
-                await fetch(`${SUPABASE_URL}/rest/v1/farm_leaderboard`, { 
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/farm_leaderboard`, { 
                     method: 'POST', 
-                    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, 
+                    headers: { 
+                        'apikey': SUPABASE_ANON_KEY, 
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 
+                        'Content-Type': 'application/json', 
+                        'Prefer': 'return=minimal' 
+                    }, 
                     body: JSON.stringify({ coins: player.coins, nickname: currentPlayerName }) 
                 });
+                
+                // ЕСЛИ БАЗА ДАННЫХ ОТВЕРГЛА ЗАПРОС:
+                if (!response.ok) {
+                    const errInfo = await response.json().catch(() => ({}));
+                    console.error("Детали ошибки от Supabase:", errInfo);
+                    throw new Error("База данных не приняла данные!");
+                }
                 
                 if (btn) {
                     btn.textContent = "✔️ Успешно!";
                     btn.style.backgroundColor = "#4caf50";
                 }
                 setTimeout(() => { if (btn) { btn.innerHTML = "🏆 Сохранить в Топ"; btn.style.backgroundColor = ""; } }, 2000);
+                
                 fetchFarmLeaderboard(); 
             } catch (e) { 
-                if (btn) btn.textContent = "❌ Ошибка";
-                setTimeout(() => { if (btn) btn.innerHTML = "🏆 Сохранить в Топ"; }, 2000);
+                console.error(e);
+                if (btn) {
+                    btn.textContent = "❌ Ошибка (жми F12)";
+                    btn.style.backgroundColor = "#ff5252";
+                }
+                setTimeout(() => { if (btn) { btn.innerHTML = "🏆 Сохранить в Топ"; btn.style.backgroundColor = ""; } }, 3000);
             }
         }
 
