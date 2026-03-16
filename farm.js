@@ -38,7 +38,82 @@ if (window.farmInitialized) {
 
         let selectedSeed = 'wheat';
         let activeCanvasRoom = 'gardenRoom'; 
+// =========================================
+        // СЕТЕВОЙ КОД И ТАБЛИЦА ЛИДЕРОВ (SUPABASE)
+        // =========================================
+        const SUPABASE_URL = 'https://bgzxdpjfsodndxroieay.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'sb_publishable_7lewcPQCbnoXmkcMLu_Hlw_dnfCXZka';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let currentPlayerName = "Аноним";
+        
+        async function checkCurrentPlayer() {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session && session.user) {
+                    currentPlayerName = session.user.user_metadata?.username || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || "Аноним";
+                }
+            } catch (e) { console.warn("Не удалось подгрузить имя профиля:", e); }
+        }
+        
+        async function fetchFarmLeaderboard() {
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/farm_leaderboard?select=coins,nickname&order=coins.desc&limit=5`, { 
+                    method: 'GET', 
+                    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } 
+                });
+                const data = await response.json();
+                const list = document.getElementById('farmLeaderboardList');
+                if (data && data.length > 0 && list) {
+                    list.innerHTML = ''; 
+                    data.forEach((entry, index) => {
+                        const li = document.createElement('li'); 
+                        let medal = `${index + 1}.`; if (index === 0) medal = '🥇'; if (index === 1) medal = '🥈'; if (index === 2) medal = '🥉';
+                        li.innerHTML = `<span class="rank">${medal}</span> <span class="name">${entry.nickname || "Аноним"}</span> <span class="score">${entry.coins.toLocaleString()} 🪙</span>`;
+                        list.appendChild(li);
+                    });
+                }
+            } catch (e) { console.error("Ошибка загрузки рекордов фермы:", e); }
+        }
 
+        async function syncFarmLeaderboard() {
+            const btn = document.getElementById('syncLeaderboardBtn');
+            if (btn) btn.textContent = "⏳ Сохранение...";
+            
+            try {
+                await checkCurrentPlayer(); // Убеждаемся, что знаем имя
+                await fetch(`${SUPABASE_URL}/rest/v1/farm_leaderboard`, { 
+                    method: 'POST', 
+                    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, 
+                    body: JSON.stringify({ coins: player.coins, nickname: currentPlayerName }) 
+                });
+                
+                if (btn) {
+                    btn.textContent = "✔️ Успешно!";
+                    btn.style.backgroundColor = "#4caf50"; // Зеленеет от успеха
+                }
+                setTimeout(() => { 
+                    if (btn) {
+                        btn.innerHTML = "🏆 Сохранить в Топ"; 
+                        btn.style.backgroundColor = ""; // Возвращаем цвет
+                    }
+                }, 2000);
+                
+                fetchFarmLeaderboard(); // Сразу обновляем доску, чтобы игрок увидел себя
+            } catch (e) { 
+                console.error(e); 
+                if (btn) btn.textContent = "❌ Ошибка";
+                setTimeout(() => { if (btn) btn.innerHTML = "🏆 Сохранить в Топ"; }, 2000);
+            }
+        }
+
+        // Привязываем кнопку
+        const syncBtn = document.getElementById('syncLeaderboardBtn');
+        if (syncBtn) syncBtn.addEventListener('click', syncFarmLeaderboard);
+
+        // При старте игры:
+        checkCurrentPlayer();
+        fetchFarmLeaderboard();
+        // =========================================
         // --- БАЗА 20 СЕМЯН ---
         // growTime - время роста в миллисекундах. waterNeeds - сколько раз попросит пить.
         const SEEDS = {
