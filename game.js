@@ -197,13 +197,23 @@ if (window.gameInitialized) {
         checkCurrentPlayer(); fetchLeaderboard();
 
         // КЛАССЫ ИГРЫ
+        // КЛАССЫ ИГРЫ
         class Enemy {
             constructor(isBoss = false) {
                 this.isBoss = isBoss; 
-                this.width = isBoss ? 128 : 64; this.height = isBoss ? 128 : 64;
-                this.x = Math.random() * (canvas.width - this.width); this.y = -this.height;
-                this.hp = isBoss ? 10 : 1; this.maxHp = this.hp;
-               this.speed = (isBoss ? 0.35 : (0.6 + Math.random() * 1.2)) * gameSpeedMultiplier;
+                
+                // РАЗМЕРЫ: Обычные гоблины теперь 40, Боссы - 128
+                this.width = isBoss ? 128 : 40; 
+                this.height = isBoss ? 128 : 40;
+                
+                this.x = Math.random() * (canvas.width - this.width); 
+                this.y = -this.height;
+                this.hp = isBoss ? 10 : 1; 
+                this.maxHp = this.hp;
+                
+                // СКОРОСТЬ: Боссы медленные, обычные тоже чуть сбавили шаг
+                this.speed = (isBoss ? 0.35 : (0.5 + Math.random() * 1.0)) * gameSpeedMultiplier;
+                
                 this.color = isBoss ? '#827717' : '#2e7d32'; 
                 this.frameX = 0; this.maxFrame = 3; this.animationSpeed = 8; this.frameTimer = 0; 
             }
@@ -237,6 +247,7 @@ if (window.gameInitialized) {
 
                 if (this.isBoss) {
                     ctx.drawImage(bossFrames[this.frameX], this.x, this.y, this.width, this.height);
+                    // Полоска здоровья босса
                     ctx.fillStyle = '#333'; ctx.fillRect(this.x + 14, this.y - 10, 100, 8); 
                     ctx.fillStyle = '#ff5252'; ctx.fillRect(this.x + 14, this.y - 10, 100 * (this.hp / this.maxHp), 8); 
                 } else {
