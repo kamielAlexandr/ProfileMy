@@ -707,15 +707,26 @@ h1 {
 /* =========================================
    ВОЗВРАЩАЕМ МЕЧ ДЛЯ ЗАЩИТЫ ЦИТАДЕЛИ
    ========================================= */
-#gameCanvas {
-    width: 100%;
-    max-width: 800px;
-    height: auto;
-    aspect-ratio: 4 / 3;
-    display: block;
-    margin: 0 auto;
-    touch-action: none;
-    image-rendering: pixelated;
-    /* Тот самый курсор-меч! */
-    cursor: url('img/cursor.cur') 0 0, crosshair !important; 
+/* =========================================
+   КУРСОРЫ-МЕЧИ ДЛЯ ЗАЩИТЫ ЦИТАДЕЛИ
+   ========================================= */
+/* Базовый меч (Урон 1) */
+#gameContainer,
+#gameCanvas,
+.game-overlay {
+    cursor: url('img/cursor.cur'), crosshair !important; 
+}
+
+/* Улучшенный меч (Урон 2) */
+.sword-lvl-2,
+.sword-lvl-2 #gameCanvas,
+.sword-lvl-2 .game-overlay {
+    cursor: url('img/cursor2.cur'), crosshair !important;
+}
+
+/* Эпический меч (Урон 3 и выше) */
+.sword-lvl-3,
+.sword-lvl-3 #gameCanvas,
+.sword-lvl-3 .game-overlay {
+    cursor: url('img/cursor3.cur'), crosshair !important;
 }
