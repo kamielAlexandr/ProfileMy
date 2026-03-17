@@ -117,19 +117,43 @@ if (window.gameInitialized) {
             });
         }
 
-        const goblinFrames = []; let isSpriteLoaded = false, loadedImagesCount = 0;
+        // --- ЗАГРУЗКА ГРАФИКИ (ОБЫЧНЫЕ И БОССЫ) ---
+        const goblinFrames = []; 
+        const bossFrames = []; // Массив для мини-боссов
+        let isSpriteLoaded = false, loadedImagesCount = 0;
+        
         const frameNames = ['img/gob1.png', 'img/gob2.png', 'img/gob3.png', 'img/gob4.png'];
+        const bossFrameNames = ['img/min_bos_gob1.png', 'img/min_bos_gob2.png', 'img/min_bos_gob3.png', 'img/min_bos_gob4.png'];
+        const totalImages = frameNames.length + bossFrameNames.length;
+
+        function checkImagesLoaded() {
+            loadedImagesCount++;
+            if (loadedImagesCount === totalImages) {
+                isSpriteLoaded = true;
+                if (isGameOver && startBtn) { 
+                    startBtn.textContent = "Начать битву"; 
+                    startBtn.disabled = false; 
+                    if(overlayTitle) overlayTitle.textContent = "Цитадель ждет"; 
+                }
+            }
+        }
+
+        // Грузим обычных гоблинов
         frameNames.forEach((src) => {
             const img = new Image();
-            img.onload = () => {
-                loadedImagesCount++;
-                if (loadedImagesCount === frameNames.length) {
-                    isSpriteLoaded = true;
-                    if (isGameOver && startBtn) { startBtn.textContent = "Начать битву"; startBtn.disabled = false; overlayTitle.textContent = "Цитадель ждет"; }
-                }
-            };
+            img.onload = checkImagesLoaded;
             img.onerror = () => { if (isGameOver && startBtn) { startBtn.textContent = "Играть (Без анимации)"; startBtn.disabled = false; } };
-            img.src = src; goblinFrames.push(img); 
+            img.src = src; 
+            goblinFrames.push(img); 
+        });
+
+        // Грузим мини-боссов
+        bossFrameNames.forEach((src) => {
+            const img = new Image();
+            img.onload = checkImagesLoaded;
+            img.onerror = () => { if (isGameOver && startBtn) { startBtn.textContent = "Играть (Без анимации)"; startBtn.disabled = false; } };
+            img.src = src; 
+            bossFrames.push(img); 
         });
 
         // --- СЕТЕВОЙ КОД И АВТОРИЗАЦИЯ ---
@@ -173,26 +197,40 @@ if (window.gameInitialized) {
 
         class Enemy {
             constructor(isBoss = false) {
-                this.isBoss = isBoss; this.width = isBoss ? 100 : 64; this.height = isBoss ? 100 : 64;
-                this.x = Math.random() * (canvas.width - this.width); this.y = -this.height;
-                this.hp = isBoss ? 5 : 1; this.maxHp = this.hp;
-                this.speed = (isBoss ? 0.7 : (1 + Math.random() * 2)) * gameSpeedMultiplier;
+                this.isBoss = isBoss; 
+                // РАЗМЕРЫ: 128 для босса, 64 для обычного
+                this.width = isBoss ? 128 : 64; 
+                this.height = isBoss ? 128 : 64;
+                
+                this.x = Math.random() * (canvas.width - this.width); 
+                this.y = -this.height;
+                
+                // ХП босса: 10 (чтобы его было тяжелее убить)
+                this.hp = isBoss ? 10 : 1; 
+                this.maxHp = this.hp;
+                this.speed = (isBoss ? 0.6 : (1 + Math.random() * 2)) * gameSpeedMultiplier;
                 this.color = isBoss ? '#827717' : '#2e7d32'; 
                 this.frameX = 0; this.maxFrame = 3; this.animationSpeed = 8; this.frameTimer = 0; 
             }
+            
             update() {
-                let currentSpeed = this.speed; let currentAnimSpeed = this.animationSpeed; let inMoat = false;
-                let moatTop = canvas.height - 140; let moatBottom = canvas.height - 50;
+                let currentSpeed = this.speed;
+                let currentAnimSpeed = this.animationSpeed;
+                let inMoat = false;
+                let moatTop = canvas.height - 140; 
+                let moatBottom = canvas.height - 50;
 
                 if (spikesLevel > 0 && (this.y + this.height > moatTop) && (this.y < moatBottom)) {
                     inMoat = true; let slowMultiplier = Math.max(0.15, 0.5 - (spikesLevel * 0.15));
                     currentSpeed *= slowMultiplier; currentAnimSpeed *= 2; 
                 }
 
-                this.y += currentSpeed; this.frameTimer++;
+                this.y += currentSpeed; 
+                this.frameTimer++;
                 
                 if (this.frameTimer >= currentAnimSpeed) {
-                    this.frameX = this.frameX < this.maxFrame ? this.frameX + 1 : 0; this.frameTimer = 0; 
+                    this.frameX = this.frameX < this.maxFrame ? this.frameX + 1 : 0; 
+                    this.frameTimer = 0; 
                     footprints.push(new Footprint(this.x + this.width / 2, this.y + this.height - 10));
                     
                     if (inMoat) {
@@ -201,13 +239,29 @@ if (window.gameInitialized) {
                     }
                 }
             }
+            
             draw() {
-                if (!isSpriteLoaded || this.isBoss) {
+                // Если картинки не успели прогрузиться — рисуем квадраты (защита от ошибок)
+                if (!isSpriteLoaded) {
                     ctx.save(); ctx.translate(this.x, this.y); ctx.fillStyle = this.color; ctx.fillRect(0, 0, this.width, this.height);
                     if (this.isBoss) { ctx.fillStyle = '#333'; ctx.fillRect(0, -12, this.width, 6); ctx.fillStyle = '#4caf50'; ctx.fillRect(0, -12, this.width * (this.hp/this.maxHp), 6); }
                     ctx.restore(); return; 
                 }
-                ctx.drawImage(goblinFrames[this.frameX], this.x, this.y, this.width, this.height);
+
+                // Рисуем нужный спрайт
+                if (this.isBoss) {
+                    // Отрисовка мини-босса
+                    ctx.drawImage(bossFrames[this.frameX], this.x, this.y, this.width, this.height);
+                    
+                    // Красивая красная полоска здоровья над головой босса
+                    ctx.fillStyle = '#333'; 
+                    ctx.fillRect(this.x + 14, this.y - 10, 100, 8); // Черный фон
+                    ctx.fillStyle = '#ff5252'; 
+                    ctx.fillRect(this.x + 14, this.y - 10, 100 * (this.hp / this.maxHp), 8); // Красное ХП
+                } else {
+                    // Отрисовка обычного гоблина
+                    ctx.drawImage(goblinFrames[this.frameX], this.x, this.y, this.width, this.height);
+                }
             }
         }
 
