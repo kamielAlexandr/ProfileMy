@@ -1,9 +1,12 @@
+// ЖЕСТКАЯ ЗАЩИТА ОТ ДВОЙНОГО ЗАПУСКА
 if (window.gameInitialized) {
     console.warn("Скрипт попытался запуститься дважды. Блокировка сработала.");
 } else {
     window.gameInitialized = true;
 
     document.addEventListener('DOMContentLoaded', () => {
+        console.log("Скрипт игры запущен.");
+        
         const canvas = document.getElementById('gameCanvas');
         if (!canvas) return; 
 
@@ -11,7 +14,7 @@ if (window.gameInitialized) {
         const overlay = document.getElementById('gameOverlay');
         const startBtn = document.getElementById('startGameBtn');
         const overlayTitle = document.getElementById('overlayTitle');
-        const gameWrapper = document.getElementById('gameWrapper'); // ГЛАВНЫЙ КОНТЕЙНЕР ДЛЯ КУРСОРОВ И ФУЛЛСКРИНА
+        const gameWrapper = document.getElementById('gameWrapper'); 
 
         let score = 0, lives = 5, maxLives = 5, isGameOver = true, animationId;
         let coins = 0, archers = 0, archerCost = 15, archerTimer = 0;
@@ -24,6 +27,7 @@ if (window.gameInitialized) {
         let repairTimer = 0, repairInterval = 500; 
         
         let enemies = [], particles = [], repairItems = [], damageNumbers = [], slashes = [], footprints = [], arrows = [];
+        let enemyProjectiles = []; // Массив для камней катапульты
         
         let localHighScore = 0;
         try { localHighScore = parseInt(localStorage.getItem('citadelHighScore')) || 0; } catch(e) {}
@@ -125,7 +129,6 @@ if (window.gameInitialized) {
                     updateUI(); 
                     damageNumbers.push(new DamageNumber(canvas.width / 2, canvas.height - 180, 'Меч улучшен!', '#ff5252'));
                     
-                    // ДОБАВЛЯЕМ КЛАСС ПРЯМО НА WRAPPER ДЛЯ СМЕНЫ КУРСОРА
                     if (gameWrapper) {
                         gameWrapper.classList.remove('sword-lvl-2', 'sword-lvl-3');
                         if (clickDamage === 2) gameWrapper.classList.add('sword-lvl-2');
@@ -135,14 +138,20 @@ if (window.gameInitialized) {
             });
         }
 
-        // ЗАГРУЗКА ГРАФИКИ
+        // --- ЗАГРУЗКА ВСЕЙ ГРАФИКИ ---
         const goblinFrames = []; 
         const bossFrames = []; 
+        const catapultFrames = []; 
+        const catapultAttackFrames = []; 
+        
         let isSpriteLoaded = false, loadedImagesCount = 0;
         
         const frameNames = ['img/gob1.png', 'img/gob2.png', 'img/gob3.png', 'img/gob4.png'];
         const bossFrameNames = ['img/min_bos_gob1.png', 'img/min_bos_gob2.png', 'img/min_bos_gob3.png', 'img/min_bos_gob4.png'];
-        const totalImages = frameNames.length + bossFrameNames.length;
+        const catFrameNames = ['img/unit1.png', 'img/unit2.png', 'img/unit3.png', 'img/unit4.png'];
+        const catAttackNames = ['img/unit_attack1.png', 'img/unit_attack2.png', 'img/unit_attack3.png', 'img/unit_attack4.png'];
+        
+        const totalImages = frameNames.length + bossFrameNames.length + catFrameNames.length + catAttackNames.length;
 
         function checkImagesLoaded() {
             loadedImagesCount++;
@@ -152,17 +161,10 @@ if (window.gameInitialized) {
             }
         }
 
-        frameNames.forEach((src) => {
-            const img = new Image(); img.onload = checkImagesLoaded;
-            img.onerror = () => { if (isGameOver && startBtn) { startBtn.textContent = "Играть (Без анимации)"; startBtn.disabled = false; } };
-            img.src = src; goblinFrames.push(img); 
-        });
-
-        bossFrameNames.forEach((src) => {
-            const img = new Image(); img.onload = checkImagesLoaded;
-            img.onerror = () => { if (isGameOver && startBtn) { startBtn.textContent = "Играть (Без анимации)"; startBtn.disabled = false; } };
-            img.src = src; bossFrames.push(img); 
-        });
+        frameNames.forEach((src) => { const img = new Image(); img.onload = checkImagesLoaded; img.onerror = () => { if (isGameOver && startBtn) { startBtn.textContent = "Играть (Без анимации)"; startBtn.disabled = false; } }; img.src = src; goblinFrames.push(img); });
+        bossFrameNames.forEach((src) => { const img = new Image(); img.onload = checkImagesLoaded; img.onerror = () => { if (isGameOver && startBtn) { startBtn.textContent = "Играть (Без анимации)"; startBtn.disabled = false; } }; img.src = src; bossFrames.push(img); });
+        catFrameNames.forEach((src) => { const img = new Image(); img.onload = checkImagesLoaded; img.onerror = () => { if (isGameOver && startBtn) { startBtn.textContent = "Играть (Без анимации)"; startBtn.disabled = false; } }; img.src = src; catapultFrames.push(img); });
+        catAttackNames.forEach((src) => { const img = new Image(); img.onload = checkImagesLoaded; img.onerror = () => { if (isGameOver && startBtn) { startBtn.textContent = "Играть (Без анимации)"; startBtn.disabled = false; } }; img.src = src; catapultAttackFrames.push(img); });
 
         // СЕТЕВОЙ КОД
         const SUPABASE_URL = 'https://bgzxdpjfsodndxroieay.supabase.co'; 
@@ -196,58 +198,149 @@ if (window.gameInitialized) {
         }
         checkCurrentPlayer(); fetchLeaderboard();
 
-        // КЛАССЫ ИГРЫ
-        // КЛАССЫ ИГРЫ
-        class Enemy {
-            constructor(isBoss = false) {
-                this.isBoss = isBoss; 
-                
-                // РАЗМЕРЫ: Обычные гоблины теперь 40, Боссы - 128
-                this.width = isBoss ? 128 : 40; 
-                this.height = isBoss ? 128 : 40;
-                
-                this.x = Math.random() * (canvas.width - this.width); 
-                this.y = -this.height;
-                this.hp = isBoss ? 10 : 1; 
-                this.maxHp = this.hp;
-                
-                // СКОРОСТЬ: Боссы медленные, обычные тоже чуть сбавили шаг
-                this.speed = (isBoss ? 0.35 : (0.5 + Math.random() * 1.0)) * gameSpeedMultiplier;
-                
-                this.color = isBoss ? '#827717' : '#2e7d32'; 
-                this.frameX = 0; this.maxFrame = 3; this.animationSpeed = 8; this.frameTimer = 0; 
+        // --- КЛАСС КАМНЯ (СНАРЯД КАТАПУЛЬТЫ) ---
+        class Rock {
+            constructor(x, y) {
+                this.x = x; 
+                this.y = y;
+                this.speedY = 5; // Быстро летит вниз
+                this.width = 20; 
+                this.height = 20;
+                this.active = true;
+                this.angle = 0;
             }
             update() {
-                let currentSpeed = this.speed; let currentAnimSpeed = this.animationSpeed; let inMoat = false;
-                let moatTop = canvas.height - 140; let moatBottom = canvas.height - 50;
-
-                if (spikesLevel > 0 && (this.y + this.height > moatTop) && (this.y < moatBottom)) {
-                    inMoat = true; let slowMultiplier = Math.max(0.15, 0.5 - (spikesLevel * 0.15));
-                    currentSpeed *= slowMultiplier; currentAnimSpeed *= 2; 
-                }
-
-                this.y += currentSpeed; this.frameTimer++;
+                this.y += this.speedY;
+                this.angle += 0.2; // Вращение в полете
                 
-                if (this.frameTimer >= currentAnimSpeed) {
-                    this.frameX = this.frameX < this.maxFrame ? this.frameX + 1 : 0; this.frameTimer = 0; 
-                    footprints.push(new Footprint(this.x + this.width / 2, this.y + this.height - 10));
-                    
-                    if (inMoat) {
-                        let splashColor = spikesLevel > 1 ? '#8a0303' : '#4e342e'; 
-                        createExplosion(this.x + this.width / 2, this.y + this.height, splashColor, 3);
-                    }
+                // Проверка удара об стену
+                if (this.y > canvas.height - 20) { 
+                    lives -= 1; // Отнимаем прочность
+                    createExplosion(this.x, this.y, '#757575', 15); // Серая пыль
+                    this.active = false;
+                    if (lives <= 0) isGameOver = true;
                 }
             }
             draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+                ctx.fillStyle = '#5d4037'; // Темно-серый/коричневый камень
+                ctx.beginPath();
+                ctx.arc(0, 0, 10, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // --- КЛАССЫ ИГРЫ ---
+        class Enemy {
+            constructor(type = 'normal') {
+                this.type = type;
+                this.isBoss = (type === 'boss');
+                this.isCatapult = (type === 'catapult');
+                
+                // НАСТРОЙКИ КАТАПУЛЬТЫ
+                if (this.isCatapult) {
+                    this.width = 120; 
+                    this.height = 120;
+                    this.hp = 25; // Очень прочная
+                    this.speed = 0.25 * gameSpeedMultiplier; // Медленная
+                    this.catapultState = 'moving';
+                    this.stopY = canvas.height - 280 - (Math.random() * 50); // Встает далеко от шипов
+                } 
+                else if (this.isBoss) {
+                    this.width = 128; this.height = 128;
+                    this.hp = 10; 
+                    this.speed = 0.35 * gameSpeedMultiplier;
+                } else {
+                    this.width = 40; this.height = 40;
+                    this.hp = 1; 
+                    this.speed = (0.5 + Math.random() * 1.0) * gameSpeedMultiplier;
+                }
+                
+                this.maxHp = this.hp;
+                this.x = Math.random() * (canvas.width - this.width); 
+                this.y = -this.height;
+                
+                this.color = this.isBoss ? '#827717' : (this.isCatapult ? '#5d4037' : '#2e7d32'); 
+                this.frameX = 0; this.maxFrame = 3; 
+                this.animationSpeed = this.isCatapult ? 12 : 8; 
+                this.frameTimer = 0; 
+            }
+            
+            update() {
+                // ЛОГИКА КАТАПУЛЬТЫ
+                if (this.isCatapult) {
+                    if (this.catapultState === 'moving') {
+                        this.y += this.speed;
+                        this.frameTimer++;
+                        if (this.frameTimer >= this.animationSpeed) {
+                            this.frameX = this.frameX < this.maxFrame ? this.frameX + 1 : 0;
+                            this.frameTimer = 0;
+                        }
+                        // Доехала до точки - остановилась и начала стрелять
+                        if (this.y >= this.stopY) {
+                            this.catapultState = 'attacking';
+                            this.frameX = 0;
+                            this.frameTimer = 0;
+                        }
+                    } else if (this.catapultState === 'attacking') {
+                        this.frameTimer++;
+                        // Анимация атаки идет медленнее
+                        if (this.frameTimer >= this.animationSpeed * 2) {
+                            this.frameX = this.frameX < this.maxFrame ? this.frameX + 1 : 0;
+                            this.frameTimer = 0;
+                            
+                            // Камень вылетает точно на 3-м кадре (индекс 2)
+                            if (this.frameX === 2) {
+                                enemyProjectiles.push(new Rock(this.x + this.width / 2, this.y + this.height - 20));
+                            }
+                        }
+                    }
+                } 
+                // ЛОГИКА ОБЫЧНЫХ ВРАГОВ И БОССОВ
+                else {
+                    let currentSpeed = this.speed; let currentAnimSpeed = this.animationSpeed; let inMoat = false;
+                    let moatTop = canvas.height - 140; let moatBottom = canvas.height - 50;
+
+                    if (spikesLevel > 0 && (this.y + this.height > moatTop) && (this.y < moatBottom)) {
+                        inMoat = true; let slowMultiplier = Math.max(0.15, 0.5 - (spikesLevel * 0.15));
+                        currentSpeed *= slowMultiplier; currentAnimSpeed *= 2; 
+                    }
+
+                    this.y += currentSpeed; this.frameTimer++;
+                    
+                    if (this.frameTimer >= currentAnimSpeed) {
+                        this.frameX = this.frameX < this.maxFrame ? this.frameX + 1 : 0; this.frameTimer = 0; 
+                        footprints.push(new Footprint(this.x + this.width / 2, this.y + this.height - 10));
+                        
+                        if (inMoat) {
+                            let splashColor = spikesLevel > 1 ? '#8a0303' : '#4e342e'; 
+                            createExplosion(this.x + this.width / 2, this.y + this.height, splashColor, 3);
+                        }
+                    }
+                }
+            }
+            
+            draw() {
                 if (!isSpriteLoaded) {
                     ctx.save(); ctx.translate(this.x, this.y); ctx.fillStyle = this.color; ctx.fillRect(0, 0, this.width, this.height);
-                    if (this.isBoss) { ctx.fillStyle = '#333'; ctx.fillRect(0, -12, this.width, 6); ctx.fillStyle = '#4caf50'; ctx.fillRect(0, -12, this.width * (this.hp/this.maxHp), 6); }
+                    if (this.hp > 1) { ctx.fillStyle = '#333'; ctx.fillRect(0, -12, this.width, 6); ctx.fillStyle = '#ff5252'; ctx.fillRect(0, -12, this.width * (this.hp/this.maxHp), 6); }
                     ctx.restore(); return; 
                 }
 
-                if (this.isBoss) {
+                if (this.isCatapult) {
+                    // Выбираем массив спрайтов в зависимости от состояния
+                    let frames = this.catapultState === 'attacking' ? catapultAttackFrames : catapultFrames;
+                    ctx.drawImage(frames[this.frameX], this.x, this.y, this.width, this.height);
+                    
+                    // Полоска ХП катапульты
+                    ctx.fillStyle = '#333'; ctx.fillRect(this.x + 10, this.y - 10, this.width - 20, 8); 
+                    ctx.fillStyle = '#ff9800'; ctx.fillRect(this.x + 10, this.y - 10, (this.width - 20) * (this.hp / this.maxHp), 8); 
+                } 
+                else if (this.isBoss) {
                     ctx.drawImage(bossFrames[this.frameX], this.x, this.y, this.width, this.height);
-                    // Полоска здоровья босса
                     ctx.fillStyle = '#333'; ctx.fillRect(this.x + 14, this.y - 10, 100, 8); 
                     ctx.fillStyle = '#ff5252'; ctx.fillRect(this.x + 14, this.y - 10, 100 * (this.hp / this.maxHp), 8); 
                 } else {
@@ -299,7 +392,7 @@ if (window.gameInitialized) {
             
             if (gameWrapper) gameWrapper.classList.remove('sword-lvl-2', 'sword-lvl-3'); 
             
-            enemies = []; particles = []; repairItems = []; damageNumbers = []; slashes = []; footprints = []; arrows = [];
+            enemies = []; enemyProjectiles = []; particles = []; repairItems = []; damageNumbers = []; slashes = []; footprints = []; arrows = [];
             spawnTimer = 0; spawnInterval = 60; repairTimer = 0; gameSpeedMultiplier = 1;
             lastScore = -1; lastCoins = -1; lastLives = -1; lastArchers = -1; lastSpikes = -1; lastSword = -1;
             
@@ -313,7 +406,7 @@ if (window.gameInitialized) {
         function createExplosion(x, y, color, count = 15) { for (let i = 0; i < count; i++) particles.push(new Particle(x, y, color)); }
 
         function update() {
-            gameSpeedMultiplier = Math.min(3.5, 1 + (score * 0.015));
+            gameSpeedMultiplier = Math.min(2.5, 1 + (score * 0.008));
             
             if (archers > 0 && enemies.length > 0) {
                 archerTimer++; let fireRate = Math.max(15, 100 - (archers * 10)); 
@@ -324,8 +417,24 @@ if (window.gameInitialized) {
             }
 
             spawnInterval = Math.max(25, 60 - score * 0.3); spawnTimer++;
-            if (spawnTimer >= spawnInterval) { enemies.push(new Enemy(score > 5 && Math.random() < 0.1)); spawnTimer = 0; }
+            if (spawnTimer >= spawnInterval) { 
+                // СПАВН КАТАПУЛЬТЫ (Только если счет >= 400, шанс 5%)
+                if (score >= 400 && Math.random() < 0.05) {
+                    enemies.push(new Enemy('catapult'));
+                } else {
+                    // Иначе обычный босс или гоблин
+                    enemies.push(new Enemy(score > 5 && Math.random() < 0.1 ? 'boss' : 'normal')); 
+                }
+                spawnTimer = 0; 
+            }
+
             repairTimer++; if (repairTimer >= repairInterval) { repairItems.push(new RepairItem()); repairTimer = 0; repairInterval = Math.floor(Math.random() * 400) + 400; }
+
+            // Обновляем камни катапульт
+            for (let i = enemyProjectiles.length - 1; i >= 0; i--) { 
+                enemyProjectiles[i].update(); 
+                if (!enemyProjectiles[i].active) enemyProjectiles.splice(i, 1); 
+            }
 
             for (let i = footprints.length - 1; i >= 0; i--) { footprints[i].update(); if (footprints[i].life <= 0) footprints.splice(i, 1); }
             for (let i = particles.length - 1; i >= 0; i--) { particles[i].update(); if (particles[i].life <= 0) particles.splice(i, 1); }
@@ -339,7 +448,13 @@ if (window.gameInitialized) {
 
                 if (enemy.hp <= 0) {
                     createExplosion(enemy.x + enemy.width/2, enemy.y + enemy.height/2, enemy.color, enemy.isBoss ? 50 : 15);
-                    score += enemy.isBoss ? 5 : 1; let coinReward = enemy.isBoss ? 5 : 1; coins += coinReward; 
+                    
+                    // Награды (Катапульта дает много!)
+                    let pointsReward = enemy.isCatapult ? 10 : (enemy.isBoss ? 5 : 1);
+                    let coinReward = enemy.isCatapult ? 15 : (enemy.isBoss ? 5 : 1);
+                    
+                    score += pointsReward; 
+                    coins += coinReward; 
                     damageNumbers.push(new DamageNumber(enemy.x + enemy.width/2, enemy.y + enemy.height/2, `+${coinReward} 🪙`, '#ffd700'));
                     
                     unlockAchievement('first_blood', 'Первая кровь');
@@ -351,15 +466,18 @@ if (window.gameInitialized) {
                 }
                 enemy.update();
 
-                const spriteDeadSpace = 25; 
-                const actualBottomEdge = enemy.y + enemy.height - spriteDeadSpace; 
-                const wallY = canvas.height - 20;
+                // Проверка столкновения со стеной (только для тех, кто доходит до нее)
+                if (!enemy.isCatapult) {
+                    const spriteDeadSpace = 25; 
+                    const actualBottomEdge = enemy.y + enemy.height - spriteDeadSpace; 
+                    const wallY = canvas.height - 20;
 
-                if (actualBottomEdge >= wallY) {
-                    lives -= enemy.isBoss ? 3 : 1; 
-                    createExplosion(enemy.x + enemy.width/2, wallY, '#ff9800', 30);
-                    enemies.splice(i, 1); 
-                    if (lives <= 0) isGameOver = true;
+                    if (actualBottomEdge >= wallY) {
+                        lives -= enemy.isBoss ? 3 : 1; 
+                        createExplosion(enemy.x + enemy.width/2, wallY, '#ff9800', 30);
+                        enemies.splice(i, 1); 
+                        if (lives <= 0) isGameOver = true;
+                    }
                 }
             }
             updateUI();
@@ -389,9 +507,13 @@ if (window.gameInitialized) {
                 ctx.fillStyle = '#827717'; ctx.fillRect(ax, canvas.height - 25, 10, 10); ctx.fillStyle = '#fff'; ctx.fillRect(ax + 2, canvas.height - 30, 2, 8); 
             }
 
-            repairItems.forEach(item => item.draw()); enemies.forEach(enemy => enemy.draw());
-            arrows.forEach(arrow => arrow.draw()); particles.forEach(p => p.draw());
-            damageNumbers.forEach(dn => dn.draw()); slashes.forEach(slash => slash.draw()); 
+            repairItems.forEach(item => item.draw()); 
+            enemies.forEach(enemy => enemy.draw());
+            enemyProjectiles.forEach(p => p.draw()); // Рисуем камни!
+            arrows.forEach(arrow => arrow.draw()); 
+            particles.forEach(p => p.draw());
+            damageNumbers.forEach(dn => dn.draw()); 
+            slashes.forEach(slash => slash.draw()); 
         }
 
         function gameLoop() {
@@ -474,7 +596,6 @@ if (window.gameInitialized) {
         
         if (startBtn) startBtn.onclick = initGame; 
         
-        // РАБОЧИЙ ПОЛНЫЙ ЭКРАН
         const fullscreenBtn = document.getElementById('fullscreenBtn');
         if (fullscreenBtn && gameWrapper) {
             fullscreenBtn.onclick = () => {
