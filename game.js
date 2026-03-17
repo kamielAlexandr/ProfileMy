@@ -141,6 +141,7 @@ if (window.gameInitialized) {
         // --- ЗАГРУЗКА ВСЕЙ ГРАФИКИ ---
         const goblinFrames = []; 
         const bossFrames = []; 
+        let logImage; // Переменная для хранения спрайта бревна
         const catapultFrames = []; 
         const catapultAttackFrames = []; 
         
@@ -151,7 +152,7 @@ if (window.gameInitialized) {
         const catFrameNames = ['img/unit1.png', 'img/unit2.png', 'img/unit3.png', 'img/unit4.png'];
         const catAttackNames = ['img/unit_attack1.png', 'img/unit_attack2.png', 'img/unit_attack3.png', 'img/unit_attack4.png'];
         
-        const totalImages = frameNames.length + bossFrameNames.length + catFrameNames.length + catAttackNames.length;
+        const totalImages = frameNames.length + bossFrameNames.length + catFrameNames.length + catAttackNames.length + 1; // +1 для бревна
 
         function checkImagesLoaded() {
             loadedImagesCount++;
@@ -165,7 +166,11 @@ if (window.gameInitialized) {
         bossFrameNames.forEach((src) => { const img = new Image(); img.onload = checkImagesLoaded; img.onerror = () => { if (isGameOver && startBtn) { startBtn.textContent = "Играть (Без анимации)"; startBtn.disabled = false; } }; img.src = src; bossFrames.push(img); });
         catFrameNames.forEach((src) => { const img = new Image(); img.onload = checkImagesLoaded; img.onerror = () => { if (isGameOver && startBtn) { startBtn.textContent = "Играть (Без анимации)"; startBtn.disabled = false; } }; img.src = src; catapultFrames.push(img); });
         catAttackNames.forEach((src) => { const img = new Image(); img.onload = checkImagesLoaded; img.onerror = () => { if (isGameOver && startBtn) { startBtn.textContent = "Играть (Без анимации)"; startBtn.disabled = false; } }; img.src = src; catapultAttackFrames.push(img); });
-
+        // === ЗАГРУЗКА СПРАЙТА БРЕВНА ===
+        logImage = new Image();
+        logImage.onload = checkImagesLoaded; // Важно, чтобы игра не началась раньше загрузки
+        logImage.onerror = () => { console.error("Не удалось загрузить спрайт img/add_health.png. Будет использован запасной квадрат."); };
+        logImage.src = 'img/add_health.png';
         // СЕТЕВОЙ КОД
         const SUPABASE_URL = 'https://bgzxdpjfsodndxroieay.supabase.co'; 
         const SUPABASE_ANON_KEY = 'sb_publishable_7lewcPQCbnoXmkcMLu_Hlw_dnfCXZka';
@@ -352,7 +357,17 @@ if (window.gameInitialized) {
         class RepairItem {
             constructor() { this.width = 40; this.height = 40; this.x = Math.random() * (canvas.width - this.width); this.y = -this.height; this.speed = (1.5 + Math.random()) * gameSpeedMultiplier; }
             update() { this.y += this.speed; }
-            draw() { ctx.fillStyle = '#00E676'; ctx.fillRect(this.x, this.y, this.width, this.height); }
+            draw() {
+                // Если спрайт загружен — рисуем его
+                if (isSpriteLoaded && logImage) {
+                    ctx.drawImage(logImage, this.x, this.y, this.width, this.height);
+                } 
+                // Запасной вариант (fallback), если картинки нет
+                else {
+                    ctx.fillStyle = '#00E676'; // Зеленый квадрат
+                    ctx.fillRect(this.x, this.y, this.width, this.height);
+                }
+            }
         }
         class Particle {
             constructor(x, y, color) { this.x = x; this.y = y; this.size = Math.random() * 5 + 2; this.speedX = (Math.random() - 0.5) * 8; this.speedY = (Math.random() - 0.5) * 8; this.color = color; this.life = 1.0; }
