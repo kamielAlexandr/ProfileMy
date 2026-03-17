@@ -242,8 +242,8 @@ if (window.gameInitialized) {
                 
                 // НАСТРОЙКИ КАТАПУЛЬТЫ
                 if (this.isCatapult) {
-                    this.width = 120; 
-                    this.height = 120;
+                    this.width = 160; 
+                    this.height = 160;
                     this.hp = 25; // Очень прочная
                     this.speed = 0.25 * gameSpeedMultiplier; // Медленная
                     this.catapultState = 'moving';
