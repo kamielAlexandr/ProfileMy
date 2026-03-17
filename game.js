@@ -14,10 +14,15 @@ if (window.gameInitialized) {
         const overlay = document.getElementById('gameOverlay');
         const startBtn = document.getElementById('startGameBtn');
         const overlayTitle = document.getElementById('overlayTitle');
+        const gameContainer = document.getElementById('gameContainer'); // Контейнер для смены курсора
 
         let score = 0, lives = 5, maxLives = 5, isGameOver = true, animationId;
         let coins = 0, archers = 0, archerCost = 15, archerTimer = 0;
         let spikesLevel = 0, spikesCost = 20;
+        
+        // НОВЫЕ ПЕРЕМЕННЫЕ ДЛЯ МЕЧА
+        let clickDamage = 1;
+        let swordCost = 30; 
 
         let spawnTimer = 0, spawnInterval = 60, gameSpeedMultiplier = 1;
         let repairTimer = 0, repairInterval = 500; 
@@ -28,7 +33,7 @@ if (window.gameInitialized) {
         try { localHighScore = parseInt(localStorage.getItem('citadelHighScore')) || 0; } catch(e) {}
         let globalHighScore = 0; 
 
-        // --- СИСТЕМА ДОСТИЖЕНИЙ ---
+        // СИСТЕМА ДОСТИЖЕНИЙ
         let unlockedAchievements = [];
         try { unlockedAchievements = JSON.parse(localStorage.getItem('citadelAchievements')) || []; } catch(e) {}
         
@@ -40,13 +45,11 @@ if (window.gameInitialized) {
             if (!unlockedAchievements.includes(id)) {
                 unlockedAchievements.push(id);
                 try { localStorage.setItem('citadelAchievements', JSON.stringify(unlockedAchievements)); } catch(e) {}
-                
                 achievementPopup.innerHTML = `🏆 Достижение получено!<br><b style="color:#ffd700">${title}</b>`;
                 achievementPopup.classList.add('show');
                 setTimeout(() => { achievementPopup.classList.remove('show'); }, 3500);
             }
         }
-        // --------------------------
 
         const topUI = document.getElementById('topUI');
         const bottomUI = document.getElementById('bottomUI');
@@ -55,13 +58,14 @@ if (window.gameInitialized) {
         const livesUI = document.getElementById('livesUI');
         const shopBtn = document.getElementById('buyArcherBtn');
         const spikesBtn = document.getElementById('buySpikesBtn');
+        const swordBtn = document.getElementById('upgradeSwordBtn'); // Кнопка меча
         
-        let lastScore = -1, lastCoins = -1, lastLives = -1, lastArchers = -1, lastSpikes = -1;
+        let lastScore = -1, lastCoins = -1, lastLives = -1, lastArchers = -1, lastSpikes = -1, lastSword = -1;
 
         function updateUI() {
             if (!scoreUI) return; 
 
-            if (lastScore !== score || lastCoins !== coins || lastLives !== lives || lastArchers !== archers || lastSpikes !== spikesLevel) {
+            if (lastScore !== score || lastCoins !== coins || lastLives !== lives || lastArchers !== archers || lastSpikes !== spikesLevel || lastSword !== clickDamage) {
                 scoreUI.innerHTML = `💀 Убито: ${score}`;
                 goldUI.innerHTML = `🪙 Монеты: <span style="color:#ffd700">${coins}</span>`;
                 let wallColor = lives > 3 ? '#4caf50' : (lives > 1 ? '#ff9800' : '#f44336');
@@ -85,9 +89,19 @@ if (window.gameInitialized) {
                     }
                 }
 
+                // ОБНОВЛЕНИЕ КНОПКИ МЕЧА
+                if (swordBtn) {
+                    swordBtn.innerHTML = `⚔️ Острый меч (${swordCost} 🪙)<br><span>Урон клика: ${clickDamage}</span>`;
+                    if (coins >= swordCost && !isGameOver) {
+                        swordBtn.style.opacity = '1'; swordBtn.style.pointerEvents = 'auto';
+                    } else {
+                        swordBtn.style.opacity = '0.5'; swordBtn.style.pointerEvents = 'none';
+                    }
+                }
+
                 if (coins >= 100) unlockAchievement('wealthy', 'Толстосум');
 
-                lastScore = score; lastCoins = coins; lastLives = lives; lastArchers = archers; lastSpikes = spikesLevel;
+                lastScore = score; lastCoins = coins; lastLives = lives; lastArchers = archers; lastSpikes = spikesLevel; lastSword = clickDamage;
             }
         }
 
@@ -97,7 +111,6 @@ if (window.gameInitialized) {
                 if (coins >= archerCost && !isGameOver) {
                     coins -= archerCost; archers++; archerCost = Math.floor(archerCost * 1.5); updateUI(); 
                     damageNumbers.push(new DamageNumber(canvas.width / 2, canvas.height - 50, 'Лучник нанят!', '#00E676'));
-                    
                     unlockAchievement('first_archer', 'Острый глаз');
                     if (archers >= 5) unlockAchievement('arrow_storm', 'Шквальный огонь');
                 }
@@ -110,16 +123,36 @@ if (window.gameInitialized) {
                 if (coins >= spikesCost && !isGameOver) {
                     coins -= spikesCost; spikesLevel++; spikesCost = Math.floor(spikesCost * 1.5); updateUI(); 
                     damageNumbers.push(new DamageNumber(canvas.width / 2, canvas.height - 120, 'Ров улучшен!', '#00E676'));
-                    
                     if (spikesLevel === 1) unlockAchievement('spikes_1', 'Шипы и боль');
                     if (spikesLevel === 2) unlockAchievement('bloodbath', 'Кровавая баня');
                 }
             });
         }
 
-        // --- ЗАГРУЗКА ГРАФИКИ (ОБЫЧНЫЕ И БОССЫ) ---
+        // ЛОГИКА ПОКУПКИ МЕЧА
+        if (swordBtn) {
+            swordBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); 
+                if (coins >= swordCost && !isGameOver) {
+                    coins -= swordCost; 
+                    clickDamage++; // Увеличиваем урон
+                    swordCost = Math.floor(swordCost * 2); // Цена растет в 2 раза
+                    updateUI(); 
+                    damageNumbers.push(new DamageNumber(canvas.width / 2, canvas.height - 180, 'Меч улучшен!', '#ff5252'));
+                    
+                    // Меняем CSS класс контейнера для смены курсора
+                    if (gameContainer) {
+                        gameContainer.classList.remove('sword-lvl-2', 'sword-lvl-3');
+                        if (clickDamage === 2) gameContainer.classList.add('sword-lvl-2');
+                        if (clickDamage >= 3) gameContainer.classList.add('sword-lvl-3');
+                    }
+                }
+            });
+        }
+
+        // ЗАГРУЗКА ГРАФИКИ (ОБЫЧНЫЕ И БОССЫ)
         const goblinFrames = []; 
-        const bossFrames = []; // Массив для мини-боссов
+        const bossFrames = []; 
         let isSpriteLoaded = false, loadedImagesCount = 0;
         
         const frameNames = ['img/gob1.png', 'img/gob2.png', 'img/gob3.png', 'img/gob4.png'];
@@ -130,49 +163,35 @@ if (window.gameInitialized) {
             loadedImagesCount++;
             if (loadedImagesCount === totalImages) {
                 isSpriteLoaded = true;
-                if (isGameOver && startBtn) { 
-                    startBtn.textContent = "Начать битву"; 
-                    startBtn.disabled = false; 
-                    if(overlayTitle) overlayTitle.textContent = "Цитадель ждет"; 
-                }
+                if (isGameOver && startBtn) { startBtn.textContent = "Начать битву"; startBtn.disabled = false; overlayTitle.textContent = "Цитадель ждет"; }
             }
         }
 
-        // Грузим обычных гоблинов
         frameNames.forEach((src) => {
-            const img = new Image();
-            img.onload = checkImagesLoaded;
+            const img = new Image(); img.onload = checkImagesLoaded;
             img.onerror = () => { if (isGameOver && startBtn) { startBtn.textContent = "Играть (Без анимации)"; startBtn.disabled = false; } };
-            img.src = src; 
-            goblinFrames.push(img); 
+            img.src = src; goblinFrames.push(img); 
         });
 
-        // Грузим мини-боссов
         bossFrameNames.forEach((src) => {
-            const img = new Image();
-            img.onload = checkImagesLoaded;
+            const img = new Image(); img.onload = checkImagesLoaded;
             img.onerror = () => { if (isGameOver && startBtn) { startBtn.textContent = "Играть (Без анимации)"; startBtn.disabled = false; } };
-            img.src = src; 
-            bossFrames.push(img); 
+            img.src = src; bossFrames.push(img); 
         });
 
-        // --- СЕТЕВОЙ КОД И АВТОРИЗАЦИЯ ---
+        // СЕТЕВОЙ КОД
         const SUPABASE_URL = 'https://bgzxdpjfsodndxroieay.supabase.co'; 
         const SUPABASE_ANON_KEY = 'sb_publishable_7lewcPQCbnoXmkcMLu_Hlw_dnfCXZka';
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let currentPlayerName = "Аноним";
         
-        // Улучшенная функция чтения профиля (быстрее и надежнее)
         async function checkCurrentPlayer() {
             try {
                 const { data: { session } } = await supabase.auth.getSession();
                 if (session && session.user) {
-                    // Берем имя пользователя, если оно есть, иначе обрезаем email до знака @
                     currentPlayerName = session.user.user_metadata?.username || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || "Аноним";
                 }
-            } catch (e) {
-                console.warn("Не удалось подгрузить имя профиля:", e);
-            }
+            } catch (e) {}
         }
         
         async function fetchLeaderboard() {
@@ -190,47 +209,32 @@ if (window.gameInitialized) {
                 }
             } catch (e) {}
         }
-        
-        // Запускаем проверки при загрузке страницы
-        checkCurrentPlayer();
-        fetchLeaderboard();
+        checkCurrentPlayer(); fetchLeaderboard();
 
+        // КЛАССЫ ИГРЫ
         class Enemy {
             constructor(isBoss = false) {
                 this.isBoss = isBoss; 
-                // РАЗМЕРЫ: 128 для босса, 64 для обычного
-                this.width = isBoss ? 128 : 64; 
-                this.height = isBoss ? 128 : 64;
-                
-                this.x = Math.random() * (canvas.width - this.width); 
-                this.y = -this.height;
-                
-                // ХП босса: 10 (чтобы его было тяжелее убить)
-                this.hp = isBoss ? 10 : 1; 
-                this.maxHp = this.hp;
+                this.width = isBoss ? 128 : 64; this.height = isBoss ? 128 : 64;
+                this.x = Math.random() * (canvas.width - this.width); this.y = -this.height;
+                this.hp = isBoss ? 10 : 1; this.maxHp = this.hp;
                 this.speed = (isBoss ? 0.6 : (1 + Math.random() * 2)) * gameSpeedMultiplier;
                 this.color = isBoss ? '#827717' : '#2e7d32'; 
                 this.frameX = 0; this.maxFrame = 3; this.animationSpeed = 8; this.frameTimer = 0; 
             }
-            
             update() {
-                let currentSpeed = this.speed;
-                let currentAnimSpeed = this.animationSpeed;
-                let inMoat = false;
-                let moatTop = canvas.height - 140; 
-                let moatBottom = canvas.height - 50;
+                let currentSpeed = this.speed; let currentAnimSpeed = this.animationSpeed; let inMoat = false;
+                let moatTop = canvas.height - 140; let moatBottom = canvas.height - 50;
 
                 if (spikesLevel > 0 && (this.y + this.height > moatTop) && (this.y < moatBottom)) {
                     inMoat = true; let slowMultiplier = Math.max(0.15, 0.5 - (spikesLevel * 0.15));
                     currentSpeed *= slowMultiplier; currentAnimSpeed *= 2; 
                 }
 
-                this.y += currentSpeed; 
-                this.frameTimer++;
+                this.y += currentSpeed; this.frameTimer++;
                 
                 if (this.frameTimer >= currentAnimSpeed) {
-                    this.frameX = this.frameX < this.maxFrame ? this.frameX + 1 : 0; 
-                    this.frameTimer = 0; 
+                    this.frameX = this.frameX < this.maxFrame ? this.frameX + 1 : 0; this.frameTimer = 0; 
                     footprints.push(new Footprint(this.x + this.width / 2, this.y + this.height - 10));
                     
                     if (inMoat) {
@@ -239,27 +243,18 @@ if (window.gameInitialized) {
                     }
                 }
             }
-            
             draw() {
-                // Если картинки не успели прогрузиться — рисуем квадраты (защита от ошибок)
                 if (!isSpriteLoaded) {
                     ctx.save(); ctx.translate(this.x, this.y); ctx.fillStyle = this.color; ctx.fillRect(0, 0, this.width, this.height);
                     if (this.isBoss) { ctx.fillStyle = '#333'; ctx.fillRect(0, -12, this.width, 6); ctx.fillStyle = '#4caf50'; ctx.fillRect(0, -12, this.width * (this.hp/this.maxHp), 6); }
                     ctx.restore(); return; 
                 }
 
-                // Рисуем нужный спрайт
                 if (this.isBoss) {
-                    // Отрисовка мини-босса
                     ctx.drawImage(bossFrames[this.frameX], this.x, this.y, this.width, this.height);
-                    
-                    // Красивая красная полоска здоровья над головой босса
-                    ctx.fillStyle = '#333'; 
-                    ctx.fillRect(this.x + 14, this.y - 10, 100, 8); // Черный фон
-                    ctx.fillStyle = '#ff5252'; 
-                    ctx.fillRect(this.x + 14, this.y - 10, 100 * (this.hp / this.maxHp), 8); // Красное ХП
+                    ctx.fillStyle = '#333'; ctx.fillRect(this.x + 14, this.y - 10, 100, 8); 
+                    ctx.fillStyle = '#ff5252'; ctx.fillRect(this.x + 14, this.y - 10, 100 * (this.hp / this.maxHp), 8); 
                 } else {
-                    // Отрисовка обычного гоблина
                     ctx.drawImage(goblinFrames[this.frameX], this.x, this.y, this.width, this.height);
                 }
             }
@@ -304,9 +299,13 @@ if (window.gameInitialized) {
         function initGame() {
             if (animationId) cancelAnimationFrame(animationId); 
             score = 0; lives = maxLives; isGameOver = false; coins = 0; archers = 0; archerCost = 15; spikesLevel = 0; spikesCost = 20; 
+            clickDamage = 1; swordCost = 30; // Сброс меча при новой игре
+            
+            if (gameContainer) gameContainer.classList.remove('sword-lvl-2', 'sword-lvl-3'); // Возвращаем обычный курсор
+            
             enemies = []; particles = []; repairItems = []; damageNumbers = []; slashes = []; footprints = []; arrows = [];
             spawnTimer = 0; spawnInterval = 60; repairTimer = 0; gameSpeedMultiplier = 1;
-            lastScore = -1; lastCoins = -1; lastLives = -1; lastArchers = -1; lastSpikes = -1;
+            lastScore = -1; lastCoins = -1; lastLives = -1; lastArchers = -1; lastSpikes = -1; lastSword = -1;
             
             if (topUI) topUI.style.display = 'flex';
             if (bottomUI) bottomUI.style.display = 'flex';
@@ -329,7 +328,8 @@ if (window.gameInitialized) {
             }
 
             spawnInterval = Math.max(25, 60 - score * 0.3); spawnTimer++;
-            if (spawnTimer >= spawnInterval) { enemies.push(new Enemy(score > 10 && Math.random() < 0.1)); spawnTimer = 0; }
+            // Каждый 10-й враг (с вероятностью 10%) - мини-босс!
+            if (spawnTimer >= spawnInterval) { enemies.push(new Enemy(score > 5 && Math.random() < 0.1)); spawnTimer = 0; }
             repairTimer++; if (repairTimer >= repairInterval) { repairItems.push(new RepairItem()); repairTimer = 0; repairInterval = Math.floor(Math.random() * 400) + 400; }
 
             for (let i = footprints.length - 1; i >= 0; i--) { footprints[i].update(); if (footprints[i].life <= 0) footprints.splice(i, 1); }
@@ -347,7 +347,6 @@ if (window.gameInitialized) {
                     score += enemy.isBoss ? 5 : 1; let coinReward = enemy.isBoss ? 5 : 1; coins += coinReward; 
                     damageNumbers.push(new DamageNumber(enemy.x + enemy.width/2, enemy.y + enemy.height/2, `+${coinReward} 🪙`, '#ffd700'));
                     
-                    // Ачивки на убийства
                     unlockAchievement('first_blood', 'Первая кровь');
                     if (enemy.isBoss) unlockAchievement('boss_slayer', 'Убийца великанов');
                     if (score >= 100) unlockAchievement('hundred_skulls', 'Сотня черепов');
@@ -406,7 +405,6 @@ if (window.gameInitialized) {
             animationId = requestAnimationFrame(gameLoop);
         }
 
-        // АСИНХРОННАЯ ФУНКЦИЯ КОНЦА ИГРЫ (Ждем имя пользователя!)
         async function endGame() {
             console.log("Игра окончена. Проверяем профиль...");
             cancelAnimationFrame(animationId);
@@ -414,10 +412,8 @@ if (window.gameInitialized) {
             if (topUI) topUI.style.display = 'none'; 
             if (bottomUI) bottomUI.style.display = 'none'; 
             
-            // ПРИНУДИТЕЛЬНО ждем, пока БД не отдаст имя пользователя
             await checkCurrentPlayer(); 
-            console.log("Рекорд будет записан на имя:", currentPlayerName);
-
+            
             let recordMessage = "";
             try {
                 if (score > localHighScore && score > 0) {
@@ -428,11 +424,9 @@ if (window.gameInitialized) {
             
             try {
                 if (score > globalHighScore && globalHighScore > 0) {
-                    // Отправляем рекорд с УЖЕ ОБНОВЛЕННЫМ именем
                     fetch(`${SUPABASE_URL}/rest/v1/leaderboard`, { method: 'POST', headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, body: JSON.stringify({ score: score, nickname: currentPlayerName }) }).catch(err => {});
                     recordMessage += `<br><span style="font-size:1.3rem; color:#00E676; text-shadow: 0 0 10px #00E676;">👑 ВЫ ПОБИЛИ РЕКОРД САЙТА! 👑</span>`;
                 } else if (score > 0 && globalHighScore === 0) {
-                    // Первое сохранение на пустой базе
                     fetch(`${SUPABASE_URL}/rest/v1/leaderboard`, { method: 'POST', headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, body: JSON.stringify({ score: score, nickname: currentPlayerName }) }).catch(err => {});
                 }
             } catch(e) {}
@@ -441,8 +435,6 @@ if (window.gameInitialized) {
             if (startBtn) { startBtn.textContent = 'Держать оборону снова'; startBtn.disabled = false; }
             if (overlay) { overlay.style.display = 'flex'; overlay.style.zIndex = '9999'; }
             draw(); 
-            
-            // Обновляем таблицу лидеров, чтобы сразу увидеть себя
             setTimeout(fetchLeaderboard, 1000); 
         }
 
@@ -471,7 +463,14 @@ if (window.gameInitialized) {
             for (let i = enemies.length - 1; i >= 0; i--) {
                 const enemy = enemies[i];
                 if (clickX >= enemy.x && clickX <= enemy.x + enemy.width && clickY >= enemy.y && clickY <= enemy.y + enemy.height) {
-                    enemy.hp--; createExplosion(clickX, clickY, '#fff', 5); damageNumbers.push(new DamageNumber(clickX, clickY, '-1', '#ff5252')); break; 
+                    
+                    // ЗДЕСЬ ПРИМЕНЯЕТСЯ УРОН ОТ ПРОКАЧКИ МЕЧА!
+                    enemy.hp -= clickDamage; 
+                    
+                    createExplosion(clickX, clickY, '#fff', 5); 
+                    // Отображаем нанесенный урон:
+                    damageNumbers.push(new DamageNumber(clickX, clickY, `-${clickDamage}`, '#ff5252')); 
+                    break; 
                 }
             }
         }
@@ -484,10 +483,9 @@ if (window.gameInitialized) {
         if (startBtn) startBtn.onclick = initGame; 
         
         const fullscreenBtn = document.getElementById('fullscreenBtn');
-        const gameWrapper = document.getElementById('gameWrapper'); 
-        if (fullscreenBtn && gameWrapper) {
+        if (fullscreenBtn && gameContainer) {
             fullscreenBtn.onclick = () => {
-                if (!document.fullscreenElement) { gameWrapper.requestFullscreen(); fullscreenBtn.textContent = "✖ Выйти"; } 
+                if (!document.fullscreenElement) { gameContainer.requestFullscreen(); fullscreenBtn.textContent = "✖ Выйти"; } 
                 else { document.exitFullscreen(); fullscreenBtn.textContent = "⛶ Полный экран"; }
             };
             document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) fullscreenBtn.textContent = "⛶ Полный экран"; });
