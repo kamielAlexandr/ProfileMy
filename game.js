@@ -203,7 +203,7 @@ if (window.gameInitialized) {
                 this.width = isBoss ? 128 : 64; this.height = isBoss ? 128 : 64;
                 this.x = Math.random() * (canvas.width - this.width); this.y = -this.height;
                 this.hp = isBoss ? 10 : 1; this.maxHp = this.hp;
-                this.speed = (isBoss ? 0.6 : (1 + Math.random() * 2)) * gameSpeedMultiplier;
+               this.speed = (isBoss ? 0.35 : (0.6 + Math.random() * 1.2)) * gameSpeedMultiplier;
                 this.color = isBoss ? '#827717' : '#2e7d32'; 
                 this.frameX = 0; this.maxFrame = 3; this.animationSpeed = 8; this.frameTimer = 0; 
             }
