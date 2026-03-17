@@ -444,7 +444,7 @@ h1 {
     width: 100%;
     max-width: 800px;
     margin: 0 auto;
-    background-image: url('img/BG.png'); /* Игровой фон */
+    background-image: url('img/BG.png'); 
     background-size: cover;
     background-position: center;
     border: 4px solid var(--accent-color);
@@ -532,7 +532,6 @@ h1 {
     display: block;
     touch-action: none;
     image-rendering: pixelated;
-    cursor: url('img/sword.png') 0 0, crosshair;
 }
 
 .game-overlay {
@@ -643,46 +642,15 @@ h1 {
    АДАПТИВНОСТЬ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ
    ========================================= */
 @media (max-width: 768px) {
-    .navbar {
-        flex-direction: column;
-        padding: 15px;
-        gap: 15px;
-    }
-    
-    .nav-links {
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 10px;
-    }
-
-    .about-content {
-        flex-direction: column-reverse;
-        text-align: center;
-    }
-    
-    .about-photo img {
-        width: 200px;
-        height: 200px;
-    }
-
+    .navbar { flex-direction: column; padding: 15px; gap: 15px; }
+    .nav-links { flex-wrap: wrap; justify-content: center; gap: 10px; }
+    .about-content { flex-direction: column-reverse; text-align: center; }
+    .about-photo img { width: 200px; height: 200px; }
     .container h1 { font-size: 1.5rem; }
     .container p { font-size: 0.9rem; }
-
-    .leaderboard-container {
-        margin: 20px 10px;
-        padding: 15px;
-    }
-
-    .leaderboard-list li {
-        font-size: 0.95rem;
-        padding: 10px 5px;
-    }
-
-    .leaderboard-list li span.rank {
-        width: 30px;
-        font-size: 1.1rem;
-    }
-
+    .leaderboard-container { margin: 20px 10px; padding: 15px; }
+    .leaderboard-list li { font-size: 0.95rem; padding: 10px 5px; }
+    .leaderboard-list li span.rank { width: 30px; font-size: 1.1rem; }
     .game-overlay h2 { font-size: 1.5rem; }
 }
 
@@ -695,38 +663,30 @@ h1 {
 }
 
 @media (max-width: 480px) {
-    .nav-links li a {
-        font-size: 0.9rem;
-        padding: 5px 10px;
-    }
-    
-    .leaderboard-list li span.score {
-        font-size: 1rem;
-    }
+    .nav-links li a { font-size: 0.9rem; padding: 5px 10px; }
+    .leaderboard-list li span.score { font-size: 1rem; }
 }
-/* =========================================
-   ВОЗВРАЩАЕМ МЕЧ ДЛЯ ЗАЩИТЫ ЦИТАДЕЛИ
-   ========================================= */
+
 /* =========================================
    КУРСОРЫ-МЕЧИ ДЛЯ ЗАЩИТЫ ЦИТАДЕЛИ
    ========================================= */
-/* Базовый меч (Урон 1) */
+/* Базовый меч (Урон 1). Применяется ко всему блоку контейнера */
 #gameContainer,
 #gameCanvas,
 .game-overlay {
     cursor: url('img/cursor.cur'), crosshair !important; 
 }
 
-/* Улучшенный меч (Урон 2) */
-.sword-lvl-2,
-.sword-lvl-2 #gameCanvas,
-.sword-lvl-2 .game-overlay {
+/* Улучшенный меч (Урон 2) - Специфичность выше! */
+#gameContainer.sword-lvl-2,
+#gameContainer.sword-lvl-2 #gameCanvas,
+#gameContainer.sword-lvl-2 .game-overlay {
     cursor: url('img/cursor2.cur'), crosshair !important;
 }
 
 /* Эпический меч (Урон 3 и выше) */
-.sword-lvl-3,
-.sword-lvl-3 #gameCanvas,
-.sword-lvl-3 .game-overlay {
+#gameContainer.sword-lvl-3,
+#gameContainer.sword-lvl-3 #gameCanvas,
+#gameContainer.sword-lvl-3 .game-overlay {
     cursor: url('img/cursor3.cur'), crosshair !important;
 }
