@@ -14,13 +14,12 @@ if (window.gameInitialized) {
         const overlay = document.getElementById('gameOverlay');
         const startBtn = document.getElementById('startGameBtn');
         const overlayTitle = document.getElementById('overlayTitle');
-        const gameContainer = document.getElementById('gameContainer'); // Контейнер для смены курсора
+        const gameContainer = document.getElementById('gameContainer'); // Для смены курсоров
 
         let score = 0, lives = 5, maxLives = 5, isGameOver = true, animationId;
         let coins = 0, archers = 0, archerCost = 15, archerTimer = 0;
         let spikesLevel = 0, spikesCost = 20;
         
-        // НОВЫЕ ПЕРЕМЕННЫЕ ДЛЯ МЕЧА
         let clickDamage = 1;
         let swordCost = 30; 
 
@@ -58,7 +57,7 @@ if (window.gameInitialized) {
         const livesUI = document.getElementById('livesUI');
         const shopBtn = document.getElementById('buyArcherBtn');
         const spikesBtn = document.getElementById('buySpikesBtn');
-        const swordBtn = document.getElementById('upgradeSwordBtn'); // Кнопка меча
+        const swordBtn = document.getElementById('upgradeSwordBtn'); 
         
         let lastScore = -1, lastCoins = -1, lastLives = -1, lastArchers = -1, lastSpikes = -1, lastSword = -1;
 
@@ -73,30 +72,20 @@ if (window.gameInitialized) {
 
                 if (shopBtn) {
                     shopBtn.innerHTML = `🏹 Нанять Лучника (${archerCost} 🪙)<br><span>На стене: ${archers}</span>`;
-                    if (coins >= archerCost && !isGameOver) {
-                        shopBtn.style.opacity = '1'; shopBtn.style.pointerEvents = 'auto';
-                    } else {
-                        shopBtn.style.opacity = '0.5'; shopBtn.style.pointerEvents = 'none';
-                    }
+                    shopBtn.style.opacity = (coins >= archerCost && !isGameOver) ? '1' : '0.5';
+                    shopBtn.style.pointerEvents = (coins >= archerCost && !isGameOver) ? 'auto' : 'none';
                 }
 
                 if (spikesBtn) {
                     spikesBtn.innerHTML = `🗡️ Ров с шипами (${spikesCost} 🪙)<br><span>Уровень: ${spikesLevel}</span>`;
-                    if (coins >= spikesCost && !isGameOver) {
-                        spikesBtn.style.opacity = '1'; spikesBtn.style.pointerEvents = 'auto';
-                    } else {
-                        spikesBtn.style.opacity = '0.5'; spikesBtn.style.pointerEvents = 'none';
-                    }
+                    spikesBtn.style.opacity = (coins >= spikesCost && !isGameOver) ? '1' : '0.5';
+                    spikesBtn.style.pointerEvents = (coins >= spikesCost && !isGameOver) ? 'auto' : 'none';
                 }
 
-                // ОБНОВЛЕНИЕ КНОПКИ МЕЧА
                 if (swordBtn) {
                     swordBtn.innerHTML = `⚔️ Острый меч (${swordCost} 🪙)<br><span>Урон клика: ${clickDamage}</span>`;
-                    if (coins >= swordCost && !isGameOver) {
-                        swordBtn.style.opacity = '1'; swordBtn.style.pointerEvents = 'auto';
-                    } else {
-                        swordBtn.style.opacity = '0.5'; swordBtn.style.pointerEvents = 'none';
-                    }
+                    swordBtn.style.opacity = (coins >= swordCost && !isGameOver) ? '1' : '0.5';
+                    swordBtn.style.pointerEvents = (coins >= swordCost && !isGameOver) ? 'auto' : 'none';
                 }
 
                 if (coins >= 100) unlockAchievement('wealthy', 'Толстосум');
@@ -129,18 +118,17 @@ if (window.gameInitialized) {
             });
         }
 
-        // ЛОГИКА ПОКУПКИ МЕЧА
         if (swordBtn) {
             swordBtn.addEventListener('click', (e) => {
                 e.stopPropagation(); 
                 if (coins >= swordCost && !isGameOver) {
                     coins -= swordCost; 
-                    clickDamage++; // Увеличиваем урон
-                    swordCost = Math.floor(swordCost * 2); // Цена растет в 2 раза
+                    clickDamage++; 
+                    swordCost = Math.floor(swordCost * 2); 
                     updateUI(); 
                     damageNumbers.push(new DamageNumber(canvas.width / 2, canvas.height - 180, 'Меч улучшен!', '#ff5252'));
                     
-                    // Меняем CSS класс контейнера для смены курсора
+                    // Меняем класс для курсора
                     if (gameContainer) {
                         gameContainer.classList.remove('sword-lvl-2', 'sword-lvl-3');
                         if (clickDamage === 2) gameContainer.classList.add('sword-lvl-2');
@@ -150,7 +138,7 @@ if (window.gameInitialized) {
             });
         }
 
-        // ЗАГРУЗКА ГРАФИКИ (ОБЫЧНЫЕ И БОССЫ)
+        // ЗАГРУЗКА ГРАФИКИ
         const goblinFrames = []; 
         const bossFrames = []; 
         let isSpriteLoaded = false, loadedImagesCount = 0;
@@ -290,7 +278,7 @@ if (window.gameInitialized) {
             update() {
                 if (!this.target || this.target.hp <= 0) { this.active = false; return; }
                 let dx = (this.target.x + this.target.width/2) - this.x; let dy = (this.target.y + this.target.height/2) - this.y; let dist = Math.hypot(dx, dy);
-                if (dist < this.speed) { this.target.hp -= 1; createExplosion(this.x, this.y, '#fff', 5); damageNumbers.push(new DamageNumber(this.x, this.y, '-1', '#ff5252')); this.active = false; } 
+                if (dist < this.speed) { this.target.hp -= clickDamage; createExplosion(this.x, this.y, '#fff', 5); damageNumbers.push(new DamageNumber(this.x, this.y, `-${clickDamage}`, '#ff5252')); this.active = false; } 
                 else { this.angle = Math.atan2(dy, dx); this.x += Math.cos(this.angle) * this.speed; this.y += Math.sin(this.angle) * this.speed; }
             }
             draw() { ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle); ctx.fillStyle = '#ccc'; ctx.fillRect(-8, -1, 16, 2); ctx.fillStyle = '#ff3333'; ctx.fillRect(8, -2, 4, 4); ctx.restore(); }
@@ -299,9 +287,9 @@ if (window.gameInitialized) {
         function initGame() {
             if (animationId) cancelAnimationFrame(animationId); 
             score = 0; lives = maxLives; isGameOver = false; coins = 0; archers = 0; archerCost = 15; spikesLevel = 0; spikesCost = 20; 
-            clickDamage = 1; swordCost = 30; // Сброс меча при новой игре
+            clickDamage = 1; swordCost = 30; 
             
-            if (gameContainer) gameContainer.classList.remove('sword-lvl-2', 'sword-lvl-3'); // Возвращаем обычный курсор
+            if (gameContainer) gameContainer.classList.remove('sword-lvl-2', 'sword-lvl-3'); 
             
             enemies = []; particles = []; repairItems = []; damageNumbers = []; slashes = []; footprints = []; arrows = [];
             spawnTimer = 0; spawnInterval = 60; repairTimer = 0; gameSpeedMultiplier = 1;
@@ -328,7 +316,6 @@ if (window.gameInitialized) {
             }
 
             spawnInterval = Math.max(25, 60 - score * 0.3); spawnTimer++;
-            // Каждый 10-й враг (с вероятностью 10%) - мини-босс!
             if (spawnTimer >= spawnInterval) { enemies.push(new Enemy(score > 5 && Math.random() < 0.1)); spawnTimer = 0; }
             repairTimer++; if (repairTimer >= repairInterval) { repairItems.push(new RepairItem()); repairTimer = 0; repairInterval = Math.floor(Math.random() * 400) + 400; }
 
@@ -406,7 +393,6 @@ if (window.gameInitialized) {
         }
 
         async function endGame() {
-            console.log("Игра окончена. Проверяем профиль...");
             cancelAnimationFrame(animationId);
             
             if (topUI) topUI.style.display = 'none'; 
@@ -464,11 +450,9 @@ if (window.gameInitialized) {
                 const enemy = enemies[i];
                 if (clickX >= enemy.x && clickX <= enemy.x + enemy.width && clickY >= enemy.y && clickY <= enemy.y + enemy.height) {
                     
-                    // ЗДЕСЬ ПРИМЕНЯЕТСЯ УРОН ОТ ПРОКАЧКИ МЕЧА!
                     enemy.hp -= clickDamage; 
                     
                     createExplosion(clickX, clickY, '#fff', 5); 
-                    // Отображаем нанесенный урон:
                     damageNumbers.push(new DamageNumber(clickX, clickY, `-${clickDamage}`, '#ff5252')); 
                     break; 
                 }
@@ -482,13 +466,22 @@ if (window.gameInitialized) {
         
         if (startBtn) startBtn.onclick = initGame; 
         
+        // === ИСПРАВЛЕННЫЙ ПОЛНЫЙ ЭКРАН ===
         const fullscreenBtn = document.getElementById('fullscreenBtn');
-        if (fullscreenBtn && gameContainer) {
+        const gameWrapper = document.getElementById('gameWrapper'); // РАЗВОРАЧИВАЕМ ИМЕННО ЭТУ КОРОБКУ
+        if (fullscreenBtn && gameWrapper) {
             fullscreenBtn.onclick = () => {
-                if (!document.fullscreenElement) { gameContainer.requestFullscreen(); fullscreenBtn.textContent = "✖ Выйти"; } 
-                else { document.exitFullscreen(); fullscreenBtn.textContent = "⛶ Полный экран"; }
+                if (!document.fullscreenElement) { 
+                    gameWrapper.requestFullscreen().catch(err => console.warn(err)); 
+                    fullscreenBtn.textContent = "✖ Выйти"; 
+                } else { 
+                    document.exitFullscreen(); 
+                    fullscreenBtn.textContent = "⛶ Полный экран"; 
+                }
             };
-            document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) fullscreenBtn.textContent = "⛶ Полный экран"; });
+            document.addEventListener('fullscreenchange', () => { 
+                if (!document.fullscreenElement) fullscreenBtn.textContent = "⛶ Полный экран"; 
+            });
         }
     });
 }
