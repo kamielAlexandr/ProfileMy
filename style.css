@@ -236,19 +236,19 @@ h1 { color: var(--accent-color); border-bottom: 2px solid var(--accent-color); p
 #gameWrapper,
 #gameWrapper #gameCanvas,
 #gameWrapper .game-overlay {
-    cursor: url('img/cursor.cur'), crosshair !important; 
+    cursor: url('img/cursor.png'), crosshair !important; 
 }
 
 /* Улучшенный меч (Урон 2) */
 #gameWrapper.sword-lvl-2,
 #gameWrapper.sword-lvl-2 #gameCanvas,
 #gameWrapper.sword-lvl-2 .game-overlay {
-    cursor: url('img/cursor2.cur'), crosshair !important;
+    cursor: url('img/cursor2.png'), crosshair !important;
 }
 
 /* Эпический меч (Урон 3 и выше) */
 #gameWrapper.sword-lvl-3,
 #gameWrapper.sword-lvl-3 #gameCanvas,
 #gameWrapper.sword-lvl-3 .game-overlay {
-    cursor: url('img/cursor3.cur'), crosshair !important;
+    cursor: url('img/cursor3.png'), crosshair !important;
 }
