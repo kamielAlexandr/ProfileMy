@@ -1,12 +1,9 @@
-// ЖЕСТКАЯ ЗАЩИТА ОТ ДВОЙНОГО ЗАПУСКА
 if (window.gameInitialized) {
     console.warn("Скрипт попытался запуститься дважды. Блокировка сработала.");
 } else {
     window.gameInitialized = true;
 
     document.addEventListener('DOMContentLoaded', () => {
-        console.log("Скрипт игры запущен.");
-        
         const canvas = document.getElementById('gameCanvas');
         if (!canvas) return; 
 
@@ -14,7 +11,7 @@ if (window.gameInitialized) {
         const overlay = document.getElementById('gameOverlay');
         const startBtn = document.getElementById('startGameBtn');
         const overlayTitle = document.getElementById('overlayTitle');
-        const gameContainer = document.getElementById('gameContainer'); // Для смены курсоров
+        const gameWrapper = document.getElementById('gameWrapper'); // ГЛАВНЫЙ КОНТЕЙНЕР ДЛЯ КУРСОРОВ И ФУЛЛСКРИНА
 
         let score = 0, lives = 5, maxLives = 5, isGameOver = true, animationId;
         let coins = 0, archers = 0, archerCost = 15, archerTimer = 0;
@@ -32,7 +29,7 @@ if (window.gameInitialized) {
         try { localHighScore = parseInt(localStorage.getItem('citadelHighScore')) || 0; } catch(e) {}
         let globalHighScore = 0; 
 
-        // СИСТЕМА ДОСТИЖЕНИЙ
+        // ДОСТИЖЕНИЯ
         let unlockedAchievements = [];
         try { unlockedAchievements = JSON.parse(localStorage.getItem('citadelAchievements')) || []; } catch(e) {}
         
@@ -71,19 +68,19 @@ if (window.gameInitialized) {
                 livesUI.innerHTML = `🛡️ Прочность: <span style="color:${wallColor}">${Math.max(0, lives)}/${maxLives}</span>`;
 
                 if (shopBtn) {
-                    shopBtn.innerHTML = `🏹 Нанять Лучника (${archerCost} 🪙)<br><span>На стене: ${archers}</span>`;
+                    shopBtn.innerHTML = `🏹 Лучник (${archerCost} 🪙)<br><span>На стене: ${archers}</span>`;
                     shopBtn.style.opacity = (coins >= archerCost && !isGameOver) ? '1' : '0.5';
                     shopBtn.style.pointerEvents = (coins >= archerCost && !isGameOver) ? 'auto' : 'none';
                 }
 
                 if (spikesBtn) {
-                    spikesBtn.innerHTML = `🗡️ Ров с шипами (${spikesCost} 🪙)<br><span>Уровень: ${spikesLevel}</span>`;
+                    spikesBtn.innerHTML = `🗡️ Шипы (${spikesCost} 🪙)<br><span>Уровень: ${spikesLevel}</span>`;
                     spikesBtn.style.opacity = (coins >= spikesCost && !isGameOver) ? '1' : '0.5';
                     spikesBtn.style.pointerEvents = (coins >= spikesCost && !isGameOver) ? 'auto' : 'none';
                 }
 
                 if (swordBtn) {
-                    swordBtn.innerHTML = `⚔️ Острый меч (${swordCost} 🪙)<br><span>Урон клика: ${clickDamage}</span>`;
+                    swordBtn.innerHTML = `⚔️ Меч (${swordCost} 🪙)<br><span>Урон клика: ${clickDamage}</span>`;
                     swordBtn.style.opacity = (coins >= swordCost && !isGameOver) ? '1' : '0.5';
                     swordBtn.style.pointerEvents = (coins >= swordCost && !isGameOver) ? 'auto' : 'none';
                 }
@@ -128,11 +125,11 @@ if (window.gameInitialized) {
                     updateUI(); 
                     damageNumbers.push(new DamageNumber(canvas.width / 2, canvas.height - 180, 'Меч улучшен!', '#ff5252'));
                     
-                    // Меняем класс для курсора
-                    if (gameContainer) {
-                        gameContainer.classList.remove('sword-lvl-2', 'sword-lvl-3');
-                        if (clickDamage === 2) gameContainer.classList.add('sword-lvl-2');
-                        if (clickDamage >= 3) gameContainer.classList.add('sword-lvl-3');
+                    // ДОБАВЛЯЕМ КЛАСС ПРЯМО НА WRAPPER ДЛЯ СМЕНЫ КУРСОРА
+                    if (gameWrapper) {
+                        gameWrapper.classList.remove('sword-lvl-2', 'sword-lvl-3');
+                        if (clickDamage === 2) gameWrapper.classList.add('sword-lvl-2');
+                        if (clickDamage >= 3) gameWrapper.classList.add('sword-lvl-3');
                     }
                 }
             });
@@ -289,7 +286,7 @@ if (window.gameInitialized) {
             score = 0; lives = maxLives; isGameOver = false; coins = 0; archers = 0; archerCost = 15; spikesLevel = 0; spikesCost = 20; 
             clickDamage = 1; swordCost = 30; 
             
-            if (gameContainer) gameContainer.classList.remove('sword-lvl-2', 'sword-lvl-3'); 
+            if (gameWrapper) gameWrapper.classList.remove('sword-lvl-2', 'sword-lvl-3'); 
             
             enemies = []; particles = []; repairItems = []; damageNumbers = []; slashes = []; footprints = []; arrows = [];
             spawnTimer = 0; spawnInterval = 60; repairTimer = 0; gameSpeedMultiplier = 1;
@@ -466,9 +463,8 @@ if (window.gameInitialized) {
         
         if (startBtn) startBtn.onclick = initGame; 
         
-        // === ИСПРАВЛЕННЫЙ ПОЛНЫЙ ЭКРАН ===
+        // РАБОЧИЙ ПОЛНЫЙ ЭКРАН
         const fullscreenBtn = document.getElementById('fullscreenBtn');
-        const gameWrapper = document.getElementById('gameWrapper'); // РАЗВОРАЧИВАЕМ ИМЕННО ЭТУ КОРОБКУ
         if (fullscreenBtn && gameWrapper) {
             fullscreenBtn.onclick = () => {
                 if (!document.fullscreenElement) { 
