@@ -704,3 +704,18 @@ h1 {
         font-size: 1rem;
     }
 }
+/* =========================================
+   ВОЗВРАЩАЕМ МЕЧ ДЛЯ ЗАЩИТЫ ЦИТАДЕЛИ
+   ========================================= */
+#gameCanvas {
+    width: 100%;
+    max-width: 800px;
+    height: auto;
+    aspect-ratio: 4 / 3;
+    display: block;
+    margin: 0 auto;
+    touch-action: none;
+    image-rendering: pixelated;
+    /* Тот самый курсор-меч! */
+    cursor: url('img/cursor.cur') 0 0, crosshair !important; 
+}
