@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тарн: Кровь и Вереск</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas" width="800" height="450"></canvas>
+        
+        <div id="story-screen" class="overlay">
+            <div class="story-text">
+                <p>Его родители сгинули в лесах, когда он был еще младенцем.</p>
+                <p>Воспитанный суровым дядюшкой Вейландом в Урочище Вереск, Тарн вырос крепким, как вековой дуб.</p>
+                <p>Он не знал благородных искусств боя. Его учителями были тяжелый плуг, неподатливая земля и твари, то и дело лезущие из чащи покушаться на урожай.</p>
+                <p>Ему не хватает техники, но силы — не занимать.</p>
+                <p class="blink">Нажмите [ПРОБЕЛ], чтобы продолжить</p>
+            </div>
+        </div>
+
+        <div id="dialogue-screen" class="overlay hidden">
+            <div class="dialogue-box">
+                <div id="speaker-name" class="speaker">Вейланд</div>
+                <div id="dialogue-text" class="text">Тарн, мальчик мой. На дальнем поле опять неспокойно. Земля гниет, и из нее лезут Хвощевики.</div>
+                <div class="hint">Нажмите [ПРОБЕЛ]</div>
+            </div>
+        </div>
+        
+        <div id="hud" class="hidden">
+            Управление: WASD - движение | J - Легкая атака | K - Тяжелая атака | L - Кувырок | F - Использовать
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
