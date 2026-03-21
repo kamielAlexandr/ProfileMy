@@ -30,6 +30,19 @@
             </div>
         </div>
 
+        <div id="shop-screen" class="overlay hidden">
+            <div class="dialogue-box shop-box">
+                <div class="speaker" style="color: #69f0ae;">Снаг (Торговец-Жаболюд)</div>
+                <div class="text" style="margin-bottom: 15px;">Ква-а-а... Земля гниет, а мои карманы пустеют. Что принес, фермер?</div>
+                
+                <div class="shop-items">
+                    <button id="btn-buy-potion" class="shop-btn">Зелье лечения (+50 HP) — 2 Монеты</button>
+                    <button id="btn-buy-upgrade" class="shop-btn">Шипы для цепа (+10 Урон) — 5 Семян гнили</button>
+                    <button id="btn-close-shop" class="shop-btn close-btn">Уйти</button>
+                </div>
+            </div>
+        </div>
+
         <div id="game-over-screen" class="overlay hidden">
             <div class="story-text">
                 <h1 style="color: #d32f2f; font-size: 32px;">ТАРН ПАЛ</h1>
@@ -40,13 +53,12 @@
         
         <div id="hud" class="hidden">
             <div id="player-stats">
-                <div class="hp-bar-bg">
-                    <div id="hp-bar-fill"></div>
-                </div>
+                <div class="hp-bar-bg"><div id="hp-bar-fill"></div></div>
                 <div id="xp-text">Опыт: 0</div>
+                <div id="inventory-text">Монеты: 0 | Семена: 0 | Зелья (E): 0</div>
             </div>
             <div id="objective">Цель: Поговорить с дядюшкой</div>
-            <div id="controls">Управление: WASD | J - Легкая | K - Тяжелая | L - Кувырок | F - Действие</div>
+            <div id="controls">WASD | J - Легкая | K - Тяжелая | L - Кувырок | F - Действие | E - Зелье</div>
         </div>
     </div>
 
