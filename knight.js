@@ -80,7 +80,7 @@ function createEnemy(x, y) {
 setTimeout(() => fadeOverlay.classList.add('hidden'), 500); // Убираем стартовый черный экран
 locations.village.setup();
 
-// Обработчики клавиатуры
+// Обработчики клавиатуры (теперь работают на любой раскладке)
 window.addEventListener('keydown', (e) => {
     if (currentState === 'STORY') {
         if (e.code === 'Space') {
@@ -107,23 +107,24 @@ window.addEventListener('keydown', (e) => {
     }
 
     if (currentState === 'PLAY') {
-        if (e.key === 'w' || e.key === 'W') keys.w = true;
-        if (e.key === 'a' || e.key === 'A') keys.a = true;
-        if (e.key === 's' || e.key === 'S') keys.s = true;
-        if (e.key === 'd' || e.key === 'D') keys.d = true;
+        // e.code считывает физическую клавишу, а не букву
+        if (e.code === 'KeyW') keys.w = true;
+        if (e.code === 'KeyA') keys.a = true;
+        if (e.code === 'KeyS') keys.s = true;
+        if (e.code === 'KeyD') keys.d = true;
         
-        if (e.key === 'j' || e.key === 'J') performAction('attackLight');
-        if (e.key === 'k' || e.key === 'K') performAction('attackHeavy');
-        if (e.key === 'l' || e.key === 'L') performAction('roll');
-        if (e.key === 'f' || e.key === 'F') checkInteraction();
+        if (e.code === 'KeyJ') performAction('attackLight');
+        if (e.code === 'KeyK') performAction('attackHeavy');
+        if (e.code === 'KeyL') performAction('roll');
+        if (e.code === 'KeyF') checkInteraction();
     }
 });
 
 window.addEventListener('keyup', (e) => {
-    if (e.key === 'w' || e.key === 'W') keys.w = false;
-    if (e.key === 'a' || e.key === 'A') keys.a = false;
-    if (e.key === 's' || e.key === 'S') keys.s = false;
-    if (e.key === 'd' || e.key === 'D') keys.d = false;
+    if (e.code === 'KeyW') keys.w = false;
+    if (e.code === 'KeyA') keys.a = false;
+    if (e.code === 'KeyS') keys.s = false;
+    if (e.code === 'KeyD') keys.d = false;
 });
 
 function updateDialogueUI() {
@@ -140,7 +141,7 @@ function performAction(action) {
         player.rollTimer = player.rollDuration;
     } else if (action === 'attackLight' || action === 'attackHeavy') {
         if (!player.hasWeapon) {
-            alert("Нужно найти оружие!");
+            alert("Нужно найти оружие! Подойди к сараю и нажми F.");
             return;
         }
         player.state = action;
