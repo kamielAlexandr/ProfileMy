@@ -81,44 +81,61 @@ locations.village.setup();
 updateHUD();
 
 // Обработчики клавиатуры
-window.addEventListener('keydown', (e) => {
-    if (currentState === 'GAMEOVER') return; // Блокируем управление при смерти
-
+// Функция для продвижения сюжета (вызывается и по кнопке, и по клику)
+function advanceStory() {
     if (currentState === 'STORY') {
-        if (e.code === 'Space') {
-            currentState = 'DIALOGUE';
-            storyScreen.classList.add('hidden');
-            dialogueScreen.classList.remove('hidden');
+        currentState = 'DIALOGUE';
+        storyScreen.classList.add('hidden');
+        dialogueScreen.classList.remove('hidden');
+        updateDialogueUI();
+    } else if (currentState === 'DIALOGUE') {
+        currentLine++;
+        if (currentLine >= dialogueLines.length) {
+            currentState = 'PLAY';
+            dialogueScreen.classList.add('hidden');
+            hud.classList.remove('hidden');
+        } else {
             updateDialogueUI();
         }
-        return;
     }
+}
 
-    if (currentState === 'DIALOGUE') {
-        if (e.code === 'Space') {
-            currentLine++;
-            if (currentLine >= dialogueLines.length) {
-                currentState = 'PLAY';
-                dialogueScreen.classList.add('hidden');
-                hud.classList.remove('hidden');
-            } else {
-                updateDialogueUI();
-            }
+// Обработка клика мыши или тапа по экрану
+window.addEventListener('mousedown', (e) => {
+    if (currentState === 'STORY' || currentState === 'DIALOGUE') {
+        advanceStory();
+    }
+});
+
+// Обработчики клавиатуры
+window.addEventListener('keydown', (e) => {
+    if (currentState === 'GAMEOVER') return;
+
+    if (currentState === 'STORY' || currentState === 'DIALOGUE') {
+        if (e.code === 'Space' || e.code === 'Enter') {
+            advanceStory();
         }
         return;
     }
 
     if (currentState === 'PLAY') {
-        if (e.code === 'KeyW') keys.w = true;
-        if (e.code === 'KeyA') keys.a = true;
-        if (e.code === 'KeyS') keys.s = true;
-        if (e.code === 'KeyD') keys.d = true;
+        if (e.code === 'KeyW' || e.code === 'ArrowUp') keys.w = true;
+        if (e.code === 'KeyA' || e.code === 'ArrowLeft') keys.a = true;
+        if (e.code === 'KeyS' || e.code === 'ArrowDown') keys.s = true;
+        if (e.code === 'KeyD' || e.code === 'ArrowRight') keys.d = true;
         
         if (e.code === 'KeyJ') performAction('attackLight');
         if (e.code === 'KeyK') performAction('attackHeavy');
         if (e.code === 'KeyL') performAction('roll');
         if (e.code === 'KeyF') checkInteraction();
     }
+});
+
+window.addEventListener('keyup', (e) => {
+    if (e.code === 'KeyW' || e.code === 'ArrowUp') keys.w = false;
+    if (e.code === 'KeyA' || e.code === 'ArrowLeft') keys.a = false;
+    if (e.code === 'KeyS' || e.code === 'ArrowDown') keys.s = false;
+    if (e.code === 'KeyD' || e.code === 'ArrowRight') keys.d = false;
 });
 
 window.addEventListener('keyup', (e) => {
