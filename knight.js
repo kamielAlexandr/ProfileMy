@@ -9,11 +9,12 @@ const hud = document.getElementById('hud');
 const objectiveText = document.getElementById('objective');
 const speakerName = document.getElementById('speaker-name');
 const dialogueText = document.getElementById('dialogue-text');
+const hpBarFill = document.getElementById('hp-bar-fill');
+const gameOverScreen = document.getElementById('game-over-screen');
 
 // Состояния игры
 let currentState = 'STORY'; 
-let currentLocation = 'village'; // village или field
-let fadeAlpha = 1; // Для плавного появления при старте
+let currentLocation = 'village'; 
 
 // Данные диалога
 const dialogueLines = [
@@ -34,12 +35,11 @@ const player = {
     state: 'idle', facingRight: true,
     rollTimer: 0, rollDuration: 15, rollSpeedMult: 2,
     hasWeapon: false, attackHitboxActive: false,
-    damage: 10
+    hp: 100, maxHp: 100, hurtTimer: 0
 };
 
-// Объекты окружения (зависят от локации)
+// Объекты окружения и Враги
 let environment = [];
-// Враги
 let enemies = [];
 
 // Настройка локаций
@@ -53,16 +53,15 @@ const locations = {
         }
     },
     field: {
-        bgColor: '#4e5e3d', horizonColor: '#0a1a0f', // Более зеленовато-гнилостный фон
+        bgColor: '#4e5e3d', horizonColor: '#0a1a0f', 
         setup: () => {
             environment = [];
-            // Спавним 3 Хвощевиков
             enemies = [
                 createEnemy(600, 300),
                 createEnemy(700, 250),
                 createEnemy(750, 380)
             ];
-            objectiveText.innerText = "Цель: Выкорчуй нечисть!";
+            objectiveText.innerText = "Цель: Выживи и выкорчуй нечисть!";
         }
     }
 };
@@ -71,17 +70,20 @@ function createEnemy(x, y) {
     return {
         x: x, y: y, width: 35, height: 60,
         speed: 1.2, hp: 30, color: '#689f38',
-        state: 'chase', // chase, hurt, dead
-        hurtTimer: 0
+        state: 'chase', hurtTimer: 0,
+        damage: 15, attackTimer: 0
     };
 }
 
 // Инициализация при загрузке
-setTimeout(() => fadeOverlay.classList.add('hidden'), 500); // Убираем стартовый черный экран
+setTimeout(() => fadeOverlay.classList.add('hidden'), 500);
 locations.village.setup();
+updateHUD();
 
-// Обработчики клавиатуры (теперь работают на любой раскладке)
+// Обработчики клавиатуры
 window.addEventListener('keydown', (e) => {
+    if (currentState === 'GAMEOVER') return; // Блокируем управление при смерти
+
     if (currentState === 'STORY') {
         if (e.code === 'Space') {
             currentState = 'DIALOGUE';
@@ -107,7 +109,6 @@ window.addEventListener('keydown', (e) => {
     }
 
     if (currentState === 'PLAY') {
-        // e.code считывает физическую клавишу, а не букву
         if (e.code === 'KeyW') keys.w = true;
         if (e.code === 'KeyA') keys.a = true;
         if (e.code === 'KeyS') keys.s = true;
@@ -133,6 +134,11 @@ function updateDialogueUI() {
     speakerName.style.color = dialogueLines[currentLine].name === "Тарн" ? "#a1887f" : "#ffb300";
 }
 
+function updateHUD() {
+    let hpPercent = Math.max(0, (player.hp / player.maxHp) * 100);
+    hpBarFill.style.width = hpPercent + '%';
+}
+
 function performAction(action) {
     if (player.state !== 'idle' && player.state !== 'walk') return;
 
@@ -145,9 +151,9 @@ function performAction(action) {
             return;
         }
         player.state = action;
-        player.attackHitboxActive = true; // Хитбокс активен только в первый кадр атаки
+        player.attackHitboxActive = true; 
         let duration = action === 'attackLight' ? 300 : 500;
-        setTimeout(() => player.state = 'idle', duration);
+        setTimeout(() => { if(player.state !== 'dead') player.state = 'idle'; }, duration);
     }
 }
 
@@ -165,19 +171,22 @@ function checkInteraction() {
 
 function transitionLocation(newLoc) {
     currentState = 'TRANSITION';
-    fadeOverlay.classList.remove('hidden'); // Затемняем экран
+    fadeOverlay.classList.remove('hidden'); 
     
     setTimeout(() => {
         currentLocation = newLoc;
         locations[newLoc].setup();
-        player.x = 50; // Перемещаем Тарна в начало экрана
-        fadeOverlay.classList.add('hidden'); // Высветляем
+        player.x = 50; 
+        fadeOverlay.classList.add('hidden'); 
         currentState = 'PLAY';
     }, 600);
 }
 
 function update() {
     if (currentState !== 'PLAY') return;
+
+    // Таймер неуязвимости игрока
+    if (player.hurtTimer > 0) player.hurtTimer--;
 
     // --- Логика игрока ---
     let currentSpeed = player.speed;
@@ -202,70 +211,75 @@ function update() {
 
         player.x += dx; player.y += dy;
 
-        // Ограничения и переход на другую локацию
         const horizon = 200; 
         if (player.x < player.width/2) player.x = player.width/2;
         if (player.y < horizon) player.y = horizon;
         if (player.y > canvas.height) player.y = canvas.height;
 
-        // Если ушли за правый край экрана с оружием в деревне
         if (player.x > canvas.width + 20) {
             if (currentLocation === 'village' && player.hasWeapon) {
                 transitionLocation('field');
             } else {
-                player.x = canvas.width - player.width/2; // Упираемся в стену
+                player.x = canvas.width - player.width/2; 
             }
         }
     }
 
-    // --- Логика атак (Хитбоксы) ---
+    // --- Атака Игрока ---
     if ((player.state === 'attackLight' || player.state === 'attackHeavy') && player.attackHitboxActive) {
-        player.attackHitboxActive = false; // Наносим урон только один раз за взмах
-        
+        player.attackHitboxActive = false; 
         let reach = player.state === 'attackLight' ? 50 : 70;
         let attackDamage = player.state === 'attackLight' ? 10 : 20;
         
         enemies.forEach(enemy => {
             if (enemy.state === 'dead') return;
-            
-            // Проверка дистанции по X
             let inRangeX = player.facingRight ? 
                 (enemy.x > player.x && enemy.x - player.x < reach) : 
                 (enemy.x < player.x && player.x - enemy.x < reach);
-            
-            // Проверка глубины по Y (чтобы нельзя было бить врага, стоящего сильно выше или ниже)
             let inRangeY = Math.abs(player.y - enemy.y) < 30;
 
             if (inRangeX && inRangeY) {
-                // Попадание!
                 enemy.hp -= attackDamage;
                 enemy.state = 'hurt';
                 enemy.hurtTimer = 15;
-                // Отбрасывание
                 enemy.x += player.facingRight ? 20 : -20;
-                
                 if (enemy.hp <= 0) enemy.state = 'dead';
             }
         });
     }
 
-    // --- ИИ Врагов ---
+    // --- ИИ Врагов и Атака по Игроку ---
     enemies.forEach(enemy => {
         if (enemy.state === 'dead') return;
+
+        if (enemy.attackTimer > 0) enemy.attackTimer--;
 
         if (enemy.state === 'hurt') {
             enemy.hurtTimer--;
             if (enemy.hurtTimer <= 0) enemy.state = 'chase';
         } else if (enemy.state === 'chase') {
-            // Двигаемся к игроку
             let dx = player.x - enemy.x;
             let dy = player.y - enemy.y;
             let dist = Math.hypot(dx, dy);
             
-            // Останавливаемся вплотную
-            if (dist > 30) {
+            if (dist > 40) {
+                // Догоняем
                 enemy.x += (dx / dist) * enemy.speed;
                 enemy.y += (dy / dist) * enemy.speed;
+            } else {
+                // Атакуем Тарна!
+                if (enemy.attackTimer <= 0 && player.state !== 'dead' && player.state !== 'roll' && player.hurtTimer <= 0) {
+                    player.hp -= enemy.damage;
+                    player.hurtTimer = 40; // Даем Тарну ~0.6 сек неуязвимости
+                    updateHUD();
+                    enemy.attackTimer = 60; // Враг бьет раз в секунду
+                    
+                    if (player.hp <= 0) {
+                        player.state = 'dead';
+                        currentState = 'GAMEOVER';
+                        gameOverScreen.classList.remove('hidden');
+                    }
+                }
             }
         }
     });
@@ -279,7 +293,7 @@ function draw() {
     ctx.fillStyle = loc.horizonColor;
     ctx.fillRect(0, 0, canvas.width, 180);
 
-    if (currentState === 'PLAY') {
+    if (currentState === 'PLAY' || currentState === 'GAMEOVER') {
         let renderQueue = [player, ...environment, ...enemies];
         renderQueue.sort((a, b) => a.y - b.y);
 
@@ -299,6 +313,15 @@ function draw() {
 }
 
 function drawPlayer() {
+    if (player.state === 'dead') {
+        ctx.fillStyle = '#4a0000';
+        ctx.fillRect(player.x - player.height/2, player.y - 10, player.height, 15);
+        return;
+    }
+
+    // Мигание при получении урона (кадры неуязвимости)
+    if (player.hurtTimer > 0 && Math.floor(Date.now() / 100) % 2 === 0) return;
+
     ctx.fillStyle = 'rgba(0,0,0,0.4)';
     ctx.beginPath();
     ctx.ellipse(player.x, player.y, player.width/1.5, 8, 0, 0, Math.PI * 2);
@@ -315,7 +338,6 @@ function drawPlayer() {
 
     ctx.fillRect(player.x - player.width/2, drawY, player.width, drawHeight);
 
-    // Глаза
     ctx.fillStyle = '#fff';
     let eyeX = player.facingRight ? player.x + 10 : player.x - 15;
     ctx.fillRect(eyeX, drawY + 10, 5, 5);
@@ -323,24 +345,26 @@ function drawPlayer() {
 
 function drawEnemy(enemy) {
     if (enemy.state === 'dead') {
-        // Труп на земле
         ctx.fillStyle = '#2e3b1c';
         ctx.fillRect(enemy.x - enemy.height/2, enemy.y - 10, enemy.height, 10);
         return;
     }
 
-    // Тень
     ctx.fillStyle = 'rgba(0,0,0,0.4)';
     ctx.beginPath();
     ctx.ellipse(enemy.x, enemy.y, enemy.width/1.5, 8, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Тело
-    ctx.fillStyle = enemy.state === 'hurt' ? '#fff' : enemy.color;
+    // Враг становится красным перед ударом
+    if (enemy.attackTimer > 40 && enemy.state !== 'hurt') {
+        ctx.fillStyle = '#ff8a65';
+    } else {
+        ctx.fillStyle = enemy.state === 'hurt' ? '#fff' : enemy.color;
+    }
+    
     let drawY = enemy.y - enemy.height;
     ctx.fillRect(enemy.x - enemy.width/2, drawY, enemy.width, enemy.height);
 
-    // "Глаза" хвощевика (красные точки)
     ctx.fillStyle = '#ff0000';
     let isFacingPlayer = player.x > enemy.x;
     let eyeX = isFacingPlayer ? enemy.x + 5 : enemy.x - 10;
