@@ -48,10 +48,9 @@ canvas {
 }
 
 .hidden {
-    opacity: 0;
-    pointer-events: none; /* Чтобы не перехватывало клики, когда скрыто */
+    opacity: 0 !important;
+    pointer-events: none !important;
 }
-
 .story-text {
     width: 80%;
     text-align: center;
