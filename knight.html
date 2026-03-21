@@ -29,13 +29,26 @@
                 <div class="hint">Нажмите [ПРОБЕЛ]</div>
             </div>
         </div>
+
+        <div id="game-over-screen" class="overlay hidden">
+            <div class="story-text">
+                <h1 style="color: #d32f2f; font-size: 32px;">ТАРН ПАЛ</h1>
+                <p>Хвощевики поглотят эти земли...</p>
+                <p class="blink">Нажмите [F5] для перезапуска</p>
+            </div>
+        </div>
         
         <div id="hud" class="hidden">
+            <div id="player-stats">
+                <div class="hp-bar-bg">
+                    <div id="hp-bar-fill"></div>
+                </div>
+            </div>
             <div id="objective">Цель: Поговорить с дядюшкой</div>
-            <div id="controls">Управление: WASD - движение | J - Легкая атака | K - Тяжелая атака | L - Кувырок | F - Использовать</div>
+            <div id="controls">Управление: WASD | J - Легкая | K - Тяжелая | L - Кувырок | F - Действие</div>
         </div>
     </div>
 
-    <script src="knight.js"?v=101></script>
+    <script src="knight.js"></script>
 </body>
 </html>
