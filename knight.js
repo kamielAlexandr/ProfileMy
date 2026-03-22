@@ -39,6 +39,7 @@ function loadFrames(prefix, count) {
     return frames;
 }
 
+// Спрайты главного героя
 const tarnSprites = {
     idle_no_weapon: loadFrames('img/GG_idle_None', 1),
     idle_weapon: loadFrames('img/GG_idle', 1),
@@ -50,6 +51,17 @@ const tarnSprites = {
     attack2_weapon: loadFrames('img/GG_Attack_SuperAxe', 6),       
     roll: loadFrames('img/GG_perevorot', 5)                            
 };
+
+// Спрайты NPC
+const npcSprites = {
+    // ВПИШИ СЮДА НАЗВАНИЕ СВОИХ КАРТИНОК И КОЛИЧЕСТВО КАДРОВ ДЛЯ ЖАБОЛЮДА
+    merchant_idle: loadFrames('img/merchant_idle', 4) 
+};
+
+// Глобальный таймер для анимации всех NPC (чтобы они дышали)
+let globalNpcTimer = 0;
+let globalNpcFrame = 0;
+const npcAnimSpeed = 12; // Скорость смены кадров у NPC
 
 // ==========================================
 // --- КОНФИГУРАЦИЯ АНИМАЦИЙ ---
@@ -74,7 +86,7 @@ const player = {
     x: 300, y: 300, width: 30, height: 70, 
     speed: 3.5, color: '#8D6E63',
     state: 'idle', facingRight: true,
-    rollTimer: 0, rollDuration: 0, // Считается динамически
+    rollTimer: 0, rollDuration: 0, 
     rollSpeedMult: 2, hasWeapon: false, attackHitboxActive: false,
     hp: 100, maxHp: 100, hurtTimer: 0, xp: 0, coins: 0, seeds: 0, potions: 0, baseDamage: 10, questStatus: 'get_weapon',
     
@@ -95,7 +107,7 @@ const locations = {
             environment = [
                 { x: 600, y: 220, width: 100, height: 70, color: player.hasWeapon ? '#271714' : '#3E2723', interactable: !player.hasWeapon, type: 'shed' },
                 { x: 200, y: 280, width: 40, height: 80, color: '#ffb300', interactable: true, type: 'uncle' },
-                { x: 450, y: 240, width: 45, height: 60, color: '#2e7d32', interactable: true, type: 'merchant' }
+                { x: 450, y: 240, width: 45, height: 60, interactable: true, type: 'merchant' }
             ];
             enemies = []; lootItems = [];
             if (player.questStatus === 'get_weapon') objectiveText.innerText = "Цель: Забери цеп у сарая (F)";
@@ -141,10 +153,8 @@ function updateAnimation() {
 
         if (player.frameIndex >= config.frames.length) {
             if (config.onComplete) {
-                // Снимаем блокировку и ВОЗВРАЩАЕМ СТАТУС IDLE
                 player.isLockAnim = false;
                 player.state = 'idle'; 
-                
                 let nextIdle = player.hasWeapon ? 'idle_weapon' : 'idle_no_weapon';
                 player.currentAnim = nextIdle;
                 player.frameIndex = 0;
@@ -210,34 +220,25 @@ function performAction(action) {
 
     if (action === 'roll') {
         player.state = 'roll'; 
-        player.rollTimer = animConfig.animations.roll.frames.length * animConfig.animations.roll.speed;
-        
-        // 1. СНАЧАЛА включаем анимацию
+        let config = animConfig.animations.roll;
+        player.rollTimer = config.frames.length * config.speed;
         setAnimation('roll');
-        // 2. ПОТОМ блокируем
         player.isLockAnim = true;
-        
     } else if (action === 'attackLight') {
         player.state = 'attackLight'; 
         player.attackHitboxActive = true; 
         let attackAnim = player.hasWeapon ? 'attack1_weapon' : 'attack1_no_weapon';
-        
-        // 1. СНАЧАЛА включаем анимацию
         setAnimation(attackAnim);
-        // 2. ПОТОМ блокируем
         player.isLockAnim = true; 
-        
     } else if (action === 'attackHeavy') {
         player.state = 'attackHeavy'; 
         player.attackHitboxActive = true; 
         let attackAnim = player.hasWeapon ? 'attack2_weapon' : 'attack2_no_weapon';
-        
-        // 1. СНАЧАЛА включаем анимацию
         setAnimation(attackAnim);
-        // 2. ПОТОМ блокируем
         player.isLockAnim = true; 
     }
 }
+
 function checkInteraction() {
     for (let obj of environment) {
         let dist = Math.hypot(player.x - obj.x, player.y - obj.y);
@@ -267,11 +268,17 @@ function update() {
 
     updateAnimation();
 
+    // Обновление глобального таймера NPC
+    globalNpcTimer++;
+    if (globalNpcTimer >= npcAnimSpeed) {
+        globalNpcTimer = 0;
+        globalNpcFrame++;
+    }
+
     let currentSpeed = player.speed;
 
     if (player.state === 'roll') {
         currentSpeed *= player.rollSpeedMult; player.rollTimer--;
-        // Возврат из кувырка теперь происходит в updateAnimation по завершению кадров
     } else if (player.state === 'idle' || player.state === 'walk') {
         if (keys.w || keys.a || keys.s || keys.d) {
             player.state = 'walk';
@@ -347,9 +354,37 @@ function draw() {
             if (obj === player) drawPlayer();
             else if (enemies.includes(obj)) drawEnemy(obj);
             else {
-                ctx.fillStyle = obj.color; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height);
-                ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(obj.x, obj.y, obj.width/1.5, 10, 0, 0, Math.PI * 2); ctx.fill();
-                if (obj.type === 'merchant') { ctx.fillStyle = '#000'; ctx.fillRect(obj.x - 10, obj.y - obj.height + 10, 4, 4); ctx.fillRect(obj.x + 6, obj.y - obj.height + 10, 4, 4); }
+                // Отрисовка Жаболюда Снага
+                if (obj.type === 'merchant') {
+                    // Тень под жаболюдом
+                    ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(obj.x, obj.y, 25, 8, 0, 0, Math.PI * 2); ctx.fill();
+                    
+                    const frames = npcSprites.merchant_idle;
+                    if (frames && frames.length > 0) {
+                        const currentFrame = frames[globalNpcFrame % frames.length]; // Берем текущий кадр из массива
+                        
+                        if (currentFrame && currentFrame.complete && currentFrame.naturalWidth > 0) {
+                            ctx.save();
+                            ctx.translate(obj.x, obj.y);
+                            
+                            // Центрируем отрисовку (предполагая, что Жаболюд нарисован на холсте 96x96)
+                            // Если твой спрайт другого размера, поменяй эти числа (например, на -32 и -64)
+                            const dX = -animConfig.w_frame / 2;
+                            const dY = -animConfig.h_frame + 10;
+                            
+                            ctx.drawImage(currentFrame, dX, dY, animConfig.w_frame, animConfig.h_frame);
+                            ctx.restore();
+                        } else {
+                            // Резервный квадрат, если картинка не загрузилась
+                            ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height);
+                        }
+                    }
+                } 
+                // Отрисовка остальных объектов (сарай, дядюшка)
+                else {
+                    ctx.fillStyle = obj.color; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height);
+                    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(obj.x, obj.y, obj.width/1.5, 10, 0, 0, Math.PI * 2); ctx.fill();
+                }
             }
         }
     }
@@ -364,7 +399,6 @@ function drawPlayer() {
     const anim = animConfig.animations[player.currentAnim];
     const currentFrameImg = anim.frames[player.frameIndex];
 
-    // --- ОТЛАДКА: ПРОВЕРКА ЗАГРУЗКИ КАРТИНКИ ---
     if (!currentFrameImg || !currentFrameImg.complete || currentFrameImg.naturalWidth === 0) {
         ctx.fillStyle = '#ff00ff'; 
         ctx.fillRect(player.x - player.width/2, player.y - player.height, player.width, player.height);
@@ -381,7 +415,6 @@ function drawPlayer() {
     const dX = -animConfig.w_frame / 2; 
     const dY = -animConfig.h_frame + 10; 
 
-    // Отрисовываем картинку
     ctx.drawImage(currentFrameImg, dX, dY, animConfig.w_frame, animConfig.h_frame);
     ctx.restore();
 }
