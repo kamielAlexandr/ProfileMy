@@ -55,7 +55,7 @@ const tarnSprites = {
 // Спрайты NPC
 const npcSprites = {
     // ВПИШИ СЮДА НАЗВАНИЕ СВОИХ КАРТИНОК И КОЛИЧЕСТВО КАДРОВ ДЛЯ ЖАБОЛЮДА
-    merchant_idle: loadFrames('img/merchant_idle', 4) 
+    merchant_idle: loadFrames('img/frog_idle', 3) 
 };
 
 // Глобальный таймер для анимации всех NPC (чтобы они дышали)
