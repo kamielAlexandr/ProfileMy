@@ -33,30 +33,30 @@ function loadFrames(prefix, count) {
     let frames = [];
     for (let i = 1; i <= count; i++) {
         let img = new Image();
-        img.src = `${prefix}_${i}.png`; // Формируем имя файла с цифрой
+        img.src = `${prefix}_${i}.png`; 
         frames.push(img);
     }
     return frames;
 }
 
 const tarnSprites = {
-    idle_no_weapon: loadFrames('img/GG_idle_None', 1),
-    idle_weapon: loadFrames('img/GG_idle', 1),
-    walk_no_weapon: loadFrames('img/GG_idle_None', 6), // Поменяй число на свое
-    walk_weapon: loadFrames('img/GG_idle', 6),       // Поменяй число на свое
-    attack1_no_weapon: loadFrames('img/GG_Attack_ryka', 6), // Поменяй число на свое
-    attack1_weapon: loadFrames('img/GG_Attack_Axe', 6),       // Поменяй число на свое
-    attack2_no_weapon: loadFrames('img/GG_Attack_superRyka', 6), // Поменяй число на свое
-    attack2_weapon: loadFrames('img/GG_Attack_SuperAxe', 6),       // Поменяй число на свое
-    roll: loadFrames('img/GG_perevorot', 5)                            // Поменяй число на свое
+    idle_no_weapon: loadFrames('GG_idle_None', 1),
+    idle_weapon: loadFrames('GG_idle', 1),
+    walk_no_weapon: loadFrames('GG_idle_None', 6), 
+    walk_weapon: loadFrames('GG_idle', 6),       
+    attack1_no_weapon: loadFrames('GG_Attack_ryka', 6), 
+    attack1_weapon: loadFrames('GG_Attack_Axe', 6),       
+    attack2_no_weapon: loadFrames('GG_Attack_superRyka', 6), 
+    attack2_weapon: loadFrames('GG_Attack_SuperAxe', 6),       
+    roll: loadFrames('GG_perevorot', 5)                            
 };
 
 // ==========================================
 // --- КОНФИГУРАЦИЯ АНИМАЦИЙ ---
 // ==========================================
 const animConfig = {
-    w_frame: 96, // Твой размер кадра по ширине
-    h_frame: 96, // Твой размер кадра по высоте
+    w_frame: 96, 
+    h_frame: 96, 
     animations: {
         'idle_no_weapon':   { frames: tarnSprites.idle_no_weapon, speed: 12 },
         'idle_weapon':      { frames: tarnSprites.idle_weapon,    speed: 12 },
@@ -71,10 +71,10 @@ const animConfig = {
 };
 
 const player = {
-    x: 300, y: 300, width: 30, height: 70, // Хитбокс
+    x: 300, y: 300, width: 30, height: 70, 
     speed: 3.5, color: '#8D6E63',
     state: 'idle', facingRight: true,
-    rollTimer: 0, rollDuration: animConfig.animations.roll.frames.length * animConfig.animations.roll.speed,
+    rollTimer: 0, rollDuration: 0, // Считается динамически
     rollSpeedMult: 2, hasWeapon: false, attackHitboxActive: false,
     hp: 100, maxHp: 100, hurtTimer: 0, xp: 0, coins: 0, seeds: 0, potions: 0, baseDamage: 10, questStatus: 'get_weapon',
     
@@ -139,22 +139,22 @@ function updateAnimation() {
         player.animTimer = 0;
         player.frameIndex++;
 
-        // Если кадры закончились
         if (player.frameIndex >= config.frames.length) {
             if (config.onComplete) {
-                // --- КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ ЗДЕСЬ ---
+                // Снимаем блокировку и ВОЗВРАЩАЕМ СТАТУС IDLE
                 player.isLockAnim = false;
-                player.state = 'idle'; // Возвращаем состояние покоя, чтобы можно было снова ходить и бить!
+                player.state = 'idle'; 
                 
                 let nextIdle = player.hasWeapon ? 'idle_weapon' : 'idle_no_weapon';
                 player.currentAnim = nextIdle;
                 player.frameIndex = 0;
             } else {
-                player.frameIndex = 0; // Зацикливаем (для ходьбы и покоя)
+                player.frameIndex = 0; 
             }
         }
     }
 }
+
 // --- ДИАЛОГИ И МАГАЗИН ---
 function startDialogue(lines) { dialogueLines = lines; currentLine = 0; currentState = 'DIALOGUE'; hud.classList.add('hidden'); dialogueScreen.classList.remove('hidden'); updateDialogueUI(); }
 function advanceDialogue() {
@@ -209,24 +209,25 @@ function performAction(action) {
     if (player.isLockAnim) return;
 
     if (action === 'roll') {
-        player.state = 'roll'; // Сообщаем физике, что мы в кувырке
+        player.state = 'roll'; // Явно меняем статус на кувырок
         player.isLockAnim = true;
         player.rollTimer = animConfig.animations.roll.frames.length * animConfig.animations.roll.speed;
         setAnimation('roll');
     } else if (action === 'attackLight') {
-        player.state = 'attackLight'; // Включаем режим легкой атаки
+        player.state = 'attackLight'; // Явно меняем статус на атаку
         player.isLockAnim = true; 
         player.attackHitboxActive = true; 
         let attackAnim = player.hasWeapon ? 'attack1_weapon' : 'attack1_no_weapon';
         setAnimation(attackAnim);
     } else if (action === 'attackHeavy') {
-        player.state = 'attackHeavy'; // Включаем режим тяжелой атаки
+        player.state = 'attackHeavy'; // Явно меняем статус на тяжелую атаку
         player.isLockAnim = true; 
         player.attackHitboxActive = true; 
         let attackAnim = player.hasWeapon ? 'attack2_weapon' : 'attack2_no_weapon';
         setAnimation(attackAnim);
     }
 }
+
 function checkInteraction() {
     for (let obj of environment) {
         let dist = Math.hypot(player.x - obj.x, player.y - obj.y);
@@ -260,7 +261,7 @@ function update() {
 
     if (player.state === 'roll') {
         currentSpeed *= player.rollSpeedMult; player.rollTimer--;
-        if (player.rollTimer <= 0) player.state = 'idle';
+        // Возврат из кувырка теперь происходит в updateAnimation по завершению кадров
     } else if (player.state === 'idle' || player.state === 'walk') {
         if (keys.w || keys.a || keys.s || keys.d) {
             player.state = 'walk';
