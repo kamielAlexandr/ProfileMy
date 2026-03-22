@@ -40,15 +40,15 @@ function loadFrames(prefix, count) {
 }
 
 const tarnSprites = {
-    idle_no_weapon: loadFrames('GG_idle_None', 1),
-    idle_weapon: loadFrames('GG_idle', 1),
-    walk_no_weapon: loadFrames('GG_idle_None', 6), // Поменяй число на свое
-    walk_weapon: loadFrames('GG_idle', 6),       // Поменяй число на свое
-    attack1_no_weapon: loadFrames('GG_Attack_ryka', 6), // Поменяй число на свое
-    attack1_weapon: loadFrames('GG_Attack_Axe', 6),       // Поменяй число на свое
-    attack2_no_weapon: loadFrames('GG_Attack_superRyka', 6), // Поменяй число на свое
-    attack2_weapon: loadFrames('GG_Attack_SuperAxe', 6),       // Поменяй число на свое
-    roll: loadFrames('GG_perevorot', 5)                            // Поменяй число на свое
+    idle_no_weapon: loadFrames('img/GG_idle_None', 1),
+    idle_weapon: loadFrames('img/GG_idle', 1),
+    walk_no_weapon: loadFrames('img/GG_idle_None', 6), // Поменяй число на свое
+    walk_weapon: loadFrames('img/GG_idle', 6),       // Поменяй число на свое
+    attack1_no_weapon: loadFrames('img/GG_Attack_ryka', 6), // Поменяй число на свое
+    attack1_weapon: loadFrames('img/GG_Attack_Axe', 6),       // Поменяй число на свое
+    attack2_no_weapon: loadFrames('img/GG_Attack_superRyka', 6), // Поменяй число на свое
+    attack2_weapon: loadFrames('img/GG_Attack_SuperAxe', 6),       // Поменяй число на свое
+    roll: loadFrames('img/GG_perevorot', 5)                            // Поменяй число на свое
 };
 
 // ==========================================
