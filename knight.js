@@ -40,15 +40,15 @@ function loadFrames(prefix, count) {
 }
 
 const tarnSprites = {
-    idle_no_weapon: loadFrames('GG_idle_None', 1),
-    idle_weapon: loadFrames('GG_idle', 1),
-    walk_no_weapon: loadFrames('GG_idle_None', 6), 
-    walk_weapon: loadFrames('GG_idle', 6),       
-    attack1_no_weapon: loadFrames('GG_Attack_ryka', 6), 
-    attack1_weapon: loadFrames('GG_Attack_Axe', 6),       
-    attack2_no_weapon: loadFrames('GG_Attack_superRyka', 6), 
-    attack2_weapon: loadFrames('GG_Attack_SuperAxe', 6),       
-    roll: loadFrames('GG_perevorot', 5)                            
+    idle_no_weapon: loadFrames('img/GG_idle_None', 1),
+    idle_weapon: loadFrames('img/GG_idle', 1),
+    walk_no_weapon: loadFrames('img/GG_idle_None', 6), 
+    walk_weapon: loadFrames('img/GG_idle', 6),       
+    attack1_no_weapon: loadFrames('img/GG_Attack_ryka', 6), 
+    attack1_weapon: loadFrames('img/GG_Attack_Axe', 6),       
+    attack2_no_weapon: loadFrames('img/GG_Attack_superRyka', 6), 
+    attack2_weapon: loadFrames('img/GG_Attack_SuperAxe', 6),       
+    roll: loadFrames('img/GG_perevorot', 5)                            
 };
 
 // ==========================================
