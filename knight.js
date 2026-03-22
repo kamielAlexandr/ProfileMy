@@ -29,9 +29,6 @@ const keys = { w: false, a: false, s: false, d: false };
 // ==========================================
 // --- ЗАГРУЗКА ОТДЕЛЬНЫХ КАДРОВ ---
 // ==========================================
-
-// Новая функция: загружает массив картинок
-// Например: loadFrames('tarn_idle', 4) загрузит файлы от tarn_idle_1.png до tarn_idle_4.png
 function loadFrames(prefix, count) {
     let frames = [];
     for (let i = 1; i <= count; i++) {
@@ -42,7 +39,6 @@ function loadFrames(prefix, count) {
     return frames;
 }
 
-// Укажи здесь базовое имя файлов (без цифры на конце) и сколько в этой анимации кадров!
 const tarnSprites = {
     idle_no_weapon: loadFrames('GG_idle_None', 1),
     idle_weapon: loadFrames('GG_idle', 1),
@@ -143,7 +139,6 @@ function updateAnimation() {
         player.animTimer = 0;
         player.frameIndex++;
 
-        // Если кадры закончились (длина массива кадров)
         if (player.frameIndex >= config.frames.length) {
             if (config.onComplete) {
                 player.isLockAnim = false;
@@ -151,7 +146,7 @@ function updateAnimation() {
                 player.currentAnim = nextIdle;
                 player.frameIndex = 0;
             } else {
-                player.frameIndex = 0; // Зацикливаем
+                player.frameIndex = 0; 
             }
         }
     }
@@ -220,7 +215,7 @@ function performAction(action) {
         setAnimation(attackAnim);
     } else if (action === 'attackHeavy') {
         player.isLockAnim = true; player.attackHitboxActive = true; 
-        drawPlayerlet attackAnim = player.hasWeapon ? 'attack2_weapon' : 'attack2_no_weapon';
+        let attackAnim = player.hasWeapon ? 'attack2_weapon' : 'attack2_no_weapon';
         setAnimation(attackAnim);
     }
 }
@@ -352,9 +347,8 @@ function drawPlayer() {
     const currentFrameImg = anim.frames[player.frameIndex];
 
     // --- ОТЛАДКА: ПРОВЕРКА ЗАГРУЗКИ КАРТИНКИ ---
-    // naturalWidth === 0 означает, что файл не найден (битая ссылка)
     if (!currentFrameImg || !currentFrameImg.complete || currentFrameImg.naturalWidth === 0) {
-        ctx.fillStyle = '#ff00ff'; // Ярко-розовый цвет ошибки
+        ctx.fillStyle = '#ff00ff'; 
         ctx.fillRect(player.x - player.width/2, player.y - player.height, player.width, player.height);
         ctx.fillStyle = '#fff';
         ctx.font = '10px Arial';
