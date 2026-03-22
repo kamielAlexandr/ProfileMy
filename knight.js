@@ -220,7 +220,7 @@ function performAction(action) {
         setAnimation(attackAnim);
     } else if (action === 'attackHeavy') {
         player.isLockAnim = true; player.attackHitboxActive = true; 
-        let attackAnim = player.hasWeapon ? 'attack2_weapon' : 'attack2_no_weapon';
+        drawPlayerlet attackAnim = player.hasWeapon ? 'attack2_weapon' : 'attack2_no_weapon';
         setAnimation(attackAnim);
     }
 }
@@ -349,12 +349,16 @@ function drawPlayer() {
     if (player.hurtTimer > 0 && Math.floor(Date.now() / 100) % 2 === 0) return;
 
     const anim = animConfig.animations[player.currentAnim];
-    
-    // Получаем текущую картинку из массива кадров
     const currentFrameImg = anim.frames[player.frameIndex];
 
-    if (!currentFrameImg || !currentFrameImg.complete) {
-        ctx.fillStyle = player.color; ctx.fillRect(player.x - player.width/2, player.y - player.height, player.width, player.height);
+    // --- ОТЛАДКА: ПРОВЕРКА ЗАГРУЗКИ КАРТИНКИ ---
+    // naturalWidth === 0 означает, что файл не найден (битая ссылка)
+    if (!currentFrameImg || !currentFrameImg.complete || currentFrameImg.naturalWidth === 0) {
+        ctx.fillStyle = '#ff00ff'; // Ярко-розовый цвет ошибки
+        ctx.fillRect(player.x - player.width/2, player.y - player.height, player.width, player.height);
+        ctx.fillStyle = '#fff';
+        ctx.font = '10px Arial';
+        ctx.fillText("IMG ERR", player.x - 20, player.y - player.height/2);
         return;
     }
 
@@ -365,7 +369,7 @@ function drawPlayer() {
     const dX = -animConfig.w_frame / 2; 
     const dY = -animConfig.h_frame + 10; 
 
-    // Отрисовываем целиком текущую отдельную картинку
+    // Отрисовываем картинку
     ctx.drawImage(currentFrameImg, dX, dY, animConfig.w_frame, animConfig.h_frame);
     ctx.restore();
 }
