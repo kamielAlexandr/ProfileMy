@@ -139,19 +139,22 @@ function updateAnimation() {
         player.animTimer = 0;
         player.frameIndex++;
 
+        // Если кадры закончились
         if (player.frameIndex >= config.frames.length) {
             if (config.onComplete) {
+                // --- КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ ЗДЕСЬ ---
                 player.isLockAnim = false;
+                player.state = 'idle'; // Возвращаем состояние покоя, чтобы можно было снова ходить и бить!
+                
                 let nextIdle = player.hasWeapon ? 'idle_weapon' : 'idle_no_weapon';
                 player.currentAnim = nextIdle;
                 player.frameIndex = 0;
             } else {
-                player.frameIndex = 0; 
+                player.frameIndex = 0; // Зацикливаем (для ходьбы и покоя)
             }
         }
     }
 }
-
 // --- ДИАЛОГИ И МАГАЗИН ---
 function startDialogue(lines) { dialogueLines = lines; currentLine = 0; currentState = 'DIALOGUE'; hud.classList.add('hidden'); dialogueScreen.classList.remove('hidden'); updateDialogueUI(); }
 function advanceDialogue() {
@@ -206,20 +209,24 @@ function performAction(action) {
     if (player.isLockAnim) return;
 
     if (action === 'roll') {
-        player.state = 'roll'; player.isLockAnim = true;
+        player.state = 'roll'; // Сообщаем физике, что мы в кувырке
+        player.isLockAnim = true;
         player.rollTimer = animConfig.animations.roll.frames.length * animConfig.animations.roll.speed;
         setAnimation('roll');
     } else if (action === 'attackLight') {
-        player.isLockAnim = true; player.attackHitboxActive = true; 
+        player.state = 'attackLight'; // Включаем режим легкой атаки
+        player.isLockAnim = true; 
+        player.attackHitboxActive = true; 
         let attackAnim = player.hasWeapon ? 'attack1_weapon' : 'attack1_no_weapon';
         setAnimation(attackAnim);
     } else if (action === 'attackHeavy') {
-        player.isLockAnim = true; player.attackHitboxActive = true; 
+        player.state = 'attackHeavy'; // Включаем режим тяжелой атаки
+        player.isLockAnim = true; 
+        player.attackHitboxActive = true; 
         let attackAnim = player.hasWeapon ? 'attack2_weapon' : 'attack2_no_weapon';
         setAnimation(attackAnim);
     }
 }
-
 function checkInteraction() {
     for (let obj of environment) {
         let dist = Math.hypot(player.x - obj.x, player.y - obj.y);
