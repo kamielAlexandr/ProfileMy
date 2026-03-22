@@ -209,25 +209,35 @@ function performAction(action) {
     if (player.isLockAnim) return;
 
     if (action === 'roll') {
-        player.state = 'roll'; // Явно меняем статус на кувырок
-        player.isLockAnim = true;
+        player.state = 'roll'; 
         player.rollTimer = animConfig.animations.roll.frames.length * animConfig.animations.roll.speed;
+        
+        // 1. СНАЧАЛА включаем анимацию
         setAnimation('roll');
+        // 2. ПОТОМ блокируем
+        player.isLockAnim = true;
+        
     } else if (action === 'attackLight') {
-        player.state = 'attackLight'; // Явно меняем статус на атаку
-        player.isLockAnim = true; 
+        player.state = 'attackLight'; 
         player.attackHitboxActive = true; 
         let attackAnim = player.hasWeapon ? 'attack1_weapon' : 'attack1_no_weapon';
+        
+        // 1. СНАЧАЛА включаем анимацию
         setAnimation(attackAnim);
-    } else if (action === 'attackHeavy') {
-        player.state = 'attackHeavy'; // Явно меняем статус на тяжелую атаку
+        // 2. ПОТОМ блокируем
         player.isLockAnim = true; 
+        
+    } else if (action === 'attackHeavy') {
+        player.state = 'attackHeavy'; 
         player.attackHitboxActive = true; 
         let attackAnim = player.hasWeapon ? 'attack2_weapon' : 'attack2_no_weapon';
+        
+        // 1. СНАЧАЛА включаем анимацию
         setAnimation(attackAnim);
+        // 2. ПОТОМ блокируем
+        player.isLockAnim = true; 
     }
 }
-
 function checkInteraction() {
     for (let obj of environment) {
         let dist = Math.hypot(player.x - obj.x, player.y - obj.y);
