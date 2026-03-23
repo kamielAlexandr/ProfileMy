@@ -1,18 +1,22 @@
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Russo+One&display=swap');
 
+/* Блокируем скролл и выделение текста на мобилках */
 body {
     margin: 0; padding: 0; background-color: #111; color: #eee;
     font-family: 'Russo One', sans-serif; display: flex;
-    justify-content: center; align-items: center; height: 100vh;
+    justify-content: center; align-items: center; 
+    height: 100vh; overflow: hidden; touch-action: none;
 }
 
+/* ДЕЛАЕМ ИГРУ АДАПТИВНОЙ (ВМЕЩАЕТСЯ В ЭКРАН ТЕЛЕФОНА) */
 #game-container {
-    position: relative; width: 800px; height: 450px;
+    position: relative; width: 100vw; max-width: 800px; 
+    aspect-ratio: 16 / 9; height: auto;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
     border: 4px solid #3e2723; overflow: hidden; background-color: #000;
 }
 
-canvas { display: block; }
+canvas { width: 100%; height: 100%; display: block; }
 
 .overlay {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -22,50 +26,70 @@ canvas { display: block; }
 }
 
 #fade-overlay { background: #000; z-index: 20; opacity: 1; }
+.hidden { opacity: 0 !important; pointer-events: none !important; }
 
-.hidden {
-    opacity: 0 !important;
-    pointer-events: none !important;
-}
-
-.story-text { width: 80%; text-align: center; font-size: 18px; line-height: 1.6; color: #d7ccc8; }
-.blink { margin-top: 30px; font-size: 14px; color: #ffb300; animation: blinker 1.5s linear infinite; cursor: pointer;}
+.story-text { width: 80%; text-align: center; font-size: clamp(12px, 3vw, 18px); line-height: 1.6; color: #d7ccc8; }
+.blink { margin-top: 30px; font-size: clamp(10px, 2vw, 14px); color: #ffb300; animation: blinker 1.5s linear infinite; cursor: pointer;}
 @keyframes blinker { 50% { opacity: 0; } }
 
 .dialogue-box {
     position: absolute; bottom: 20px; width: 90%;
     background: #2e1e19; border: 3px solid #8d6e63;
-    padding: 15px; border-radius: 5px; box-shadow: 0 5px 15px rgba(0,0,0,0.7);
-    cursor: pointer;
+    padding: 15px; border-radius: 5px; box-shadow: 0 5px 15px rgba(0,0,0,0.7); cursor: pointer;
 }
-.speaker { font-size: 20px; color: #ffb300; margin-bottom: 10px; text-transform: uppercase; }
-.text { font-size: 16px; color: #fff; line-height: 1.4; }
-.hint { text-align: right; font-size: 12px; color: #aaa; margin-top: 10px; }
+.speaker { font-size: clamp(16px, 3vw, 20px); color: #ffb300; margin-bottom: 10px; text-transform: uppercase; }
+.text { font-size: clamp(12px, 2.5vw, 16px); color: #fff; line-height: 1.4; }
+.hint { text-align: right; font-size: 10px; color: #aaa; margin-top: 10px; }
 
+/* МАГАЗИН */
+.shop-box { bottom: auto; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center;}
+.shop-items { display: flex; flex-direction: column; width: 100%; gap: 10px; }
+.shop-btn {
+    background: #4e342e; color: #fff; font-family: 'Russo One', sans-serif;
+    border: 2px solid #8d6e63; padding: clamp(5px, 2vw, 10px); cursor: pointer; border-radius: 5px; transition: 0.2s; font-size: clamp(10px, 2vw, 14px);
+}
+.shop-btn:hover { background: #5d4037; border-color: #ffb300; }
+.close-btn { background: #3e2723; color: #aaa; margin-top: 10px; }
+.close-btn:hover { background: #d32f2f; color: #fff; border-color: #ff5252; }
+
+/* HUD */
 #hud {
     position: absolute; top: 10px; left: 10px; right: 10px;
-    font-family: monospace; font-size: 14px; color: rgba(255, 255, 255, 0.8);
+    font-family: monospace; font-size: clamp(10px, 2vw, 14px); color: rgba(255, 255, 255, 0.8);
     z-index: 5; display: flex; justify-content: space-between; align-items: flex-start;
 }
-
-#player-stats { width: 200px; margin-right: 20px; }
-
-.hp-bar-bg {
-    width: 100%; height: 15px; background-color: #3e2723;
-    border: 2px solid #111; border-radius: 5px; overflow: hidden;
-}
-#hp-bar-fill {
-    width: 100%; height: 100%; background-color: #d32f2f;
-    transition: width 0.2s ease-out;
-}
-
-/* СТИЛИ ДЛЯ ОПЫТА */
-#xp-text {
-    color: #4fc3f7;
-    font-size: 12px;
-    margin-top: 5px;
-    text-shadow: 1px 1px 0 #000;
-}
-
+#player-stats { width: 30%; max-width: 200px; margin-right: 10px; }
+.hp-bar-bg { width: 100%; height: 10px; background-color: #3e2723; border: 2px solid #111; border-radius: 5px; overflow: hidden; }
+#hp-bar-fill { width: 100%; height: 100%; background-color: #d32f2f; transition: width 0.2s ease-out; }
+#xp-text, #inventory-text { color: #4fc3f7; font-size: clamp(8px, 1.5vw, 12px); margin-top: 5px; text-shadow: 1px 1px 0 #000; }
+#inventory-text { color: #ffd54f; }
 #objective { color: #ffb300; font-weight: bold; flex-grow: 1; text-align: center; }
 #controls { font-size: 10px; opacity: 0.6; text-align: right; max-width: 250px; }
+
+/* ==========================================
+   --- МОБИЛЬНЫЕ КНОПКИ УПРАВЛЕНИЯ ---
+   ========================================== */
+#mobile-controls {
+    position: absolute; bottom: 10px; left: 0; width: 100%;
+    display: flex; justify-content: space-between; padding: 0 15px; box-sizing: border-box;
+    z-index: 15; pointer-events: none;
+}
+.d-pad, .action-pad { pointer-events: auto; display: flex; flex-direction: column; gap: 5px; }
+.d-pad { align-items: center; }
+.d-pad-middle { display: flex; gap: 35px; }
+.action-pad { align-items: flex-end; }
+.action-row { display: flex; gap: 10px; justify-content: flex-end;}
+
+.mob-btn {
+    background: rgba(46, 30, 25, 0.7); border: 2px solid rgba(141, 110, 99, 0.8);
+    border-radius: 50%; color: #fff; font-family: 'Russo One', sans-serif;
+    font-size: 16px; width: 45px; height: 45px;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    user-select: none; -webkit-user-select: none; touch-action: manipulation;
+}
+.mob-btn:active { background: rgba(141, 110, 99, 0.9); transform: scale(0.95); }
+.mob-btn span { font-size: 8px; color: #ffb300; line-height: 1; }
+
+@media (max-width: 768px) {
+    .desktop-only { display: none !important; }
+}
