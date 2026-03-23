@@ -19,6 +19,7 @@ const gameOverScreen = document.getElementById('game-over-screen');
 const btnPotion = document.getElementById('btn-buy-potion');
 const btnUpgrade = document.getElementById('btn-buy-upgrade');
 const btnCloseShop = document.getElementById('btn-close-shop');
+const mobileControls = document.getElementById('mobile-controls');
 
 let currentState = 'STORY'; 
 let currentLocation = 'village'; 
@@ -51,11 +52,13 @@ const tarnSprites = {
     roll: loadFrames('img/GG_perevorot', 5)                            
 };
 
-// --- СПРАЙТЫ NPC ---
+// --- СПРАЙТЫ NPC И ОКРУЖЕНИЯ ---
 const npcSprites = {
-    merchant_idle: loadFrames('img/frog_idle', 3), // Замени 4 на свои кадры Жаболюда
-    // ДОБАВЛЕН ДЯДЮШКА (Замени 4 на количество картинок dad_idle)
+    merchant_idle: loadFrames('img/frog_idle', 3), 
     uncle_idle: loadFrames('img/dad_idle', 3) 
+};
+const buildingSprites = {
+    shed: loadFrames('img/home', 1) // Новый спрайт сарая
 };
 
 let globalNpcTimer = 0;
@@ -106,7 +109,7 @@ const locations = {
             environment = [
                 { x: 600, y: 220, width: 100, height: 70, color: player.hasWeapon ? '#271714' : '#3E2723', interactable: !player.hasWeapon, type: 'shed' },
                 { x: 200, y: 280, width: 40, height: 80, color: '#ffb300', interactable: true, type: 'uncle' },
-                { x: 450, y: 240, width: 45, height: 60, interactable: true, type: 'merchant' }
+                { x: 450, y: 240, width: 45, height: 60, color: '#2e7d32', interactable: true, type: 'merchant' }
             ];
             enemies = []; lootItems = [];
             if (player.questStatus === 'get_weapon') objectiveText.innerText = "Цель: Забери цеп у сарая (F)";
@@ -165,7 +168,7 @@ function updateAnimation() {
 }
 
 // --- ДИАЛОГИ И МАГАЗИН ---
-function startDialogue(lines) { dialogueLines = lines; currentLine = 0; currentState = 'DIALOGUE'; hud.classList.add('hidden'); dialogueScreen.classList.remove('hidden'); updateDialogueUI(); }
+function startDialogue(lines) { dialogueLines = lines; currentLine = 0; currentState = 'DIALOGUE'; hud.classList.add('hidden'); mobileControls.classList.add('hidden'); dialogueScreen.classList.remove('hidden'); updateDialogueUI(); }
 function advanceDialogue() {
     if (currentState === 'STORY') {
         storyScreen.classList.add('hidden');
@@ -176,21 +179,33 @@ function advanceDialogue() {
         ]);
     } else if (currentState === 'DIALOGUE') {
         currentLine++;
-        if (currentLine >= dialogueLines.length) { currentState = 'PLAY'; dialogueScreen.classList.add('hidden'); hud.classList.remove('hidden');
+        if (currentLine >= dialogueLines.length) { currentState = 'PLAY'; dialogueScreen.classList.add('hidden'); hud.classList.remove('hidden'); checkMobile();
         } else updateDialogueUI();
     }
 }
 function updateDialogueUI() { speakerName.innerText = dialogueLines[currentLine].name; dialogueText.innerText = dialogueLines[currentLine].text; speakerName.style.color = dialogueLines[currentLine].name === "Тарн" ? "#a1887f" : "#ffb300"; }
-function openShop() { currentState = 'SHOP'; keys.w = keys.a = keys.s = keys.d = false; shopScreen.classList.remove('hidden'); }
-function closeShop() { currentState = 'PLAY'; shopScreen.classList.add('hidden'); }
+function openShop() { currentState = 'SHOP'; keys.w = keys.a = keys.s = keys.d = false; shopScreen.classList.remove('hidden'); mobileControls.classList.add('hidden'); }
+function closeShop() { currentState = 'PLAY'; shopScreen.classList.add('hidden'); checkMobile(); }
 btnPotion.addEventListener('click', () => { if (player.coins >= 2) { player.coins -= 2; player.potions++; updateHUD(); } else alert("Не хватает монет!"); });
 btnUpgrade.addEventListener('click', () => { if (player.seeds >= 5) { player.seeds -= 5; player.baseDamage += 10; updateHUD(); alert("Оружие улучшено!"); } else alert("Не хватает семян!"); });
 btnCloseShop.addEventListener('click', closeShop);
 function usePotion() { if (player.potions > 0 && player.hp < player.maxHp) { player.potions--; player.hp = Math.min(player.maxHp, player.hp + 50); updateHUD(); } }
 function updateHUD() { let hpPercent = Math.max(0, (player.hp / player.maxHp) * 100); hpBarFill.style.width = hpPercent + '%'; xpText.innerText = 'Опыт: ' + player.xp; inventoryText.innerText = `Монеты: ${player.coins} | Семена: ${player.seeds} | Зелья (E): ${player.potions}`; }
 
-// --- УПРАВЛЕНИЕ ---
-window.addEventListener('mousedown', () => { if (currentState === 'STORY' || currentState === 'DIALOGUE') advanceDialogue(); });
+// ==========================================
+// --- УПРАВЛЕНИЕ (КЛАВИАТУРА И ТАЧСКРИН) ---
+// ==========================================
+function checkMobile() {
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (isTouchDevice && currentState === 'PLAY') mobileControls.classList.remove('hidden');
+    else mobileControls.classList.add('hidden');
+}
+
+window.addEventListener('pointerdown', (e) => { 
+    if (e.target.closest('.mob-btn') || e.target.closest('.shop-btn')) return; 
+    if (currentState === 'STORY' || currentState === 'DIALOGUE') advanceDialogue(); 
+});
+
 window.addEventListener('keydown', (e) => {
     if (currentState === 'GAMEOVER' || currentState === 'SHOP') return;
     if (currentState === 'STORY' || currentState === 'DIALOGUE') { if (e.code === 'Space' || e.code === 'Enter') advanceDialogue(); return; }
@@ -206,12 +221,35 @@ window.addEventListener('keydown', (e) => {
         if (e.code === 'KeyE') usePotion();
     }
 });
+
 window.addEventListener('keyup', (e) => {
     if (e.code === 'KeyW' || e.code === 'ArrowUp') keys.w = false;
     if (e.code === 'KeyA' || e.code === 'ArrowLeft') keys.a = false;
     if (e.code === 'KeyS' || e.code === 'ArrowDown') keys.s = false;
     if (e.code === 'KeyD' || e.code === 'ArrowRight') keys.d = false;
 });
+
+function bindTouch(id, keyProp, actionFunc) {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    btn.addEventListener('touchstart', (e) => {
+        e.preventDefault(); 
+        if (keyProp) keys[keyProp] = true;
+        if (actionFunc && currentState === 'PLAY') actionFunc();
+    }, { passive: false });
+    btn.addEventListener('touchend', (e) => { e.preventDefault(); if (keyProp) keys[keyProp] = false; }, { passive: false });
+    btn.addEventListener('touchcancel', (e) => { e.preventDefault(); if (keyProp) keys[keyProp] = false; }, { passive: false });
+}
+
+bindTouch('btn-up', 'w', null);
+bindTouch('btn-down', 's', null);
+bindTouch('btn-left', 'a', null);
+bindTouch('btn-right', 'd', null);
+bindTouch('btn-j', null, () => performAction('attackLight'));
+bindTouch('btn-k', null, () => performAction('attackHeavy'));
+bindTouch('btn-l', null, () => performAction('roll'));
+bindTouch('btn-f', null, () => checkInteraction());
+bindTouch('btn-e', null, () => usePotion());
 
 function performAction(action) {
     if (player.state !== 'idle' && player.state !== 'walk') return;
@@ -243,7 +281,7 @@ function checkInteraction() {
         let dist = Math.hypot(player.x - obj.x, player.y - obj.y);
         if (dist < 80 && obj.interactable) {
             if (obj.type === 'shed' && player.questStatus === 'get_weapon') {
-                player.hasWeapon = true; obj.interactable = false; obj.color = '#271714'; 
+                player.hasWeapon = true; obj.interactable = false;
                 player.questStatus = 'kill_monsters'; objectiveText.innerText = "Цель: Иди направо, на дальнее поле ->";
                 setAnimation('idle_weapon');
             }
@@ -258,7 +296,7 @@ function checkInteraction() {
 }
 
 function checkQuestProgress() { if (player.questStatus === 'kill_monsters') { let allDead = enemies.every(e => e.state === 'dead'); if (allDead) { player.questStatus = 'return'; objectiveText.innerText = "Цель: Вернись к дядюшке (Иди влево <-)"; } } }
-function transitionLocation(newLoc, spawnSide = 'left') { currentState = 'TRANSITION'; fadeOverlay.classList.remove('hidden'); setTimeout(() => { currentLocation = newLoc; locations[newLoc].setup(); player.x = spawnSide === 'left' ? 50 : canvas.width - 50; fadeOverlay.classList.add('hidden'); currentState = 'PLAY'; }, 600); }
+function transitionLocation(newLoc, spawnSide = 'left') { currentState = 'TRANSITION'; fadeOverlay.classList.remove('hidden'); mobileControls.classList.add('hidden'); setTimeout(() => { currentLocation = newLoc; locations[newLoc].setup(); player.x = spawnSide === 'left' ? 50 : canvas.width - 50; fadeOverlay.classList.add('hidden'); currentState = 'PLAY'; checkMobile(); }, 600); }
 
 // --- ИГРОВОЙ ЦИКЛ ---
 function update() {
@@ -329,7 +367,7 @@ function update() {
             } else {
                 if (enemy.attackTimer <= 0 && player.state !== 'dead' && player.state !== 'roll' && player.hurtTimer <= 0) {
                     player.hp -= enemy.damage; player.hurtTimer = 40; updateHUD(); enemy.attackTimer = 60; 
-                    if (player.hp <= 0) { player.state = 'dead'; currentState = 'GAMEOVER'; gameOverScreen.classList.remove('hidden'); }
+                    if (player.hp <= 0) { player.state = 'dead'; currentState = 'GAMEOVER'; mobileControls.classList.add('hidden'); gameOverScreen.classList.remove('hidden'); }
                 }
             }
         }
@@ -352,8 +390,20 @@ function draw() {
             if (obj === player) drawPlayer();
             else if (enemies.includes(obj)) drawEnemy(obj);
             else {
+                // --- ОТРИСОВКА САРАЯ ---
+                if (obj.type === 'shed') {
+                    const frames = buildingSprites.shed;
+                    if (frames && frames.length > 0 && frames[0].complete && frames[0].naturalWidth > 0) {
+                        ctx.drawImage(frames[0], obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height);
+                        // Затемняем сарай, когда забрали оружие
+                        if (player.hasWeapon) {
+                            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                            ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height);
+                        }
+                    } else { ctx.fillStyle = obj.color; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
+                }
                 // --- ОТРИСОВКА ЖАБОЛЮДА ---
-                if (obj.type === 'merchant') {
+                else if (obj.type === 'merchant') {
                     ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(obj.x, obj.y, 25, 8, 0, 0, Math.PI * 2); ctx.fill();
                     const frames = npcSprites.merchant_idle;
                     if (frames && frames.length > 0) {
@@ -380,11 +430,6 @@ function draw() {
                         } else { ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
                     }
                 }
-                // Отрисовка сарая
-                else {
-                    ctx.fillStyle = obj.color; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height);
-                    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(obj.x, obj.y, obj.width/1.5, 10, 0, 0, Math.PI * 2); ctx.fill();
-                }
             }
         }
     }
@@ -392,6 +437,7 @@ function draw() {
 
 function drawPlayer() {
     if (player.state === 'dead') { ctx.fillStyle = '#4a0000'; ctx.fillRect(player.x - player.width/2, player.y - 10, player.width, 15); return; }
+    
     ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(player.x, player.y, player.width / 1.2, 8, 0, 0, Math.PI * 2); ctx.fill();
     if (player.hurtTimer > 0 && Math.floor(Date.now() / 100) % 2 === 0) return;
 
