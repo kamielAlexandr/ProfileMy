@@ -39,7 +39,6 @@ function loadFrames(prefix, count) {
     return frames;
 }
 
-// Спрайты главного героя
 const tarnSprites = {
     idle_no_weapon: loadFrames('img/GG_idle_None', 1),
     idle_weapon: loadFrames('img/GG_idle', 1),
@@ -52,16 +51,16 @@ const tarnSprites = {
     roll: loadFrames('img/GG_perevorot', 5)                            
 };
 
-// Спрайты NPC
+// --- СПРАЙТЫ NPC ---
 const npcSprites = {
-    // ВПИШИ СЮДА НАЗВАНИЕ СВОИХ КАРТИНОК И КОЛИЧЕСТВО КАДРОВ ДЛЯ ЖАБОЛЮДА
-    merchant_idle: loadFrames('img/frog_idle', 3) 
+    merchant_idle: loadFrames('img/merchant_idle', 4), // Замени 4 на свои кадры Жаболюда
+    // ДОБАВЛЕН ДЯДЮШКА (Замени 4 на количество картинок dad_idle)
+    uncle_idle: loadFrames('img/dad_idle', 3) 
 };
 
-// Глобальный таймер для анимации всех NPC (чтобы они дышали)
 let globalNpcTimer = 0;
 let globalNpcFrame = 0;
-const npcAnimSpeed = 12; // Скорость смены кадров у NPC
+const npcAnimSpeed = 12;
 
 // ==========================================
 // --- КОНФИГУРАЦИЯ АНИМАЦИЙ ---
@@ -268,7 +267,6 @@ function update() {
 
     updateAnimation();
 
-    // Обновление глобального таймера NPC
     globalNpcTimer++;
     if (globalNpcTimer >= npcAnimSpeed) {
         globalNpcTimer = 0;
@@ -354,33 +352,35 @@ function draw() {
             if (obj === player) drawPlayer();
             else if (enemies.includes(obj)) drawEnemy(obj);
             else {
-                // Отрисовка Жаболюда Снага
+                // --- ОТРИСОВКА ЖАБОЛЮДА ---
                 if (obj.type === 'merchant') {
-                    // Тень под жаболюдом
                     ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(obj.x, obj.y, 25, 8, 0, 0, Math.PI * 2); ctx.fill();
-                    
                     const frames = npcSprites.merchant_idle;
                     if (frames && frames.length > 0) {
-                        const currentFrame = frames[globalNpcFrame % frames.length]; // Берем текущий кадр из массива
-                        
+                        const currentFrame = frames[globalNpcFrame % frames.length]; 
                         if (currentFrame && currentFrame.complete && currentFrame.naturalWidth > 0) {
-                            ctx.save();
-                            ctx.translate(obj.x, obj.y);
-                            
-                            // Центрируем отрисовку (предполагая, что Жаболюд нарисован на холсте 96x96)
-                            // Если твой спрайт другого размера, поменяй эти числа (например, на -32 и -64)
-                            const dX = -animConfig.w_frame / 2;
-                            const dY = -animConfig.h_frame + 10;
-                            
+                            ctx.save(); ctx.translate(obj.x, obj.y);
+                            const dX = -animConfig.w_frame / 2; const dY = -animConfig.h_frame + 10;
                             ctx.drawImage(currentFrame, dX, dY, animConfig.w_frame, animConfig.h_frame);
                             ctx.restore();
-                        } else {
-                            // Резервный квадрат, если картинка не загрузилась
-                            ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height);
-                        }
+                        } else { ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
                     }
                 } 
-                // Отрисовка остальных объектов (сарай, дядюшка)
+                // --- ОТРИСОВКА ДЯДЮШКИ ВЕЙЛАНДА ---
+                else if (obj.type === 'uncle') {
+                    ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(obj.x, obj.y, 20, 6, 0, 0, Math.PI * 2); ctx.fill();
+                    const frames = npcSprites.uncle_idle;
+                    if (frames && frames.length > 0) {
+                        const currentFrame = frames[globalNpcFrame % frames.length]; 
+                        if (currentFrame && currentFrame.complete && currentFrame.naturalWidth > 0) {
+                            ctx.save(); ctx.translate(obj.x, obj.y);
+                            const dX = -animConfig.w_frame / 2; const dY = -animConfig.h_frame + 10;
+                            ctx.drawImage(currentFrame, dX, dY, animConfig.w_frame, animConfig.h_frame);
+                            ctx.restore();
+                        } else { ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
+                    }
+                }
+                // Отрисовка сарая
                 else {
                     ctx.fillStyle = obj.color; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height);
                     ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(obj.x, obj.y, obj.width/1.5, 10, 0, 0, Math.PI * 2); ctx.fill();
@@ -392,7 +392,6 @@ function draw() {
 
 function drawPlayer() {
     if (player.state === 'dead') { ctx.fillStyle = '#4a0000'; ctx.fillRect(player.x - player.width/2, player.y - 10, player.width, 15); return; }
-    
     ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(player.x, player.y, player.width / 1.2, 8, 0, 0, Math.PI * 2); ctx.fill();
     if (player.hurtTimer > 0 && Math.floor(Date.now() / 100) % 2 === 0) return;
 
@@ -400,21 +399,13 @@ function drawPlayer() {
     const currentFrameImg = anim.frames[player.frameIndex];
 
     if (!currentFrameImg || !currentFrameImg.complete || currentFrameImg.naturalWidth === 0) {
-        ctx.fillStyle = '#ff00ff'; 
-        ctx.fillRect(player.x - player.width/2, player.y - player.height, player.width, player.height);
-        ctx.fillStyle = '#fff';
-        ctx.font = '10px Arial';
-        ctx.fillText("IMG ERR", player.x - 20, player.y - player.height/2);
-        return;
+        ctx.fillStyle = '#ff00ff'; ctx.fillRect(player.x - player.width/2, player.y - player.height, player.width, player.height);
+        ctx.fillStyle = '#fff'; ctx.font = '10px Arial'; ctx.fillText("IMG ERR", player.x - 20, player.y - player.height/2); return;
     }
 
-    ctx.save();
-    ctx.translate(player.x, player.y);
+    ctx.save(); ctx.translate(player.x, player.y);
     if (!player.facingRight) ctx.scale(-1, 1);
-
-    const dX = -animConfig.w_frame / 2; 
-    const dY = -animConfig.h_frame + 10; 
-
+    const dX = -animConfig.w_frame / 2; const dY = -animConfig.h_frame + 10; 
     ctx.drawImage(currentFrameImg, dX, dY, animConfig.w_frame, animConfig.h_frame);
     ctx.restore();
 }
