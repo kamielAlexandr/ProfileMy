@@ -61,13 +61,13 @@ const buildingSprites = {
     shed: loadFrames('img/Home', 1) 
 };
 
-// --- ЗАГРУЗКА ФОНОВ ---
+// --- ЗАГРУЗКА ФОНА И ЗЕМЛИ ---
 const backgroundImages = {
     horizon: new Image(),
-    villageGround: new Image() // НОВОЕ: Картинка земли для деревни
+    villageGround: new Image() // НОВОЕ: земля деревни
 };
 backgroundImages.horizon.src = 'img/BG_farm.png'; 
-backgroundImages.villageGround.src = 'img/zemly_1.png'; // Убедись, что файл называется именно так
+backgroundImages.villageGround.src = 'img/zemly_1.png'; // НОВОЕ: путь к земле
 
 let globalNpcTimer = 0;
 let globalNpcFrame = 0;
@@ -113,7 +113,7 @@ let lootItems = [];
 const locations = {
     village: {
         bgColor: '#5d4037', horizonColor: '#1b1b1b',
-        groundImage: backgroundImages.villageGround, // НОВОЕ: Подключаем картинку земли
+        groundImage: backgroundImages.villageGround, // НОВОЕ: привязываем картинку земли к деревне
         setup: () => {
             environment = [
                 { x: 600, y: 230, width: 240, height: 180, color: player.hasWeapon ? '#271714' : '#3E2723', interactable: !player.hasWeapon, type: 'shed' },
@@ -128,7 +128,6 @@ const locations = {
     },
     field: {
         bgColor: '#4e5e3d', horizonColor: '#0a1a0f',
-        // У поля пока нет своей картинки земли, будет заливка зеленым цветом (#4e5e3d)
         setup: () => {
             environment = []; lootItems = [];
             enemies = [createEnemy(500, 300), createEnemy(650, 250), createEnemy(750, 380)];
@@ -303,4 +302,195 @@ function checkInteraction() {
     }
 }
 
-function checkQuestProgress() { if (player.questStatus === 'kill_monsters') { let allDead = enemies.every(e => e.state === 'dead'); if (allDead) { player.questStatus = '
+function checkQuestProgress() { if (player.questStatus === 'kill_monsters') { let allDead = enemies.every(e => e.state === 'dead'); if (allDead) { player.questStatus = 'return'; objectiveText.innerText = "Цель: Вернись к дядюшке (Иди влево <-)"; } } }
+function transitionLocation(newLoc, spawnSide = 'left') { currentState = 'TRANSITION'; fadeOverlay.classList.remove('hidden'); mobileControls.classList.add('hidden'); setTimeout(() => { currentLocation = newLoc; locations[newLoc].setup(); player.x = spawnSide === 'left' ? 50 : canvas.width - 50; fadeOverlay.classList.add('hidden'); currentState = 'PLAY'; checkMobile(); }, 600); }
+
+// --- ИГРОВОЙ ЦИКЛ ---
+function update() {
+    if (currentState !== 'PLAY') return;
+    if (player.hurtTimer > 0) player.hurtTimer--;
+
+    updateAnimation();
+
+    globalNpcTimer++;
+    if (globalNpcTimer >= npcAnimSpeed) {
+        globalNpcTimer = 0;
+        globalNpcFrame++;
+    }
+
+    let currentSpeed = player.speed;
+
+    if (player.state === 'roll') {
+        currentSpeed *= player.rollSpeedMult; player.rollTimer--;
+    } else if (player.state === 'idle' || player.state === 'walk') {
+        if (keys.w || keys.a || keys.s || keys.d) {
+            player.state = 'walk';
+            let walkAnim = player.hasWeapon ? 'walk_weapon' : 'walk_no_weapon';
+            setAnimation(walkAnim);
+        } else {
+            player.state = 'idle';
+            let idleAnim = player.hasWeapon ? 'idle_weapon' : 'idle_no_weapon';
+            setAnimation(idleAnim);
+        }
+    }
+
+    if (player.state === 'walk' || player.state === 'roll') {
+        let dx = 0; let dy = 0;
+        if (keys.w) dy -= currentSpeed; if (keys.s) dy += currentSpeed;
+        if (keys.a) { dx -= currentSpeed; player.facingRight = false; }
+        if (keys.d) { dx += currentSpeed; player.facingRight = true; }
+        if (dx !== 0 && dy !== 0) { dx *= 0.707; dy *= 0.707; }
+        player.x += dx; player.y += dy;
+        
+        const horizon = 200; if (player.y < horizon) player.y = horizon; if (player.y > canvas.height) player.y = canvas.height;
+        
+        if (player.x > canvas.width + 20) { 
+            if (currentLocation === 'village' && player.hasWeapon) transitionLocation('field', 'left'); 
+            else player.x = canvas.width - player.width/2; 
+        }
+        if (player.x < -20) { 
+            if (currentLocation === 'field') transitionLocation('village', 'right'); 
+            else player.x = player.width/2; 
+        }
+    }
+
+    for (let i = lootItems.length - 1; i >= 0; i--) { let item = lootItems[i]; let dist = Math.hypot(player.x - item.x, player.y - item.y); if (dist < 30) { if (item.type === 'coin') player.coins++; else if (item.type === 'seed') player.seeds++; lootItems.splice(i, 1); updateHUD(); } }
+    
+    if ((player.state === 'attackLight' || player.state === 'attackHeavy') && player.attackHitboxActive) {
+        player.attackHitboxActive = false; 
+        let reach = player.state === 'attackLight' ? 50 : 70;
+        let attackDamage = player.baseDamage * (player.state === 'attackLight' ? 1 : 2);
+        
+        enemies.forEach(enemy => {
+            if (enemy.state === 'dead') return;
+            let inRangeX = player.facingRight ? (enemy.x > player.x && enemy.x - player.x < reach) : (enemy.x < player.x && player.x - enemy.x < reach);
+            let inRangeY = Math.abs(player.y - enemy.y) < 30;
+            if (inRangeX && inRangeY) {
+                enemy.hp -= attackDamage; enemy.state = 'hurt'; enemy.hurtTimer = 15; enemy.x += player.facingRight ? 20 : -20;
+                if (enemy.hp <= 0) { enemy.state = 'dead'; player.xp += 20; let dropType = Math.random() > 0.5 ? 'coin' : 'seed'; lootItems.push({ x: enemy.x, y: enemy.y, type: dropType }); updateHUD(); checkQuestProgress(); }
+            }
+        });
+    }
+
+    enemies.forEach(enemy => {
+        if (enemy.state === 'dead') return;
+        if (enemy.attackTimer > 0) enemy.attackTimer--;
+        if (enemy.state === 'hurt') { enemy.hurtTimer--; if (enemy.hurtTimer <= 0) enemy.state = 'chase';
+        } else if (enemy.state === 'chase') {
+            let dx = player.x - enemy.x; let dy = player.y - enemy.y; let dist = Math.hypot(dx, dy);
+            if (dist > 40) { enemy.x += (dx / dist) * enemy.speed; enemy.y += (dy / dist) * enemy.speed;
+            } else {
+                if (enemy.attackTimer <= 0 && player.state !== 'dead' && player.state !== 'roll' && player.hurtTimer <= 0) {
+                    player.hp -= enemy.damage; player.hurtTimer = 40; updateHUD(); enemy.attackTimer = 60; 
+                    if (player.hp <= 0) { player.state = 'dead'; currentState = 'GAMEOVER'; mobileControls.classList.add('hidden'); gameOverScreen.classList.remove('hidden'); }
+                }
+            }
+        }
+    });
+}
+
+// --- ОТРИСОВКА ---
+function draw() {
+    const loc = locations[currentLocation];
+    
+    // Сначала заливаем весь экран цветом-подложкой
+    ctx.fillStyle = loc.bgColor || '#000'; 
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // --- НОВОЕ: Рисуем уникальную землю (от горизонта вниз) ---
+    if (loc.groundImage && loc.groundImage.complete && loc.groundImage.naturalWidth > 0) {
+        ctx.drawImage(loc.groundImage, 0, 180, canvas.width, canvas.height - 180);
+    }
+
+    // Затем рисуем картинку горизонта ТОЛЬКО СВЕРХУ (ширина 100%, высота 180px)
+    if (backgroundImages.horizon && backgroundImages.horizon.complete && backgroundImages.horizon.naturalWidth > 0) {
+        ctx.drawImage(backgroundImages.horizon, 0, 0, canvas.width, 180);
+    } else if (loc.horizonColor) {
+        // Резервный цвет, если картинка не загрузилась
+        ctx.fillStyle = loc.horizonColor; 
+        ctx.fillRect(0, 0, canvas.width, 180);
+    }
+
+    if (currentState === 'PLAY' || currentState === 'GAMEOVER' || currentState === 'SHOP') {
+        lootItems.forEach(item => { ctx.fillStyle = item.type === 'coin' ? '#ffca28' : '#69f0ae'; ctx.beginPath(); ctx.arc(item.x, item.y, 6, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.stroke(); });
+
+        let renderQueue = [player, ...environment, ...enemies];
+        renderQueue.sort((a, b) => a.y - b.y);
+
+        for (let obj of renderQueue) {
+            if (obj === player) drawPlayer();
+            else if (enemies.includes(obj)) drawEnemy(obj);
+            else {
+                if (obj.type === 'shed') {
+                    const frames = buildingSprites.shed;
+                    if (frames && frames.length > 0 && frames[0].complete && frames[0].naturalWidth > 0) {
+                        ctx.drawImage(frames[0], obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height);
+                        if (player.hasWeapon) {
+                            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                            ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height);
+                        }
+                    } else { ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
+                }
+                else if (obj.type === 'merchant') {
+                    ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(obj.x, obj.y, 25, 8, 0, 0, Math.PI * 2); ctx.fill();
+                    const frames = npcSprites.merchant_idle;
+                    if (frames && frames.length > 0) {
+                        const currentFrame = frames[globalNpcFrame % frames.length]; 
+                        if (currentFrame && currentFrame.complete && currentFrame.naturalWidth > 0) {
+                            ctx.save(); ctx.translate(obj.x, obj.y);
+                            const dX = -animConfig.w_frame / 2; const dY = -animConfig.h_frame + 10;
+                            ctx.drawImage(currentFrame, dX, dY, animConfig.w_frame, animConfig.h_frame);
+                            ctx.restore();
+                        } else { ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
+                    }
+                } 
+                else if (obj.type === 'uncle') {
+                    ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(obj.x, obj.y, 20, 6, 0, 0, Math.PI * 2); ctx.fill();
+                    const frames = npcSprites.uncle_idle;
+                    if (frames && frames.length > 0) {
+                        const currentFrame = frames[globalNpcFrame % frames.length]; 
+                        if (currentFrame && currentFrame.complete && currentFrame.naturalWidth > 0) {
+                            ctx.save(); ctx.translate(obj.x, obj.y);
+                            const dX = -animConfig.w_frame / 2; const dY = -animConfig.h_frame + 10;
+                            ctx.drawImage(currentFrame, dX, dY, animConfig.w_frame, animConfig.h_frame);
+                            ctx.restore();
+                        } else { ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
+                    }
+                }
+            }
+        }
+    }
+}
+
+function drawPlayer() {
+    if (player.state === 'dead') { ctx.fillStyle = '#4a0000'; ctx.fillRect(player.x - player.width/2, player.y - 10, player.width, 15); return; }
+    ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(player.x, player.y, player.width / 1.2, 8, 0, 0, Math.PI * 2); ctx.fill();
+    if (player.hurtTimer > 0 && Math.floor(Date.now() / 100) % 2 === 0) return;
+
+    const anim = animConfig.animations[player.currentAnim];
+    const currentFrameImg = anim.frames[player.frameIndex];
+
+    if (!currentFrameImg || !currentFrameImg.complete || currentFrameImg.naturalWidth === 0) {
+        ctx.fillStyle = '#ff00ff'; ctx.fillRect(player.x - player.width/2, player.y - player.height, player.width, player.height);
+        ctx.fillStyle = '#fff'; ctx.font = '10px Arial'; ctx.fillText("IMG ERR", player.x - 20, player.y - player.height/2); return;
+    }
+
+    ctx.save(); ctx.translate(player.x, player.y);
+    if (!player.facingRight) ctx.scale(-1, 1);
+    const dX = -animConfig.w_frame / 2; const dY = -animConfig.h_frame + 10; 
+    ctx.drawImage(currentFrameImg, dX, dY, animConfig.w_frame, animConfig.h_frame);
+    ctx.restore();
+}
+
+function drawEnemy(enemy) {
+    if (enemy.state === 'dead') { ctx.fillStyle = '#2e3b1c'; ctx.fillRect(enemy.x - enemy.height/2, enemy.y - 10, enemy.height, 10); return; }
+    ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(enemy.x, enemy.y, enemy.width/1.5, 8, 0, 0, Math.PI * 2); ctx.fill();
+    if (enemy.attackTimer > 40 && enemy.state !== 'hurt') ctx.fillStyle = '#ff8a65';
+    else ctx.fillStyle = enemy.state === 'hurt' ? '#fff' : enemy.color;
+    let drawY = enemy.y - enemy.height;
+    ctx.fillRect(enemy.x - enemy.width/2, drawY, enemy.width, enemy.height);
+    ctx.fillStyle = '#ff0000'; let isFacingPlayer = player.x > enemy.x; let eyeX = isFacingPlayer ? enemy.x + 5 : enemy.x - 10; ctx.fillRect(eyeX, drawY + 15, 4, 4);
+}
+
+function gameLoop() { update(); draw(); requestAnimationFrame(gameLoop); }
+gameLoop();
