@@ -40,6 +40,7 @@ function loadFrames(prefix, count) {
     return frames;
 }
 
+// ГГ
 const tarnSprites = {
     idle_no_weapon: loadFrames('img/GG_idle_None', 1),
     idle_weapon: loadFrames('img/GG_idle', 1),
@@ -52,14 +53,22 @@ const tarnSprites = {
     roll: loadFrames('img/GG_perevorot', 5)                            
 };
 
-// --- СПРАЙТЫ NPC И ОКРУЖЕНИЯ ---
+// NPC
 const npcSprites = {
     merchant_idle: loadFrames('img/frog_idle', 3), 
     uncle_idle: loadFrames('img/dad_idle', 3) 
 };
+
+// Здания
 const buildingSprites = {
-    shed: loadFrames('img/Home', 1) // Новый спрайт сарая
+    shed: loadFrames('img/home', 1) 
 };
+
+// --- НОВОЕ: ЗАГРУЗКА ФОНА ---
+const backgroundImages = {
+    field: new Image()
+};
+backgroundImages.field.src = 'img/BG_farm.png'; // Твой файл фона
 
 let globalNpcTimer = 0;
 let globalNpcFrame = 0;
@@ -104,14 +113,13 @@ let lootItems = [];
 
 const locations = {
     village: {
-        bgColor: '#5d4037', horizonColor: '#1b1b1b',
+        bgColor: '#5d4037', horizonColor: '#1b1b1b', // Деревня пока без фона
         setup: () => {
             environment = [
-                // ИЗМЕНИЛИ width, height и y В ЭТОЙ СТРОЧКЕ:
+                // Большой сарай (240x180)
                 { x: 600, y: 230, width: 240, height: 180, color: player.hasWeapon ? '#271714' : '#3E2723', interactable: !player.hasWeapon, type: 'shed' },
-                
                 { x: 200, y: 280, width: 40, height: 80, color: '#ffb300', interactable: true, type: 'uncle' },
-                { x: 450, y: 240, width: 45, height: 60, color: '#2e7d32', interactable: true, type: 'merchant' }
+                { x: 450, y: 240, width: 45, height: 60, interactable: true, type: 'merchant' }
             ];
             enemies = []; lootItems = [];
             if (player.questStatus === 'get_weapon') objectiveText.innerText = "Цель: Забери цеп у сарая (F)";
@@ -120,7 +128,8 @@ const locations = {
         }
     },
     field: {
-        bgColor: '#4e5e3d', horizonColor: '#0a1a0f', 
+        // --- ОБНОВЛЕНО: ДОБАВИЛИ ФОН ---
+        bgImage: backgroundImages.field,
         setup: () => {
             environment = []; lootItems = [];
             enemies = [createEnemy(500, 300), createEnemy(650, 250), createEnemy(750, 380)];
@@ -192,11 +201,9 @@ btnPotion.addEventListener('click', () => { if (player.coins >= 2) { player.coin
 btnUpgrade.addEventListener('click', () => { if (player.seeds >= 5) { player.seeds -= 5; player.baseDamage += 10; updateHUD(); alert("Оружие улучшено!"); } else alert("Не хватает семян!"); });
 btnCloseShop.addEventListener('click', closeShop);
 function usePotion() { if (player.potions > 0 && player.hp < player.maxHp) { player.potions--; player.hp = Math.min(player.maxHp, player.hp + 50); updateHUD(); } }
-function updateHUD() { let hpPercent = Math.max(0, (player.hp / player.maxHp) * 100); hpBarFill.style.width = hpPercent + '%'; xpText.innerText = 'Опыт: ' + player.xp; inventoryText.innerText = `Монеты: ${player.coins} | Семена: ${player.seeds} | Зелья (E): ${player.potions}`; }
+function updateHUD() { let hpPercent = Math.max(0, (player.hp / player.maxHp) * 100); hpBarFill.style.width = hpPercent + '%'; xpText.innerText = 'Опыт: ' + player.xp; inventoryText.innerText = `Монеты: ${player.coins} | Семена: ${player.seeds} | Зелья: ${player.potions}`; }
 
-// ==========================================
-// --- УПРАВЛЕНИЕ (КЛАВИАТУРА И ТАЧСКРИН) ---
-// ==========================================
+// --- УПРАВЛЕНИЕ ---
 function checkMobile() {
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     if (isTouchDevice && currentState === 'PLAY') mobileControls.classList.remove('hidden');
@@ -379,8 +386,20 @@ function update() {
 // --- ОТРИСОВКА ---
 function draw() {
     const loc = locations[currentLocation];
-    ctx.fillStyle = loc.bgColor; ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = loc.horizonColor; ctx.fillRect(0, 0, canvas.width, 180);
+    
+    // --- ОБНОВЛЕНО: ОТРИСОВКА ФОНА ИЛИ ЦВЕТА ---
+    if (loc.bgImage && loc.bgImage.complete && loc.bgImage.naturalWidth > 0) {
+        // Рисуем картинку на весь холст (800x450)
+        ctx.drawImage(loc.bgImage, 0, 0, canvas.width, canvas.height);
+    } else {
+        // Откат к заливке цветом, если нет фона
+        ctx.fillStyle = loc.bgColor || '#000'; 
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // Рисуем горизонт только если это цветной фон
+        if (loc.horizonColor) {
+            ctx.fillStyle = loc.horizonColor; ctx.fillRect(0, 0, canvas.width, 180);
+        }
+    }
 
     if (currentState === 'PLAY' || currentState === 'GAMEOVER' || currentState === 'SHOP') {
         lootItems.forEach(item => { ctx.fillStyle = item.type === 'coin' ? '#ffca28' : '#69f0ae'; ctx.beginPath(); ctx.arc(item.x, item.y, 6, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.stroke(); });
@@ -392,19 +411,18 @@ function draw() {
             if (obj === player) drawPlayer();
             else if (enemies.includes(obj)) drawEnemy(obj);
             else {
-                // --- ОТРИСОВКА САРАЯ ---
+                // Отрисовка сарая (уже большим)
                 if (obj.type === 'shed') {
                     const frames = buildingSprites.shed;
                     if (frames && frames.length > 0 && frames[0].complete && frames[0].naturalWidth > 0) {
                         ctx.drawImage(frames[0], obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height);
-                        // Затемняем сарай, когда забрали оружие
                         if (player.hasWeapon) {
                             ctx.fillStyle = 'rgba(0,0,0,0.5)';
                             ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height);
                         }
-                    } else { ctx.fillStyle = obj.color; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
+                    } else { ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
                 }
-                // --- ОТРИСОВКА ЖАБОЛЮДА ---
+                // NPC
                 else if (obj.type === 'merchant') {
                     ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(obj.x, obj.y, 25, 8, 0, 0, Math.PI * 2); ctx.fill();
                     const frames = npcSprites.merchant_idle;
@@ -418,7 +436,6 @@ function draw() {
                         } else { ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
                     }
                 } 
-                // --- ОТРИСОВКА ДЯДЮШКИ ВЕЙЛАНДА ---
                 else if (obj.type === 'uncle') {
                     ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(obj.x, obj.y, 20, 6, 0, 0, Math.PI * 2); ctx.fill();
                     const frames = npcSprites.uncle_idle;
@@ -439,7 +456,6 @@ function draw() {
 
 function drawPlayer() {
     if (player.state === 'dead') { ctx.fillStyle = '#4a0000'; ctx.fillRect(player.x - player.width/2, player.y - 10, player.width, 15); return; }
-    
     ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(player.x, player.y, player.width / 1.2, 8, 0, 0, Math.PI * 2); ctx.fill();
     if (player.hurtTimer > 0 && Math.floor(Date.now() / 100) % 2 === 0) return;
 
