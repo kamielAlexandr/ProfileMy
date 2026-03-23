@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Тарн: Кровь и Вереск</title>
     <link rel="stylesheet" href="knight.css">
 </head>
@@ -18,7 +18,7 @@
                 <p>Воспитанный суровым дядюшкой Вейландом в Урочище Вереск, Тарн вырос крепким, как вековой дуб.</p>
                 <p>Он не знал благородных искусств боя. Его учителями были тяжелый плуг, неподатливая земля и твари, лезущие из чащи.</p>
                 <p>Ему не хватает техники, но силы — не занимать.</p>
-                <p class="blink">Нажмите [ПРОБЕЛ] или кликните мышью</p>
+                <p class="blink">Коснитесь экрана или нажмите [ПРОБЕЛ]</p>
             </div>
         </div>
 
@@ -26,7 +26,7 @@
             <div class="dialogue-box">
                 <div id="speaker-name" class="speaker">Вейланд</div>
                 <div id="dialogue-text" class="text">...</div>
-                <div class="hint">Нажмите [ПРОБЕЛ] или кликните</div>
+                <div class="hint">Коснитесь экрана или нажмите [ПРОБЕЛ]</div>
             </div>
         </div>
 
@@ -47,7 +47,7 @@
             <div class="story-text">
                 <h1 style="color: #d32f2f; font-size: 32px;">ТАРН ПАЛ</h1>
                 <p>Хвощевики поглотят эти земли...</p>
-                <p class="blink">Нажмите [F5] для перезапуска</p>
+                <p class="blink">Обновите страницу для перезапуска</p>
             </div>
         </div>
         
@@ -58,10 +58,35 @@
                 <div id="inventory-text">Монеты: 0 | Семена: 0 | Зелья (E): 0</div>
             </div>
             <div id="objective">Цель: Поговорить с дядюшкой</div>
-            <div id="controls">WASD | J - Легкая | K - Тяжелая | L - Кувырок | F - Действие | E - Зелье</div>
+            <div id="controls" class="desktop-only">WASD | J - Легкая | K - Тяжелая | L - Кувырок | F - Действие | E - Зелье</div>
         </div>
+
+        <div id="mobile-controls" class="hidden">
+            <div class="d-pad">
+                <button id="btn-up" class="mob-btn dir-btn">▲</button>
+                <div class="d-pad-middle">
+                    <button id="btn-left" class="mob-btn dir-btn">◀</button>
+                    <button id="btn-right" class="mob-btn dir-btn">▶</button>
+                </div>
+                <button id="btn-down" class="mob-btn dir-btn">▼</button>
+            </div>
+            <div class="action-pad">
+                <div class="action-row">
+                    <button id="btn-f" class="mob-btn act-btn">F<br><span>Взять</span></button>
+                    <button id="btn-e" class="mob-btn act-btn" style="background: rgba(46, 125, 50, 0.7);">E<br><span>Зелье</span></button>
+                </div>
+                <div class="action-row">
+                    <button id="btn-j" class="mob-btn act-btn">J<br><span>Удар</span></button>
+                    <button id="btn-k" class="mob-btn act-btn" style="background: rgba(183, 28, 28, 0.7);">K<br><span>Тяж</span></button>
+                </div>
+                <div class="action-row" style="justify-content: flex-end;">
+                    <button id="btn-l" class="mob-btn act-btn" style="width: 100px; border-radius: 25px;">L (Кувырок)</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
-    <script src="knight.js?v=122"></script>
+    <script src="knight.js?v=123"></script>
 </body>
 </html>
