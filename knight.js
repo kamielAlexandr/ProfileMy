@@ -53,7 +53,7 @@ const tarnSprites = {
 
 // --- СПРАЙТЫ NPC ---
 const npcSprites = {
-    merchant_idle: loadFrames('img/merchant_idle', 4), // Замени 4 на свои кадры Жаболюда
+    merchant_idle: loadFrames('img/frog_idle', 3), // Замени 4 на свои кадры Жаболюда
     // ДОБАВЛЕН ДЯДЮШКА (Замени 4 на количество картинок dad_idle)
     uncle_idle: loadFrames('img/dad_idle', 3) 
 };
