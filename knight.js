@@ -58,7 +58,7 @@ const npcSprites = {
     uncle_idle: loadFrames('img/dad_idle', 3) 
 };
 const buildingSprites = {
-    shed: loadFrames('img/home', 1) // Новый спрайт сарая
+    shed: loadFrames('img/Home', 1) // Новый спрайт сарая
 };
 
 let globalNpcTimer = 0;
