@@ -58,14 +58,14 @@ const npcSprites = {
 };
 
 const buildingSprites = {
-    shed: loadFrames('img/home', 1) 
+    shed: loadFrames('img/Home', 1) 
 };
 
-// ЗАГРУЗКА ФОНА (Полоска фермы)
+// ЗАГРУЗКА ФОНА (Горизонт)
 const backgroundImages = {
-    field: new Image()
+    horizon: new Image()
 };
-backgroundImages.field.src = 'img/BG_farm.png'; 
+backgroundImages.horizon.src = 'img/BG_farm.png'; 
 
 let globalNpcTimer = 0;
 let globalNpcFrame = 0;
@@ -108,9 +108,6 @@ let environment = [];
 let enemies = [];
 let lootItems = []; 
 
-// ШИРИНА КАРТИНКИ ФОНА СПРАВА (Измени, если полоска слишком широкая или узкая)
-const bgStripWidth = 250; 
-
 const locations = {
     village: {
         bgColor: '#5d4037', horizonColor: '#1b1b1b',
@@ -128,11 +125,9 @@ const locations = {
     },
     field: {
         bgColor: '#4e5e3d', horizonColor: '#0a1a0f',
-        bgImage: backgroundImages.field,
         setup: () => {
             environment = []; lootItems = [];
-            // Враги спавнятся прямо внутри полоски и выходят к игроку!
-            enemies = [createEnemy(550, 300), createEnemy(650, 250), createEnemy(750, 380)];
+            enemies = [createEnemy(500, 300), createEnemy(650, 250), createEnemy(750, 380)];
             if (player.questStatus === 'kill_monsters') objectiveText.innerText = "Цель: Выживи и выкорчуй нечисть!";
             else objectiveText.innerText = "Охота на Хвощевиков продолжается...";
         }
@@ -346,7 +341,6 @@ function update() {
         
         const horizon = 200; if (player.y < horizon) player.y = horizon; if (player.y > canvas.height) player.y = canvas.height;
         
-        // Ограничения перемещения
         if (player.x > canvas.width + 20) { 
             if (currentLocation === 'village' && player.hasWeapon) transitionLocation('field', 'left'); 
             else player.x = canvas.width - player.width/2; 
@@ -354,11 +348,6 @@ function update() {
         if (player.x < -20) { 
             if (currentLocation === 'field') transitionLocation('village', 'right'); 
             else player.x = player.width/2; 
-        }
-
-        // НЕВИДИМАЯ СТЕНА: Не пускаем Тарна на картинку фермы
-        if (currentLocation === 'field' && player.x > canvas.width - bgStripWidth) {
-            player.x = canvas.width - bgStripWidth;
         }
     }
 
@@ -401,16 +390,17 @@ function update() {
 function draw() {
     const loc = locations[currentLocation];
     
-    // Сначала рисуем базовый цвет (земля + горизонт)
+    // Сначала заливаем весь экран цветом земли
     ctx.fillStyle = loc.bgColor || '#000'; 
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    if (loc.horizonColor) {
-        ctx.fillStyle = loc.horizonColor; ctx.fillRect(0, 0, canvas.width, 180);
-    }
 
-    // Если есть картинка поля, рисуем её ТОЛЬКО СПРАВА
-    if (loc.bgImage && loc.bgImage.complete && loc.bgImage.naturalWidth > 0) {
-        ctx.drawImage(loc.bgImage, canvas.width - bgStripWidth, 0, bgStripWidth, canvas.height);
+    // Затем рисуем картинку горизонта ТОЛЬКО СВЕРХУ (ширина 100%, высота 180px)
+    if (backgroundImages.horizon && backgroundImages.horizon.complete && backgroundImages.horizon.naturalWidth > 0) {
+        ctx.drawImage(backgroundImages.horizon, 0, 0, canvas.width, 180);
+    } else if (loc.horizonColor) {
+        // Резервный цвет, если картинка не загрузилась
+        ctx.fillStyle = loc.horizonColor; 
+        ctx.fillRect(0, 0, canvas.width, 180);
     }
 
     if (currentState === 'PLAY' || currentState === 'GAMEOVER' || currentState === 'SHOP') {
