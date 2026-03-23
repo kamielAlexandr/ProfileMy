@@ -40,7 +40,6 @@ function loadFrames(prefix, count) {
     return frames;
 }
 
-// ГГ
 const tarnSprites = {
     idle_no_weapon: loadFrames('img/GG_idle_None', 1),
     idle_weapon: loadFrames('img/GG_idle', 1),
@@ -53,22 +52,20 @@ const tarnSprites = {
     roll: loadFrames('img/GG_perevorot', 5)                            
 };
 
-// NPC
 const npcSprites = {
     merchant_idle: loadFrames('img/frog_idle', 3), 
     uncle_idle: loadFrames('img/dad_idle', 3) 
 };
 
-// Здания
 const buildingSprites = {
     shed: loadFrames('img/home', 1) 
 };
 
-// --- НОВОЕ: ЗАГРУЗКА ФОНА ---
+// ЗАГРУЗКА ФОНА (Полоска фермы)
 const backgroundImages = {
     field: new Image()
 };
-backgroundImages.field.src = 'img/BG_farm.png'; // Твой файл фона
+backgroundImages.field.src = 'img/BG_farm.png'; 
 
 let globalNpcTimer = 0;
 let globalNpcFrame = 0;
@@ -111,12 +108,14 @@ let environment = [];
 let enemies = [];
 let lootItems = []; 
 
+// ШИРИНА КАРТИНКИ ФОНА СПРАВА (Измени, если полоска слишком широкая или узкая)
+const bgStripWidth = 250; 
+
 const locations = {
     village: {
-        bgColor: '#5d4037', horizonColor: '#1b1b1b', // Деревня пока без фона
+        bgColor: '#5d4037', horizonColor: '#1b1b1b',
         setup: () => {
             environment = [
-                // Большой сарай (240x180)
                 { x: 600, y: 230, width: 240, height: 180, color: player.hasWeapon ? '#271714' : '#3E2723', interactable: !player.hasWeapon, type: 'shed' },
                 { x: 200, y: 280, width: 40, height: 80, color: '#ffb300', interactable: true, type: 'uncle' },
                 { x: 450, y: 240, width: 45, height: 60, interactable: true, type: 'merchant' }
@@ -128,11 +127,12 @@ const locations = {
         }
     },
     field: {
-        // --- ОБНОВЛЕНО: ДОБАВИЛИ ФОН ---
+        bgColor: '#4e5e3d', horizonColor: '#0a1a0f',
         bgImage: backgroundImages.field,
         setup: () => {
             environment = []; lootItems = [];
-            enemies = [createEnemy(500, 300), createEnemy(650, 250), createEnemy(750, 380)];
+            // Враги спавнятся прямо внутри полоски и выходят к игроку!
+            enemies = [createEnemy(550, 300), createEnemy(650, 250), createEnemy(750, 380)];
             if (player.questStatus === 'kill_monsters') objectiveText.innerText = "Цель: Выживи и выкорчуй нечисть!";
             else objectiveText.innerText = "Охота на Хвощевиков продолжается...";
         }
@@ -201,7 +201,7 @@ btnPotion.addEventListener('click', () => { if (player.coins >= 2) { player.coin
 btnUpgrade.addEventListener('click', () => { if (player.seeds >= 5) { player.seeds -= 5; player.baseDamage += 10; updateHUD(); alert("Оружие улучшено!"); } else alert("Не хватает семян!"); });
 btnCloseShop.addEventListener('click', closeShop);
 function usePotion() { if (player.potions > 0 && player.hp < player.maxHp) { player.potions--; player.hp = Math.min(player.maxHp, player.hp + 50); updateHUD(); } }
-function updateHUD() { let hpPercent = Math.max(0, (player.hp / player.maxHp) * 100); hpBarFill.style.width = hpPercent + '%'; xpText.innerText = 'Опыт: ' + player.xp; inventoryText.innerText = `Монеты: ${player.coins} | Семена: ${player.seeds} | Зелья: ${player.potions}`; }
+function updateHUD() { let hpPercent = Math.max(0, (player.hp / player.maxHp) * 100); hpBarFill.style.width = hpPercent + '%'; xpText.innerText = 'Опыт: ' + player.xp; inventoryText.innerText = `Монеты: ${player.coins} | Семена: ${player.seeds} | Зелья (E): ${player.potions}`; }
 
 // --- УПРАВЛЕНИЕ ---
 function checkMobile() {
@@ -343,9 +343,23 @@ function update() {
         if (keys.d) { dx += currentSpeed; player.facingRight = true; }
         if (dx !== 0 && dy !== 0) { dx *= 0.707; dy *= 0.707; }
         player.x += dx; player.y += dy;
+        
         const horizon = 200; if (player.y < horizon) player.y = horizon; if (player.y > canvas.height) player.y = canvas.height;
-        if (player.x > canvas.width + 20) { if (currentLocation === 'village' && player.hasWeapon) transitionLocation('field', 'left'); else player.x = canvas.width - player.width/2; }
-        if (player.x < -20) { if (currentLocation === 'field') transitionLocation('village', 'right'); else player.x = player.width/2; }
+        
+        // Ограничения перемещения
+        if (player.x > canvas.width + 20) { 
+            if (currentLocation === 'village' && player.hasWeapon) transitionLocation('field', 'left'); 
+            else player.x = canvas.width - player.width/2; 
+        }
+        if (player.x < -20) { 
+            if (currentLocation === 'field') transitionLocation('village', 'right'); 
+            else player.x = player.width/2; 
+        }
+
+        // НЕВИДИМАЯ СТЕНА: Не пускаем Тарна на картинку фермы
+        if (currentLocation === 'field' && player.x > canvas.width - bgStripWidth) {
+            player.x = canvas.width - bgStripWidth;
+        }
     }
 
     for (let i = lootItems.length - 1; i >= 0; i--) { let item = lootItems[i]; let dist = Math.hypot(player.x - item.x, player.y - item.y); if (dist < 30) { if (item.type === 'coin') player.coins++; else if (item.type === 'seed') player.seeds++; lootItems.splice(i, 1); updateHUD(); } }
@@ -387,18 +401,16 @@ function update() {
 function draw() {
     const loc = locations[currentLocation];
     
-    // --- ОБНОВЛЕНО: ОТРИСОВКА ФОНА ИЛИ ЦВЕТА ---
+    // Сначала рисуем базовый цвет (земля + горизонт)
+    ctx.fillStyle = loc.bgColor || '#000'; 
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    if (loc.horizonColor) {
+        ctx.fillStyle = loc.horizonColor; ctx.fillRect(0, 0, canvas.width, 180);
+    }
+
+    // Если есть картинка поля, рисуем её ТОЛЬКО СПРАВА
     if (loc.bgImage && loc.bgImage.complete && loc.bgImage.naturalWidth > 0) {
-        // Рисуем картинку на весь холст (800x450)
-        ctx.drawImage(loc.bgImage, 0, 0, canvas.width, canvas.height);
-    } else {
-        // Откат к заливке цветом, если нет фона
-        ctx.fillStyle = loc.bgColor || '#000'; 
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        // Рисуем горизонт только если это цветной фон
-        if (loc.horizonColor) {
-            ctx.fillStyle = loc.horizonColor; ctx.fillRect(0, 0, canvas.width, 180);
-        }
+        ctx.drawImage(loc.bgImage, canvas.width - bgStripWidth, 0, bgStripWidth, canvas.height);
     }
 
     if (currentState === 'PLAY' || currentState === 'GAMEOVER' || currentState === 'SHOP') {
@@ -411,7 +423,6 @@ function draw() {
             if (obj === player) drawPlayer();
             else if (enemies.includes(obj)) drawEnemy(obj);
             else {
-                // Отрисовка сарая (уже большим)
                 if (obj.type === 'shed') {
                     const frames = buildingSprites.shed;
                     if (frames && frames.length > 0 && frames[0].complete && frames[0].naturalWidth > 0) {
@@ -422,7 +433,6 @@ function draw() {
                         }
                     } else { ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
                 }
-                // NPC
                 else if (obj.type === 'merchant') {
                     ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(obj.x, obj.y, 25, 8, 0, 0, Math.PI * 2); ctx.fill();
                     const frames = npcSprites.merchant_idle;
