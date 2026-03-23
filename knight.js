@@ -107,7 +107,9 @@ const locations = {
         bgColor: '#5d4037', horizonColor: '#1b1b1b',
         setup: () => {
             environment = [
-                { x: 600, y: 220, width: 100, height: 70, color: player.hasWeapon ? '#271714' : '#3E2723', interactable: !player.hasWeapon, type: 'shed' },
+                // ИЗМЕНИЛИ width, height и y В ЭТОЙ СТРОЧКЕ:
+                { x: 600, y: 230, width: 240, height: 180, color: player.hasWeapon ? '#271714' : '#3E2723', interactable: !player.hasWeapon, type: 'shed' },
+                
                 { x: 200, y: 280, width: 40, height: 80, color: '#ffb300', interactable: true, type: 'uncle' },
                 { x: 450, y: 240, width: 45, height: 60, color: '#2e7d32', interactable: true, type: 'merchant' }
             ];
