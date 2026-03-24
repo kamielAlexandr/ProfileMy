@@ -61,7 +61,7 @@ const buildingSprites = {
     shed: loadFrames('img/Home', 1) 
 };
 
-// --- НОВОЕ: СПРАЙТЫ ВРАГОВ ---
+// --- СПРАЙТЫ ВРАГОВ ---
 const enemySprites = {
     walk: loadFrames('img/hroshevik_walk', 4),
     preAttack: loadFrames('img/hroshevik_Pre-Attack', 3),
@@ -70,13 +70,15 @@ const enemySprites = {
     death: loadFrames('img/hroshevik_Death', 5)
 };
 
-// ЗАГРУЗКА ФОНА И ЗЕМЛИ
+// --- ЗАГРУЗКА ФОНА И ЗЕМЛИ ---
 const backgroundImages = {
     horizon: new Image(),
-    villageGround: new Image() 
+    villageGround: new Image(), 
+    fieldGround: new Image() // НОВОЕ: земля для поля боя
 };
 backgroundImages.horizon.src = 'img/BG_farm.png'; 
 backgroundImages.villageGround.src = 'img/zemly_1.png'; 
+backgroundImages.fieldGround.src = 'img/BG2_1.png'; // НОВОЕ: путь к земле второй локации
 
 let globalNpcTimer = 0;
 let globalNpcFrame = 0;
@@ -145,6 +147,7 @@ const locations = {
     },
     field: {
         bgColor: '#4e5e3d', horizonColor: '#0a1a0f',
+        groundImage: backgroundImages.fieldGround, // НОВОЕ: привязываем новую картинку земли к полю
         setup: () => {
             environment = []; lootItems = [];
             enemies = [createEnemy(500, 300), createEnemy(650, 250), createEnemy(750, 380)];
@@ -158,7 +161,6 @@ function createEnemy(x, y) {
     return { 
         x: x, y: y, width: 35, height: 60, speed: 1.2, hp: 30, color: '#689f38', 
         state: 'chase', hurtTimer: 0, damage: 15, attackTimer: 0,
-        // Новые свойства для анимации врага
         currentAnim: 'enemy_walk', frameIndex: 0, animTimer: 0, isLockAnim: false, facingRight: false
     }; 
 }
@@ -169,7 +171,6 @@ updateHUD();
 
 // --- СИСТЕМА АНИМАЦИЙ ---
 
-// Функция анимации для Тарна
 function setAnimation(animName) {
     if (player.isLockAnim || player.currentAnim === animName) return;
     if (!animConfig.animations[animName]) return;
@@ -179,7 +180,6 @@ function setAnimation(animName) {
     player.animTimer = 0;
 }
 
-// Отдельная функция анимации для Врагов
 function setEntityAnimation(entity, animName) {
     if (entity.isLockAnim || entity.currentAnim === animName) return;
     if (!animConfig.animations[animName]) return;
@@ -225,10 +225,8 @@ function updateEnemyAnimation(entity) {
             if (config.onComplete) {
                 entity.isLockAnim = false;
                 
-                // Логика перехода состояний врага
                 if (config.onComplete === 'attack') {
                     entity.currentAnim = 'enemy_attack';
-                    // Урон наносится в момент удара
                     if (Math.hypot(player.x - entity.x, player.y - entity.y) < 60 && player.state !== 'roll') {
                         player.hp -= entity.damage; player.hurtTimer = 40; updateHUD();
                         if (player.hp <= 0) { player.state = 'dead'; currentState = 'GAMEOVER'; mobileControls.classList.add('hidden'); gameOverScreen.classList.remove('hidden'); }
@@ -237,7 +235,7 @@ function updateEnemyAnimation(entity) {
                     entity.state = 'chase';
                     entity.currentAnim = 'enemy_walk';
                 } else if (config.onComplete === 'dead') {
-                    entity.frameIndex = config.frames.length - 1; // Зависаем на последнем кадре смерти
+                    entity.frameIndex = config.frames.length - 1; 
                     return; 
                 }
                 entity.frameIndex = 0;
@@ -450,11 +448,9 @@ function update() {
                     let dropType = Math.random() > 0.5 ? 'coin' : 'seed'; lootItems.push({ x: enemy.x, y: enemy.y, type: dropType }); 
                     updateHUD(); checkQuestProgress(); 
                     
-                    // Включаем анимацию смерти
                     enemy.isLockAnim = true;
                     setEntityAnimation(enemy, 'enemy_death');
                 } else {
-                    // Включаем анимацию урона
                     enemy.state = 'hurt'; 
                     enemy.hurtTimer = 15; 
                     enemy.x += player.facingRight ? 20 : -20;
@@ -467,14 +463,13 @@ function update() {
 
     // --- ЛОГИКА ВРАГОВ ---
     enemies.forEach(enemy => {
-        // Обновляем кадры врага
         if (enemy.state === 'dead') {
             updateEnemyAnimation(enemy);
             return;
         }
         
         updateEnemyAnimation(enemy);
-        enemy.facingRight = player.x > enemy.x; // Враг поворачивается к игроку
+        enemy.facingRight = player.x > enemy.x; 
 
         if (enemy.attackTimer > 0) enemy.attackTimer--;
         
@@ -487,8 +482,8 @@ function update() {
                 if (enemy.attackTimer <= 0 && player.state !== 'dead' && player.state !== 'roll') {
                     enemy.state = 'attack';
                     enemy.isLockAnim = true;
-                    enemy.attackTimer = 100; // Пауза перед следующим ударом
-                    setEntityAnimation(enemy, 'enemy_preAttack'); // Включаем долгий замах
+                    enemy.attackTimer = 100; 
+                    setEntityAnimation(enemy, 'enemy_preAttack'); 
                 } else {
                     setEntityAnimation(enemy, 'enemy_walk');
                 }
@@ -504,10 +499,13 @@ function draw() {
     ctx.fillStyle = loc.bgColor || '#000'; 
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    // --- Рисуем уникальную землю (от горизонта вниз) ---
+    // Это теперь работает и для локации field тоже!
     if (loc.groundImage && loc.groundImage.complete && loc.groundImage.naturalWidth > 0) {
         ctx.drawImage(loc.groundImage, 0, 180, canvas.width, canvas.height - 180);
     }
 
+    // Затем рисуем картинку горизонта ТОЛЬКО СВЕРХУ (ширина 100%, высота 180px)
     if (backgroundImages.horizon && backgroundImages.horizon.complete && backgroundImages.horizon.naturalWidth > 0) {
         ctx.drawImage(backgroundImages.horizon, 0, 0, canvas.width, 180);
     } else if (loc.horizonColor) {
@@ -594,7 +592,6 @@ function drawEnemy(enemy) {
     const anim = animConfig.animations[enemy.currentAnim];
     
     if (!anim || !anim.frames[enemy.frameIndex] || !anim.frames[enemy.frameIndex].complete || anim.frames[enemy.frameIndex].naturalWidth === 0) {
-        // Резервная отрисовка (розовый квадрат)
         ctx.fillStyle = '#ff00ff'; ctx.fillRect(enemy.x - enemy.width/2, enemy.y - enemy.height, enemy.width, enemy.height);
         ctx.fillStyle = '#fff'; ctx.font = '10px Arial'; ctx.fillText("ERR", enemy.x - 10, enemy.y - enemy.height/2);
         return;
@@ -603,7 +600,6 @@ function drawEnemy(enemy) {
     const currentFrameImg = anim.frames[enemy.frameIndex];
 
     ctx.save(); ctx.translate(enemy.x, enemy.y);
-    // Враг поворачивается
     if (!enemy.facingRight) ctx.scale(-1, 1);
     const dX = -animConfig.w_frame / 2; const dY = -animConfig.h_frame + 10; 
     ctx.drawImage(currentFrameImg, dX, dY, animConfig.w_frame, animConfig.h_frame);
