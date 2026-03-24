@@ -20,6 +20,8 @@ const btnPotion = document.getElementById('btn-buy-potion');
 const btnUpgrade = document.getElementById('btn-buy-upgrade');
 const btnCloseShop = document.getElementById('btn-close-shop');
 const mobileControls = document.getElementById('mobile-controls');
+const btnFullscreen = document.getElementById('btn-fullscreen');
+const gameContainer = document.getElementById('game-container');
 
 let currentState = 'STORY'; 
 let currentLocation = 'village'; 
@@ -61,7 +63,6 @@ const buildingSprites = {
     shed: loadFrames('img/Home', 1) 
 };
 
-// --- СПРАЙТЫ ВРАГОВ ---
 const enemySprites = {
     walk: loadFrames('img/hroshevik_walk', 4),
     preAttack: loadFrames('img/hroshevik_Pre-Attack', 3),
@@ -70,7 +71,6 @@ const enemySprites = {
     death: loadFrames('img/hroshevik_Death', 5)
 };
 
-// --- ЗАГРУЗКА ФОНА И ЗЕМЛИ ---
 const backgroundImages = {
     horizon: new Image(),
     villageGround: new Image(), 
@@ -91,7 +91,6 @@ const animConfig = {
     w_frame: 96, 
     h_frame: 96, 
     animations: {
-        // Игрок
         'idle_no_weapon':   { frames: tarnSprites.idle_no_weapon, speed: 12 },
         'idle_weapon':      { frames: tarnSprites.idle_weapon,    speed: 12 },
         'walk_no_weapon':   { frames: tarnSprites.walk_no_weapon, speed: 8 }, 
@@ -102,7 +101,6 @@ const animConfig = {
         'attack2_weapon':   { frames: tarnSprites.attack2_weapon, speed: 5, onComplete: 'idle' },
         'roll':             { frames: tarnSprites.roll,           speed: 4, onComplete: 'idle' },
         
-        // --- Враг ---
         'enemy_walk':       { frames: enemySprites.walk,      speed: 10 },
         'enemy_preAttack':  { frames: enemySprites.preAttack, speed: 12, onComplete: 'attack' }, 
         'enemy_attack':     { frames: enemySprites.attack,    speed: 5,  onComplete: 'walk' },   
@@ -140,8 +138,6 @@ const locations = {
                 { x: 450, y: 240, width: 45, height: 60, interactable: true, type: 'merchant' }
             ];
             enemies = []; lootItems = [];
-            
-            // ИЗМЕНЕНИЕ: Заменено слово 'цеп' на 'топор'
             if (player.questStatus === 'get_weapon') objectiveText.innerText = "Цель: Забери топор у сарая (F)";
             else if (player.questStatus === 'return') objectiveText.innerText = "Цель: Поговори с дядюшкой (F)";
             else if (player.questStatus === 'done') objectiveText.innerText = "Свободная игра: охоться и торгуй!";
@@ -171,8 +167,37 @@ setTimeout(() => fadeOverlay.classList.add('hidden'), 500);
 locations.village.setup();
 updateHUD();
 
-// --- СИСТЕМА АНИМАЦИЙ ---
 
+// ==========================================
+// --- ПОЛНОЭКРАННЫЙ РЕЖИМ ---
+// ==========================================
+btnFullscreen.addEventListener('click', () => {
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        if (gameContainer.requestFullscreen) { gameContainer.requestFullscreen(); } 
+        else if (gameContainer.webkitRequestFullscreen) { gameContainer.webkitRequestFullscreen(); }
+        btnFullscreen.innerText = '✖';
+    } else {
+        if (document.exitFullscreen) { document.exitFullscreen(); } 
+        else if (document.webkitExitFullscreen) { document.webkitExitFullscreen(); }
+        btnFullscreen.innerText = '⛶';
+    }
+});
+
+document.addEventListener('fullscreenchange', updateFullscreenBtn);
+document.addEventListener('webkitfullscreenchange', updateFullscreenBtn);
+
+function updateFullscreenBtn() {
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        btnFullscreen.innerText = '⛶';
+    } else {
+        btnFullscreen.innerText = '✖';
+    }
+}
+
+
+// ==========================================
+// --- СИСТЕМА АНИМАЦИЙ ---
+// ==========================================
 function setAnimation(animName) {
     if (player.isLockAnim || player.currentAnim === animName) return;
     if (!animConfig.animations[animName]) return;
@@ -228,19 +253,22 @@ function updateEnemyAnimation(entity) {
                 entity.isLockAnim = false;
                 
                 if (config.onComplete === 'attack') {
-                    entity.currentAnim = 'enemy_attack';
+                    setEntityAnimation(entity, 'enemy_attack');
+                    entity.isLockAnim = true; 
+                    
                     if (Math.hypot(player.x - entity.x, player.y - entity.y) < 60 && player.state !== 'roll') {
                         player.hp -= entity.damage; player.hurtTimer = 40; updateHUD();
                         if (player.hp <= 0) { player.state = 'dead'; currentState = 'GAMEOVER'; mobileControls.classList.add('hidden'); gameOverScreen.classList.remove('hidden'); }
                     }
                 } else if (config.onComplete === 'walk') {
                     entity.state = 'chase';
-                    entity.currentAnim = 'enemy_walk';
+                    setEntityAnimation(entity, 'enemy_walk');
                 } else if (config.onComplete === 'dead') {
                     entity.frameIndex = config.frames.length - 1; 
                     return; 
+                } else {
+                    entity.frameIndex = 0;
                 }
-                entity.frameIndex = 0;
             } else {
                 if (entity.state === 'dead') entity.frameIndex = config.frames.length - 1;
                 else entity.frameIndex = 0; 
@@ -249,13 +277,11 @@ function updateEnemyAnimation(entity) {
     }
 }
 
-
 // --- ДИАЛОГИ И МАГАЗИН ---
 function startDialogue(lines) { dialogueLines = lines; currentLine = 0; currentState = 'DIALOGUE'; hud.classList.add('hidden'); mobileControls.classList.add('hidden'); dialogueScreen.classList.remove('hidden'); updateDialogueUI(); }
 function advanceDialogue() {
     if (currentState === 'STORY') {
         storyScreen.classList.add('hidden');
-        // ИЗМЕНЕНИЕ: 'цеп' заменен на 'топор'
         startDialogue([
             { name: "Вейланд", text: "Тарн, мальчик мой. На дальнем поле опять неспокойно. Земля гниет, и из нее лезут Хвощевики." },
             { name: "Тарн", text: "Снова они? В прошлый раз я сломал о них любимые вилы." },
@@ -271,9 +297,7 @@ function updateDialogueUI() { speakerName.innerText = dialogueLines[currentLine]
 function openShop() { currentState = 'SHOP'; keys.w = keys.a = keys.s = keys.d = false; shopScreen.classList.remove('hidden'); mobileControls.classList.add('hidden'); }
 function closeShop() { currentState = 'PLAY'; shopScreen.classList.add('hidden'); checkMobile(); }
 btnPotion.addEventListener('click', () => { if (player.coins >= 2) { player.coins -= 2; player.potions++; updateHUD(); } else alert("Не хватает монет!"); });
-// ИЗМЕНЕНИЕ: Текст магазина обновлен под топор
 btnUpgrade.addEventListener('click', () => { if (player.seeds >= 5) { player.seeds -= 5; player.baseDamage += 10; updateHUD(); alert("Оружие улучшено!"); } else alert("Не хватает семян!"); });
-// В HTML-файле нужно будет тоже изменить текст на "Заточка для топора (+10 Урон)", но я поменял всплывающее сообщение здесь
 btnCloseShop.addEventListener('click', closeShop);
 function usePotion() { if (player.potions > 0 && player.hp < player.maxHp) { player.potions--; player.hp = Math.min(player.maxHp, player.hp + 50); updateHUD(); } }
 function updateHUD() { let hpPercent = Math.max(0, (player.hp / player.maxHp) * 100); hpBarFill.style.width = hpPercent + '%'; xpText.innerText = 'Опыт: ' + player.xp; inventoryText.innerText = `Монеты: ${player.coins} | Семена: ${player.seeds} | Зелья (E): ${player.potions}`; }
@@ -286,7 +310,7 @@ function checkMobile() {
 }
 
 window.addEventListener('pointerdown', (e) => { 
-    if (e.target.closest('.mob-btn') || e.target.closest('.shop-btn')) return; 
+    if (e.target.closest('.mob-btn') || e.target.closest('.shop-btn') || e.target.closest('.fullscreen-btn')) return; 
     if (currentState === 'STORY' || currentState === 'DIALOGUE') advanceDialogue(); 
 });
 
@@ -453,14 +477,15 @@ function update() {
                     let dropType = Math.random() > 0.5 ? 'coin' : 'seed'; lootItems.push({ x: enemy.x, y: enemy.y, type: dropType }); 
                     updateHUD(); checkQuestProgress(); 
                     
-                    enemy.isLockAnim = true;
                     setEntityAnimation(enemy, 'enemy_death');
+                    enemy.isLockAnim = true;
                 } else {
                     enemy.state = 'hurt'; 
                     enemy.hurtTimer = 15; 
                     enemy.x += player.facingRight ? 20 : -20;
-                    enemy.isLockAnim = true;
+                    
                     setEntityAnimation(enemy, 'enemy_hurt');
+                    enemy.isLockAnim = true;
                 }
             }
         });
@@ -498,22 +523,14 @@ function update() {
     });
 }
 
-// --- НОВАЯ ФУНКЦИЯ ДЛЯ МАРКЕРОВ КВЕСТА ---
+// --- МАРКЕРЫ КВЕСТА ---
 function drawQuestMark(x, y, markStr) {
     ctx.save();
-    // Анимация парения (вверх-вниз на 5 пикселей)
     let floatOffset = Math.sin(Date.now() / 200) * 5;
-    
-    ctx.fillStyle = '#ffb300'; // Ярко-желтый
+    ctx.fillStyle = '#ffb300';
     ctx.font = 'bold 24px "Russo One", Arial, sans-serif';
     ctx.textAlign = 'center';
-    
-    // Добавляем красивую тень для читаемости
-    ctx.shadowColor = '#000';
-    ctx.shadowBlur = 4;
-    ctx.shadowOffsetX = 2;
-    ctx.shadowOffsetY = 2;
-    
+    ctx.shadowColor = '#000'; ctx.shadowBlur = 4; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2;
     ctx.fillText(markStr, x, y + floatOffset);
     ctx.restore();
 }
@@ -546,7 +563,6 @@ function draw() {
             if (obj === player) drawPlayer();
             else if (enemies.includes(obj)) drawEnemy(obj);
             else {
-                // --- ОТРИСОВКА САРАЯ ---
                 if (obj.type === 'shed') {
                     const frames = buildingSprites.shed;
                     if (frames && frames.length > 0 && frames[0].complete && frames[0].naturalWidth > 0) {
@@ -557,12 +573,8 @@ function draw() {
                         }
                     } else { ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
                     
-                    // ЕСЛИ НУЖНО ВЗЯТЬ ТОПОР -> ЖЕЛТЫЙ ВОСКЛИЦАТЕЛЬНЫЙ ЗНАК
-                    if (player.questStatus === 'get_weapon') {
-                        drawQuestMark(obj.x, obj.y - obj.height - 20, '!');
-                    }
+                    if (player.questStatus === 'get_weapon') { drawQuestMark(obj.x, obj.y - obj.height - 20, '!'); }
                 }
-                // --- ОТРИСОВКА ТОРГОВЦА ---
                 else if (obj.type === 'merchant') {
                     ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(obj.x, obj.y, 25, 8, 0, 0, Math.PI * 2); ctx.fill();
                     const frames = npcSprites.merchant_idle;
@@ -576,7 +588,6 @@ function draw() {
                         } else { ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
                     }
                 } 
-                // --- ОТРИСОВКА ДЯДЮШКИ ВЕЙЛАНДА ---
                 else if (obj.type === 'uncle') {
                     ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(obj.x, obj.y, 20, 6, 0, 0, Math.PI * 2); ctx.fill();
                     const frames = npcSprites.uncle_idle;
@@ -589,15 +600,8 @@ function draw() {
                             ctx.restore();
                         } else { ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
                     }
-                    
-                    // ЕСЛИ КВЕСТ ВЫПОЛНЕН И МОЖНО СДАТЬ -> ЖЕЛТЫЙ ВОСКЛИЦАТЕЛЬНЫЙ ЗНАК
-                    if (player.questStatus === 'return') {
-                        drawQuestMark(obj.x, obj.y - obj.height - 20, '!');
-                    }
-                    // ЕСЛИ ЕСТЬ НОВОЕ ЗАДАНИЕ ИЛИ ДИАЛОГ -> ЖЕЛТЫЙ ВОПРОСИТЕЛЬНЫЙ ЗНАК
-                    else if (player.questStatus === 'done') {
-                        drawQuestMark(obj.x, obj.y - obj.height - 20, '?');
-                    }
+                    if (player.questStatus === 'return') { drawQuestMark(obj.x, obj.y - obj.height - 20, '!'); }
+                    else if (player.questStatus === 'done') { drawQuestMark(obj.x, obj.y - obj.height - 20, '?'); }
                 }
             }
         }
