@@ -8,6 +8,8 @@
 </head>
 <body>
     <div id="game-container">
+        <button id="btn-fullscreen" class="fullscreen-btn" title="На весь экран">⛶</button>
+
         <canvas id="gameCanvas" width="800" height="450"></canvas>
         
         <div id="fade-overlay" class="overlay hidden"></div>
@@ -58,7 +60,7 @@
                 <div id="inventory-text">Монеты: 0 | Семена: 0 | Зелья (E): 0</div>
             </div>
             <div id="objective">Цель: Поговорить с дядюшкой</div>
-            <div id="controls" class="desktop-only">WASD | J - Легкая | K - Тяжелая | L - Кувырок | F - Действие | E - Зелье</div>
+            <div id="controls" class="desktop-only">WASD | J - Атака | K - Тяжелая | L - Кувырок | F - Действие | E - Зелье</div>
         </div>
 
         <div id="mobile-controls" class="hidden">
@@ -87,6 +89,6 @@
 
     </div>
 
-    <script src="knight.js?v=135"></script>
+    <script src="knight.js?v=full"></script>
 </body>
 </html>
