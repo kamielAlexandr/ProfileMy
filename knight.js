@@ -61,7 +61,7 @@ const buildingSprites = {
     shed: loadFrames('img/Home', 1) 
 };
 
-// --- НОВОЕ: СПРАЙТЫ ВРАГА ---
+// --- НОВОЕ: СПРАЙТЫ ВРАГОВ ---
 const enemySprites = {
     walk: loadFrames('img/hroshevik_walk', 4),
     preAttack: loadFrames('img/hroshevik_Pre-Attack', 3),
@@ -70,9 +70,10 @@ const enemySprites = {
     death: loadFrames('img/hroshevik_Death', 5)
 };
 
+// ЗАГРУЗКА ФОНА И ЗЕМЛИ
 const backgroundImages = {
     horizon: new Image(),
-    villageGround: new Image()
+    villageGround: new Image() 
 };
 backgroundImages.horizon.src = 'img/BG_farm.png'; 
 backgroundImages.villageGround.src = 'img/zemly_1.png'; 
@@ -98,10 +99,11 @@ const animConfig = {
         'attack2_no_weapon':{ frames: tarnSprites.attack2_no_weapon, speed: 5, onComplete: 'idle' },
         'attack2_weapon':   { frames: tarnSprites.attack2_weapon, speed: 5, onComplete: 'idle' },
         'roll':             { frames: tarnSprites.roll,           speed: 4, onComplete: 'idle' },
-        // Враг (НОВОЕ)
+        
+        // --- Враг ---
         'enemy_walk':       { frames: enemySprites.walk,      speed: 10 },
-        'enemy_preAttack':  { frames: enemySprites.preAttack, speed: 12, onComplete: 'attack' }, // Долгий замах
-        'enemy_attack':     { frames: enemySprites.attack,    speed: 5,  onComplete: 'walk' },   // Резкий удар
+        'enemy_preAttack':  { frames: enemySprites.preAttack, speed: 12, onComplete: 'attack' }, 
+        'enemy_attack':     { frames: enemySprites.attack,    speed: 5,  onComplete: 'walk' },   
         'enemy_hurt':       { frames: enemySprites.hurt,      speed: 6,  onComplete: 'walk' },
         'enemy_death':      { frames: enemySprites.death,     speed: 8,  onComplete: 'dead' }
     }
@@ -154,15 +156,10 @@ const locations = {
 
 function createEnemy(x, y) { 
     return { 
-        x: x, y: y, width: 40, height: 60, // Размеры хитбокса врага
-        speed: 1.2, hp: 30, color: '#689f38', 
+        x: x, y: y, width: 35, height: 60, speed: 1.2, hp: 30, color: '#689f38', 
         state: 'chase', hurtTimer: 0, damage: 15, attackTimer: 0,
-        // Переменные для анимации
-        currentAnim: 'enemy_walk',
-        frameIndex: 0,
-        animTimer: 0,
-        isLockAnim: false,
-        facingRight: false // Смотрит ли вправо
+        // Новые свойства для анимации врага
+        currentAnim: 'enemy_walk', frameIndex: 0, animTimer: 0, isLockAnim: false, facingRight: false
     }; 
 }
 
@@ -170,8 +167,20 @@ setTimeout(() => fadeOverlay.classList.add('hidden'), 500);
 locations.village.setup();
 updateHUD();
 
-// --- СИСТЕМА АНИМАЦИЙ (ОБЩАЯ) ---
-function setAnimation(entity, animName) {
+// --- СИСТЕМА АНИМАЦИЙ ---
+
+// Функция анимации для Тарна
+function setAnimation(animName) {
+    if (player.isLockAnim || player.currentAnim === animName) return;
+    if (!animConfig.animations[animName]) return;
+
+    player.currentAnim = animName;
+    player.frameIndex = 0;
+    player.animTimer = 0;
+}
+
+// Отдельная функция анимации для Врагов
+function setEntityAnimation(entity, animName) {
     if (entity.isLockAnim || entity.currentAnim === animName) return;
     if (!animConfig.animations[animName]) return;
 
@@ -180,8 +189,30 @@ function setAnimation(entity, animName) {
     entity.animTimer = 0;
 }
 
-// Эта функция теперь может обновлять и игрока, и любого врага (entity)
-function updateEntityAnimation(entity, isPlayer = false) {
+function updateAnimation() {
+    const config = animConfig.animations[player.currentAnim];
+    if (!config) return;
+
+    player.animTimer++;
+    if (player.animTimer >= config.speed) {
+        player.animTimer = 0;
+        player.frameIndex++;
+
+        if (player.frameIndex >= config.frames.length) {
+            if (config.onComplete) {
+                player.isLockAnim = false;
+                player.state = 'idle'; 
+                let nextIdle = player.hasWeapon ? 'idle_weapon' : 'idle_no_weapon';
+                player.currentAnim = nextIdle;
+                player.frameIndex = 0;
+            } else {
+                player.frameIndex = 0; 
+            }
+        }
+    }
+}
+
+function updateEnemyAnimation(entity) {
     const config = animConfig.animations[entity.currentAnim];
     if (!config) return;
 
@@ -194,38 +225,30 @@ function updateEntityAnimation(entity, isPlayer = false) {
             if (config.onComplete) {
                 entity.isLockAnim = false;
                 
-                if (isPlayer) {
-                    entity.state = 'idle'; 
-                    let nextIdle = entity.hasWeapon ? 'idle_weapon' : 'idle_no_weapon';
-                    entity.currentAnim = nextIdle;
-                } else {
-                    // Логика завершения анимации для Врага
-                    if (config.onComplete === 'attack') {
-                        // После замаха (preAttack) бьем
-                        entity.currentAnim = 'enemy_attack';
-                        // Наносим урон игроку именно в этот момент
-                        if (Math.hypot(player.x - entity.x, player.y - entity.y) < 60 && player.state !== 'roll') {
-                            player.hp -= entity.damage; player.hurtTimer = 40; updateHUD();
-                            if (player.hp <= 0) { player.state = 'dead'; currentState = 'GAMEOVER'; mobileControls.classList.add('hidden'); gameOverScreen.classList.remove('hidden'); }
-                        }
-                    } else if (config.onComplete === 'walk') {
-                        entity.state = 'chase';
-                        entity.currentAnim = 'enemy_walk';
-                    } else if (config.onComplete === 'dead') {
-                        // Оставляем последний кадр смерти навсегда
-                        entity.frameIndex = config.frames.length - 1;
-                        return; 
+                // Логика перехода состояний врага
+                if (config.onComplete === 'attack') {
+                    entity.currentAnim = 'enemy_attack';
+                    // Урон наносится в момент удара
+                    if (Math.hypot(player.x - entity.x, player.y - entity.y) < 60 && player.state !== 'roll') {
+                        player.hp -= entity.damage; player.hurtTimer = 40; updateHUD();
+                        if (player.hp <= 0) { player.state = 'dead'; currentState = 'GAMEOVER'; mobileControls.classList.add('hidden'); gameOverScreen.classList.remove('hidden'); }
                     }
+                } else if (config.onComplete === 'walk') {
+                    entity.state = 'chase';
+                    entity.currentAnim = 'enemy_walk';
+                } else if (config.onComplete === 'dead') {
+                    entity.frameIndex = config.frames.length - 1; // Зависаем на последнем кадре смерти
+                    return; 
                 }
                 entity.frameIndex = 0;
             } else {
-                // Если entity мертв, не зацикливаем анимацию
-                if (!isPlayer && entity.state === 'dead') entity.frameIndex = config.frames.length - 1;
+                if (entity.state === 'dead') entity.frameIndex = config.frames.length - 1;
                 else entity.frameIndex = 0; 
             }
         }
     }
 }
+
 
 // --- ДИАЛОГИ И МАГАЗИН ---
 function startDialogue(lines) { dialogueLines = lines; currentLine = 0; currentState = 'DIALOGUE'; hud.classList.add('hidden'); mobileControls.classList.add('hidden'); dialogueScreen.classList.remove('hidden'); updateDialogueUI(); }
@@ -317,19 +340,19 @@ function performAction(action) {
         player.state = 'roll'; 
         let config = animConfig.animations.roll;
         player.rollTimer = config.frames.length * config.speed;
-        setAnimation(player, 'roll');
+        setAnimation('roll');
         player.isLockAnim = true;
     } else if (action === 'attackLight') {
         player.state = 'attackLight'; 
         player.attackHitboxActive = true; 
         let attackAnim = player.hasWeapon ? 'attack1_weapon' : 'attack1_no_weapon';
-        setAnimation(player, attackAnim);
+        setAnimation(attackAnim);
         player.isLockAnim = true; 
     } else if (action === 'attackHeavy') {
         player.state = 'attackHeavy'; 
         player.attackHitboxActive = true; 
         let attackAnim = player.hasWeapon ? 'attack2_weapon' : 'attack2_no_weapon';
-        setAnimation(player, attackAnim);
+        setAnimation(attackAnim);
         player.isLockAnim = true; 
     }
 }
@@ -341,7 +364,7 @@ function checkInteraction() {
             if (obj.type === 'shed' && player.questStatus === 'get_weapon') {
                 player.hasWeapon = true; obj.interactable = false;
                 player.questStatus = 'kill_monsters'; objectiveText.innerText = "Цель: Иди направо, на дальнее поле ->";
-                setAnimation(player, 'idle_weapon');
+                setAnimation('idle_weapon');
             }
             else if (obj.type === 'uncle') {
                 if (player.questStatus === 'get_weapon' || player.questStatus === 'kill_monsters') startDialogue([{ name: "Вейланд", text: "Очисти поле!" }]);
@@ -361,7 +384,7 @@ function update() {
     if (currentState !== 'PLAY') return;
     if (player.hurtTimer > 0) player.hurtTimer--;
 
-    updateEntityAnimation(player, true);
+    updateAnimation();
 
     globalNpcTimer++;
     if (globalNpcTimer >= npcAnimSpeed) {
@@ -377,11 +400,11 @@ function update() {
         if (keys.w || keys.a || keys.s || keys.d) {
             player.state = 'walk';
             let walkAnim = player.hasWeapon ? 'walk_weapon' : 'walk_no_weapon';
-            setAnimation(player, walkAnim);
+            setAnimation(walkAnim);
         } else {
             player.state = 'idle';
             let idleAnim = player.hasWeapon ? 'idle_weapon' : 'idle_no_weapon';
-            setAnimation(player, idleAnim);
+            setAnimation(idleAnim);
         }
     }
 
@@ -407,7 +430,7 @@ function update() {
 
     for (let i = lootItems.length - 1; i >= 0; i--) { let item = lootItems[i]; let dist = Math.hypot(player.x - item.x, player.y - item.y); if (dist < 30) { if (item.type === 'coin') player.coins++; else if (item.type === 'seed') player.seeds++; lootItems.splice(i, 1); updateHUD(); } }
     
-    // Атака игрока по врагам
+    // --- ОБРАБОТКА ПОПАДАНИЙ ПО ВРАГУ ---
     if ((player.state === 'attackLight' || player.state === 'attackHeavy') && player.attackHitboxActive) {
         player.attackHitboxActive = false; 
         let reach = player.state === 'attackLight' ? 50 : 70;
@@ -417,54 +440,57 @@ function update() {
             if (enemy.state === 'dead') return;
             let inRangeX = player.facingRight ? (enemy.x > player.x && enemy.x - player.x < reach) : (enemy.x < player.x && player.x - enemy.x < reach);
             let inRangeY = Math.abs(player.y - enemy.y) < 30;
+            
             if (inRangeX && inRangeY) {
                 enemy.hp -= attackDamage; 
                 
                 if (enemy.hp <= 0) { 
                     enemy.state = 'dead'; 
-                    enemy.isLockAnim = true;
-                    setAnimation(enemy, 'enemy_death'); // Смерть
                     player.xp += 20; 
                     let dropType = Math.random() > 0.5 ? 'coin' : 'seed'; lootItems.push({ x: enemy.x, y: enemy.y, type: dropType }); 
                     updateHUD(); checkQuestProgress(); 
-                } else {
-                    // Урон, но не смерть
-                    enemy.state = 'hurt'; 
+                    
+                    // Включаем анимацию смерти
                     enemy.isLockAnim = true;
-                    setAnimation(enemy, 'enemy_hurt');
-                    enemy.x += player.facingRight ? 15 : -15; // Отбрасывание
+                    setEntityAnimation(enemy, 'enemy_death');
+                } else {
+                    // Включаем анимацию урона
+                    enemy.state = 'hurt'; 
+                    enemy.hurtTimer = 15; 
+                    enemy.x += player.facingRight ? 20 : -20;
+                    enemy.isLockAnim = true;
+                    setEntityAnimation(enemy, 'enemy_hurt');
                 }
             }
         });
     }
 
-    // Обновление врагов
+    // --- ЛОГИКА ВРАГОВ ---
     enemies.forEach(enemy => {
-        updateEntityAnimation(enemy, false);
-
-        if (enemy.state === 'dead') return;
+        // Обновляем кадры врага
+        if (enemy.state === 'dead') {
+            updateEnemyAnimation(enemy);
+            return;
+        }
         
-        // Поворот врага к игроку
-        enemy.facingRight = player.x > enemy.x;
+        updateEnemyAnimation(enemy);
+        enemy.facingRight = player.x > enemy.x; // Враг поворачивается к игроку
 
         if (enemy.attackTimer > 0) enemy.attackTimer--;
-
+        
         if (enemy.state === 'chase' && !enemy.isLockAnim) {
             let dx = player.x - enemy.x; let dy = player.y - enemy.y; let dist = Math.hypot(dx, dy);
-            
-            if (dist > 45) {
+            if (dist > 45) { 
                 enemy.x += (dx / dist) * enemy.speed; enemy.y += (dy / dist) * enemy.speed;
-                setAnimation(enemy, 'enemy_walk');
+                setEntityAnimation(enemy, 'enemy_walk');
             } else {
-                // Враг дошел до игрока и готов бить
-                if (enemy.attackTimer <= 0 && player.state !== 'dead') {
+                if (enemy.attackTimer <= 0 && player.state !== 'dead' && player.state !== 'roll') {
                     enemy.state = 'attack';
                     enemy.isLockAnim = true;
-                    enemy.attackTimer = 100; // Кулдаун между ударами
-                    setAnimation(enemy, 'enemy_preAttack'); // Включаем замах
+                    enemy.attackTimer = 100; // Пауза перед следующим ударом
+                    setEntityAnimation(enemy, 'enemy_preAttack'); // Включаем долгий замах
                 } else {
-                    // Ждет отката
-                    setAnimation(enemy, 'enemy_walk'); // Пока просто топчется
+                    setEntityAnimation(enemy, 'enemy_walk');
                 }
             }
         }
@@ -561,16 +587,14 @@ function drawPlayer() {
 }
 
 function drawEnemy(enemy) {
-    // Тень под врагом
     if (enemy.state !== 'dead') {
-        ctx.fillStyle = 'rgba(0,0,0,0.4)'; 
-        ctx.beginPath(); ctx.ellipse(enemy.x, enemy.y, enemy.width/1.2, 8, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(enemy.x, enemy.y, enemy.width/1.5, 8, 0, 0, Math.PI * 2); ctx.fill();
     }
-
+    
     const anim = animConfig.animations[enemy.currentAnim];
     
-    // Защита: если анимации нет, рисуем розовый квадрат
     if (!anim || !anim.frames[enemy.frameIndex] || !anim.frames[enemy.frameIndex].complete || anim.frames[enemy.frameIndex].naturalWidth === 0) {
+        // Резервная отрисовка (розовый квадрат)
         ctx.fillStyle = '#ff00ff'; ctx.fillRect(enemy.x - enemy.width/2, enemy.y - enemy.height, enemy.width, enemy.height);
         ctx.fillStyle = '#fff'; ctx.font = '10px Arial'; ctx.fillText("ERR", enemy.x - 10, enemy.y - enemy.height/2);
         return;
@@ -578,15 +602,10 @@ function drawEnemy(enemy) {
 
     const currentFrameImg = anim.frames[enemy.frameIndex];
 
-    ctx.save(); 
-    ctx.translate(enemy.x, enemy.y);
-    // Враг поворачивается к игроку (отражение)
+    ctx.save(); ctx.translate(enemy.x, enemy.y);
+    // Враг поворачивается
     if (!enemy.facingRight) ctx.scale(-1, 1);
-    
-    // Размер кадра врага (предполагаем, что он тоже 96x96, если нет - нужно изменить в animConfig)
-    const dX = -animConfig.w_frame / 2; 
-    const dY = -animConfig.h_frame + 10; 
-    
+    const dX = -animConfig.w_frame / 2; const dY = -animConfig.h_frame + 10; 
     ctx.drawImage(currentFrameImg, dX, dY, animConfig.w_frame, animConfig.h_frame);
     ctx.restore();
 }
