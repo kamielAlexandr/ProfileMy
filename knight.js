@@ -7,7 +7,7 @@ const storyScreen = document.getElementById('story-screen');
 const dialogueScreen = document.getElementById('dialogue-screen');
 const fadeOverlay = document.getElementById('fade-overlay');
 const shopScreen = document.getElementById('shop-screen');
-const craftScreen = document.getElementById('craft-screen'); // НОВОЕ: Экран крафта
+const craftScreen = document.getElementById('craft-screen'); 
 const inventoryScreen = document.getElementById('inventory-screen'); 
 const hud = document.getElementById('hud');
 const objectiveText = document.getElementById('objective');
@@ -20,8 +20,8 @@ const gameOverScreen = document.getElementById('game-over-screen');
 
 const btnPotion = document.getElementById('btn-buy-potion');
 const btnCloseShop = document.getElementById('btn-close-shop');
-const btnCraftChest = document.getElementById('btn-craft-chest'); // НОВОЕ: Кнопка крафта брони
-const btnCloseCraft = document.getElementById('btn-close-craft'); // НОВОЕ: Кнопка закрытия крафта
+const btnCraftChest = document.getElementById('btn-craft-chest'); 
+const btnCloseCraft = document.getElementById('btn-close-craft'); 
 const mobileControls = document.getElementById('mobile-controls');
 const btnFullscreen = document.getElementById('btn-fullscreen');
 const btnInventory = document.getElementById('btn-inventory'); 
@@ -59,7 +59,7 @@ const enemySprites = {
 };
 
 const undeadSprites = {
-    walk: loadFrames('img/undead_walk', 5), preAttack: loadFrames('img/undead_Pre-Attack', 3),
+    walk: loadFrames('img/undead_walk', 4), preAttack: loadFrames('img/undead_Pre-Attack', 3),
     attack: loadFrames('img/undead_Attack', 3), hurt: loadFrames('img/undead_Hurt', 3), death: loadFrames('img/undead_Death', 5)
 };
 
@@ -97,7 +97,6 @@ const player = {
     state: 'idle', facingRight: true, rollTimer: 0, rollDuration: 0, rollSpeedMult: 2, hasWeapon: false, attackHitboxActive: false,
     hp: 100, maxHp: 100, hurtTimer: 0, xp: 0, baseDamage: 10, 
     
-    // НОВОЕ: Ресурсы
     coins: 0, seeds: 0, potions: 0, shell: 0, bones: 0,
 
     questStatus: 'get_weapon',
@@ -192,36 +191,28 @@ function updateInventoryUI() {
     document.getElementById('stat-def').innerText = player.defense; document.getElementById('stat-dmg').innerText = player.baseDamage;
 
     const bagGrid = document.getElementById('bag-grid'); bagGrid.innerHTML = ''; 
-    
-    // Заполняем слоты сумки ресурсами
     let slotIndex = 0;
     
-    // Зелья
     for (let i = 0; i < player.potions; i++) {
         if(slotIndex >= 12) break;
         let slot = document.createElement('div'); slot.className = 'bag-item';
         slot.style.display = 'flex'; slot.style.justifyContent = 'center'; slot.style.alignItems = 'center'; slot.style.fontSize = '24px';
         slot.innerHTML = '🧪'; slot.title = 'Зелье лечения'; bagGrid.appendChild(slot); slotIndex++;
     }
-    // Панцири
     for (let i = 0; i < player.shell; i++) {
         if(slotIndex >= 12) break;
         let slot = document.createElement('div'); slot.className = 'bag-item';
         slot.style.display = 'flex'; slot.style.justifyContent = 'center'; slot.style.alignItems = 'center'; 
         slot.innerHTML = '<div style="width:15px; height:15px; background:#4fc3f7; border: 1px solid #000;"></div>'; slot.title = 'Панцирь Хвощевика'; bagGrid.appendChild(slot); slotIndex++;
     }
-    // Кости
     for (let i = 0; i < player.bones; i++) {
         if(slotIndex >= 12) break;
         let slot = document.createElement('div'); slot.className = 'bag-item';
         slot.style.display = 'flex'; slot.style.justifyContent = 'center'; slot.style.alignItems = 'center'; 
         slot.innerHTML = '<div style="width:15px; height:15px; background:#fff; border: 1px solid #000;"></div>'; slot.title = 'Старая кость'; bagGrid.appendChild(slot); slotIndex++;
     }
-
-    // Пустые слоты
     for (; slotIndex < 12; slotIndex++) {
-        let slot = document.createElement('div'); slot.className = 'bag-item';
-        bagGrid.appendChild(slot);
+        let slot = document.createElement('div'); slot.className = 'bag-item'; bagGrid.appendChild(slot);
     }
 }
 
@@ -330,27 +321,24 @@ function updateDialogueUI() { speakerName.innerText = dialogueLines[currentLine]
 function openShop() { currentState = 'SHOP'; keys.w = keys.a = keys.s = keys.d = false; shopScreen.classList.remove('hidden'); mobileControls.classList.add('hidden'); }
 function closeShop() { currentState = 'PLAY'; shopScreen.classList.add('hidden'); checkMobile(); }
 
-// ОТКРЫТИЕ ВЕРСТАКА
 function openCraft() { currentState = 'SHOP'; keys.w = keys.a = keys.s = keys.d = false; craftScreen.classList.remove('hidden'); mobileControls.classList.add('hidden'); }
 function closeCraft() { currentState = 'PLAY'; craftScreen.classList.add('hidden'); checkMobile(); }
 
 btnPotion.addEventListener('click', () => { if (player.coins >= 2) { player.coins -= 2; player.potions++; updateHUD(); updateInventoryUI(); } else alert("Не хватает монет!"); });
 btnCloseShop.addEventListener('click', closeShop);
 
-// КРАФТ БРОНИ
 btnCraftChest.addEventListener('click', () => { 
     if (player.shell >= 15 && player.coins >= 10) { 
         player.shell -= 15; player.coins -= 10;
         player.equipment.chest = { name: "Нагрудник из панциря", def: 5 };
-        btnCraftChest.innerText = "ПРОДАНО";
-        btnCraftChest.disabled = true;
+        btnCraftChest.innerText = "ПРОДАНО"; btnCraftChest.disabled = true;
         updateHUD(); updateInventoryUI(); alert("Скрафчен Нагрудник из панциря (+5 Защиты)!"); 
     } else alert("Не хватает материалов (нужно 15 панцирей и 10 монет)!"); 
 });
 btnCloseCraft.addEventListener('click', closeCraft);
 
 function usePotion() { if (player.potions > 0 && player.hp < player.maxHp) { player.potions--; player.hp = Math.min(player.maxHp, player.hp + 50); updateHUD(); updateInventoryUI(); } }
-// ИЗМЕНЕНИЕ: Обновленный текст HUD
+
 function updateHUD() { 
     let hpPercent = Math.max(0, (player.hp / player.maxHp) * 100); hpBarFill.style.width = hpPercent + '%'; 
     xpText.innerText = 'Опыт: ' + player.xp; 
@@ -455,7 +443,6 @@ function checkInteraction() {
                     startDialogue([{ name: "Вейланд", text: "Ты упокоил мертвецов... Невероятно! Ты стал настоящим воином. (+300 ОПЫТА)" }]); 
                 } 
                 else if (player.questStatus === 'done') {
-                    // Открываем Верстак
                     openCraft();
                 }
                 else {
@@ -560,7 +547,6 @@ function update() {
                 player.seeds++; 
                 if (player.questStatus === 'gather_seeds' && player.seeds >= 10) { player.questStatus = 'return_merchant'; updateObjectiveText(); }
             }
-            // НОВЫЙ ЛУТ
             else if (item.type === 'shell') player.shell++;
             else if (item.type === 'bone') player.bones++;
 
@@ -585,26 +571,27 @@ function update() {
                 if (enemy.hp <= 0) { 
                     if (enemy.revives > 0) {
                         enemy.state = 'resurrecting'; enemy.revives--; enemy.reviveTimer = 150; 
+                        enemy.isLockAnim = false; // ИСПРАВЛЕНИЕ ЗАВИСАНИЯ
                         setEntityAnimation(enemy, enemy.baseAnim + '_death'); enemy.isLockAnim = true;
                     } else {
                         enemy.state = 'dead'; player.xp += (enemy.type === 'undead' ? 40 : 20); 
                         
-                        // ИЗМЕНЕННАЯ СИСТЕМА ДРОПА
                         let rand = Math.random();
                         let dropType = null;
-                        if (rand < 0.4) dropType = 'coin'; // 40% монета
-                        else if (rand < 0.7) dropType = 'seed'; // 30% семя
+                        if (rand < 0.4) dropType = 'coin'; 
+                        else if (rand < 0.7) dropType = 'seed'; 
                         else {
-                            // 30% шанс на редкий лут
                             dropType = enemy.type === 'hroshevik' ? 'shell' : 'bone';
                         }
                         if(dropType) lootItems.push({ x: enemy.x, y: enemy.y, type: dropType }); 
                         
                         updateHUD(); checkQuestProgress(); 
+                        enemy.isLockAnim = false; // ИСПРАВЛЕНИЕ ЗАВИСАНИЯ
                         setEntityAnimation(enemy, enemy.baseAnim + '_death'); enemy.isLockAnim = true;
                     }
                 } else {
                     enemy.state = 'hurt'; enemy.hurtTimer = 15; enemy.x += player.facingRight ? 20 : -20;
+                    enemy.isLockAnim = false; // ИСПРАВЛЕНИЕ ЗАВИСАНИЯ
                     setEntityAnimation(enemy, enemy.baseAnim + '_hurt'); enemy.isLockAnim = true;
                 }
             }
@@ -655,14 +642,12 @@ function draw() {
 
     if (currentState === 'PLAY' || currentState === 'GAMEOVER' || currentState === 'SHOP' || currentState === 'INVENTORY') {
         
-        // ОТРИСОВКА ЛУТА
         lootItems.forEach(item => { 
             ctx.beginPath(); 
             if (item.type === 'coin') { ctx.fillStyle = '#ffca28'; ctx.arc(item.x, item.y, 6, 0, Math.PI * 2); ctx.fill(); }
             else if (item.type === 'seed') { ctx.fillStyle = '#69f0ae'; ctx.arc(item.x, item.y, 6, 0, Math.PI * 2); ctx.fill(); }
-            else if (item.type === 'shell') { ctx.fillStyle = '#4fc3f7'; ctx.rect(item.x-5, item.y-5, 10, 10); ctx.fill(); } // Синий квадрат
-            else if (item.type === 'bone') { ctx.fillStyle = '#fff'; ctx.rect(item.x-5, item.y-5, 10, 10); ctx.fill(); } // Белый квадрат
-            
+            else if (item.type === 'shell') { ctx.fillStyle = '#4fc3f7'; ctx.rect(item.x-5, item.y-5, 10, 10); ctx.fill(); }
+            else if (item.type === 'bone') { ctx.fillStyle = '#fff'; ctx.rect(item.x-5, item.y-5, 10, 10); ctx.fill(); }
             ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.stroke(); 
         });
 
@@ -699,7 +684,7 @@ function draw() {
                     } else { ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
                     
                     if (['return', 'return_graveyard', 'talk_uncle_2'].includes(player.questStatus)) { drawQuestMark(obj.x, obj.y - obj.height - 20, '!'); }
-                    else if (player.questStatus === 'done') { drawQuestMark(obj.x, obj.y - obj.height - 20, '⚒', '#4fc3f7'); } // Значок крафта
+                    else if (player.questStatus === 'done') { drawQuestMark(obj.x, obj.y - obj.height - 20, '⚒', '#4fc3f7'); } 
                 }
             }
         }
