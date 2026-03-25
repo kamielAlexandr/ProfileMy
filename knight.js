@@ -8,7 +8,7 @@ const storyScreen = document.getElementById('story-screen');
 const dialogueScreen = document.getElementById('dialogue-screen');
 const fadeOverlay = document.getElementById('fade-overlay');
 const shopScreen = document.getElementById('shop-screen');
-const inventoryScreen = document.getElementById('inventory-screen'); // НОВОЕ: экран инвентаря
+const inventoryScreen = document.getElementById('inventory-screen'); 
 const hud = document.getElementById('hud');
 const objectiveText = document.getElementById('objective');
 const speakerName = document.getElementById('speaker-name');
@@ -24,8 +24,8 @@ const btnUpgrade = document.getElementById('btn-buy-upgrade');
 const btnCloseShop = document.getElementById('btn-close-shop');
 const mobileControls = document.getElementById('mobile-controls');
 const btnFullscreen = document.getElementById('btn-fullscreen');
-const btnInventory = document.getElementById('btn-inventory'); // НОВОЕ: кнопка рюкзака
-const btnCloseInventory = document.getElementById('btn-close-inventory'); // НОВОЕ: кнопка закрыть рюкзак
+const btnInventory = document.getElementById('btn-inventory'); 
+const btnCloseInventory = document.getElementById('btn-close-inventory'); 
 const gameContainer = document.getElementById('game-container');
 
 let currentState = 'STORY'; 
@@ -117,7 +117,6 @@ const player = {
     
     currentAnim: 'idle_no_weapon', frameIndex: 0, animTimer: 0, isLockAnim: false,
 
-    // --- НОВОЕ: ЭКИПИРОВКА ---
     equipment: {
         head: null,
         chest: { name: 'Рубаха фермера', def: 0 },
@@ -126,7 +125,7 @@ const player = {
         feet: { name: 'Лапти', def: 0 },
         weapon: null
     },
-    defense: 0 // Считается динамически
+    defense: 0
 };
 
 let environment = [];
@@ -177,7 +176,6 @@ updateHUD();
 // --- ИНВЕНТАРЬ ---
 // ==========================================
 function updateInventoryUI() {
-    // Обновляем текст в слотах
     document.getElementById('slot-head').innerHTML = `Шлем: <span>${player.equipment.head ? player.equipment.head.name : 'Нет'}</span>`;
     document.getElementById('slot-chest').innerHTML = `Грудь: <span>${player.equipment.chest ? player.equipment.chest.name + ' (+'+player.equipment.chest.def+')' : 'Нет'}</span>`;
     document.getElementById('slot-hands').innerHTML = `Перчатки: <span>${player.equipment.hands ? player.equipment.hands.name : 'Нет'}</span>`;
@@ -187,15 +185,38 @@ function updateInventoryUI() {
     let wpnText = player.equipment.weapon ? player.equipment.weapon.name + ' (+'+player.baseDamage+')' : 'Нет';
     document.getElementById('slot-weapon').innerHTML = `Оружие: <span style="color:#ffb300">${wpnText}</span>`;
 
-    // Обновляем статы
     player.defense = (player.equipment.chest?.def || 0) + (player.equipment.legs?.def || 0) + (player.equipment.feet?.def || 0);
     document.getElementById('stat-def').innerText = player.defense;
     document.getElementById('stat-dmg').innerText = player.baseDamage;
+
+    // --- ОТРИСОВКА ЗЕЛИЙ В СУМКЕ ---
+    const bagGrid = document.getElementById('bag-grid');
+    bagGrid.innerHTML = ''; // Очищаем слоты
+    const totalSlots = 12; 
+
+    for (let i = 0; i < totalSlots; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'bag-item';
+        
+        // Задаем стили для центрирования иконок внутри слота
+        slot.style.display = 'flex';
+        slot.style.justifyContent = 'center';
+        slot.style.alignItems = 'center';
+        slot.style.fontSize = 'clamp(16px, 3vw, 24px)';
+        
+        // Если в этом слоте должно быть зелье
+        if (i < player.potions) {
+            slot.innerHTML = '🧪';
+            slot.title = 'Зелье лечения (+50 HP)';
+            slot.style.cursor = 'help';
+        }
+        
+        bagGrid.appendChild(slot);
+    }
 }
 
 function toggleInventory() {
     if (currentState === 'PLAY') {
-        // Проверка на наличие живых врагов рядом
         if (currentLocation === 'field' && enemies.some(e => e.state !== 'dead')) {
             alert("Вы не можете копаться в рюкзаке во время боя!");
             return;
@@ -279,7 +300,6 @@ function updateEnemyAnimation(entity) {
                 if (config.onComplete === 'attack') {
                     setEntityAnimation(entity, 'enemy_attack'); entity.isLockAnim = true; 
                     if (Math.hypot(player.x - entity.x, player.y - entity.y) < 60 && player.state !== 'roll') {
-                        // Урон снижается за счет защиты (минимум 1 урон)
                         let finalDamage = Math.max(1, entity.damage - player.defense);
                         player.hp -= finalDamage; player.hurtTimer = 40; updateHUD();
                         if (player.hp <= 0) { player.state = 'dead'; currentState = 'GAMEOVER'; mobileControls.classList.add('hidden'); gameOverScreen.classList.remove('hidden'); }
@@ -315,16 +335,16 @@ function advanceDialogue() {
 function updateDialogueUI() { speakerName.innerText = dialogueLines[currentLine].name; dialogueText.innerText = dialogueLines[currentLine].text; speakerName.style.color = dialogueLines[currentLine].name === "Тарн" ? "#a1887f" : "#ffb300"; }
 function openShop() { currentState = 'SHOP'; keys.w = keys.a = keys.s = keys.d = false; shopScreen.classList.remove('hidden'); mobileControls.classList.add('hidden'); }
 function closeShop() { currentState = 'PLAY'; shopScreen.classList.add('hidden'); checkMobile(); }
-btnPotion.addEventListener('click', () => { if (player.coins >= 2) { player.coins -= 2; player.potions++; updateHUD(); } else alert("Не хватает монет!"); });
+btnPotion.addEventListener('click', () => { if (player.coins >= 2) { player.coins -= 2; player.potions++; updateHUD(); updateInventoryUI(); } else alert("Не хватает монет!"); });
 btnUpgrade.addEventListener('click', () => { 
     if (player.seeds >= 5) { 
         player.seeds -= 5; player.baseDamage += 10; 
         if (player.equipment.weapon) player.equipment.weapon.name = "Заточенный топор";
-        updateHUD(); alert("Оружие улучшено!"); 
+        updateHUD(); updateInventoryUI(); alert("Оружие улучшено!"); 
     } else alert("Не хватает семян!"); 
 });
 btnCloseShop.addEventListener('click', closeShop);
-function usePotion() { if (player.potions > 0 && player.hp < player.maxHp) { player.potions--; player.hp = Math.min(player.maxHp, player.hp + 50); updateHUD(); } }
+function usePotion() { if (player.potions > 0 && player.hp < player.maxHp) { player.potions--; player.hp = Math.min(player.maxHp, player.hp + 50); updateHUD(); updateInventoryUI(); } }
 function updateHUD() { let hpPercent = Math.max(0, (player.hp / player.maxHp) * 100); hpBarFill.style.width = hpPercent + '%'; xpText.innerText = 'Опыт: ' + player.xp; inventoryText.innerText = `Монеты: ${player.coins} | Семена: ${player.seeds} | Зелья (E): ${player.potions}`; }
 
 // --- УПРАВЛЕНИЕ ---
@@ -343,7 +363,6 @@ window.addEventListener('keydown', (e) => {
     if (currentState === 'GAMEOVER' || currentState === 'SHOP') return;
     if (currentState === 'STORY' || currentState === 'DIALOGUE') { if (e.code === 'Space' || e.code === 'Enter') advanceDialogue(); return; }
     
-    // Хоткей Инвентаря
     if (e.code === 'KeyI' && (currentState === 'PLAY' || currentState === 'INVENTORY')) {
         toggleInventory(); return;
     }
@@ -422,7 +441,6 @@ function checkInteraction() {
             if (obj.type === 'shed' && player.questStatus === 'get_weapon') {
                 player.hasWeapon = true; obj.interactable = false;
                 
-                // ИЗМЕНЕНИЕ: Даем оружие в инвентарь!
                 player.equipment.weapon = { name: "Старый топор", dmg: 10 };
 
                 player.questStatus = 'kill_monsters'; objectiveText.innerText = "Цель: Иди направо, на дальнее поле ->";
@@ -492,7 +510,6 @@ function update() {
 
     for (let i = lootItems.length - 1; i >= 0; i--) { let item = lootItems[i]; let dist = Math.hypot(player.x - item.x, player.y - item.y); if (dist < 30) { if (item.type === 'coin') player.coins++; else if (item.type === 'seed') player.seeds++; lootItems.splice(i, 1); updateHUD(); } }
     
-    // --- ОБРАБОТКА ПОПАДАНИЙ ПО ВРАГУ ---
     if ((player.state === 'attackLight' || player.state === 'attackHeavy') && player.attackHitboxActive) {
         player.attackHitboxActive = false; 
         let reach = player.state === 'attackLight' ? 50 : 70;
@@ -526,7 +543,6 @@ function update() {
         });
     }
 
-    // --- ЛОГИКА ВРАГОВ ---
     enemies.forEach(enemy => {
         if (enemy.state === 'dead') {
             updateEnemyAnimation(enemy);
