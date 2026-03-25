@@ -8,6 +8,7 @@ const storyScreen = document.getElementById('story-screen');
 const dialogueScreen = document.getElementById('dialogue-screen');
 const fadeOverlay = document.getElementById('fade-overlay');
 const shopScreen = document.getElementById('shop-screen');
+const inventoryScreen = document.getElementById('inventory-screen'); // НОВОЕ: экран инвентаря
 const hud = document.getElementById('hud');
 const objectiveText = document.getElementById('objective');
 const speakerName = document.getElementById('speaker-name');
@@ -16,11 +17,15 @@ const hpBarFill = document.getElementById('hp-bar-fill');
 const xpText = document.getElementById('xp-text');
 const inventoryText = document.getElementById('inventory-text');
 const gameOverScreen = document.getElementById('game-over-screen');
+
+// Кнопки интерфейса
 const btnPotion = document.getElementById('btn-buy-potion');
 const btnUpgrade = document.getElementById('btn-buy-upgrade');
 const btnCloseShop = document.getElementById('btn-close-shop');
 const mobileControls = document.getElementById('mobile-controls');
 const btnFullscreen = document.getElementById('btn-fullscreen');
+const btnInventory = document.getElementById('btn-inventory'); // НОВОЕ: кнопка рюкзака
+const btnCloseInventory = document.getElementById('btn-close-inventory'); // НОВОЕ: кнопка закрыть рюкзак
 const gameContainer = document.getElementById('game-container');
 
 let currentState = 'STORY'; 
@@ -29,9 +34,6 @@ let dialogueLines = [];
 let currentLine = 0;
 const keys = { w: false, a: false, s: false, d: false };
 
-// ==========================================
-// --- ЗАГРУЗКА ОТДЕЛЬНЫХ КАДРОВ ---
-// ==========================================
 function loadFrames(prefix, count) {
     let frames = [];
     for (let i = 1; i <= count; i++) {
@@ -84,12 +86,8 @@ let globalNpcTimer = 0;
 let globalNpcFrame = 0;
 const npcAnimSpeed = 12;
 
-// ==========================================
-// --- КОНФИГУРАЦИЯ АНИМАЦИЙ ---
-// ==========================================
 const animConfig = {
-    w_frame: 96, 
-    h_frame: 96, 
+    w_frame: 96, h_frame: 96, 
     animations: {
         'idle_no_weapon':   { frames: tarnSprites.idle_no_weapon, speed: 12 },
         'idle_weapon':      { frames: tarnSprites.idle_weapon,    speed: 12 },
@@ -117,10 +115,18 @@ const player = {
     rollSpeedMult: 2, hasWeapon: false, attackHitboxActive: false,
     hp: 100, maxHp: 100, hurtTimer: 0, xp: 0, coins: 0, seeds: 0, potions: 0, baseDamage: 10, questStatus: 'get_weapon',
     
-    currentAnim: 'idle_no_weapon',
-    frameIndex: 0,
-    animTimer: 0,
-    isLockAnim: false
+    currentAnim: 'idle_no_weapon', frameIndex: 0, animTimer: 0, isLockAnim: false,
+
+    // --- НОВОЕ: ЭКИПИРОВКА ---
+    equipment: {
+        head: null,
+        chest: { name: 'Рубаха фермера', def: 0 },
+        hands: null,
+        legs: { name: 'Штаны фермера', def: 0 },
+        feet: { name: 'Лапти', def: 0 },
+        weapon: null
+    },
+    defense: 0 // Считается динамически
 };
 
 let environment = [];
@@ -167,6 +173,47 @@ setTimeout(() => fadeOverlay.classList.add('hidden'), 500);
 locations.village.setup();
 updateHUD();
 
+// ==========================================
+// --- ИНВЕНТАРЬ ---
+// ==========================================
+function updateInventoryUI() {
+    // Обновляем текст в слотах
+    document.getElementById('slot-head').innerHTML = `Шлем: <span>${player.equipment.head ? player.equipment.head.name : 'Нет'}</span>`;
+    document.getElementById('slot-chest').innerHTML = `Грудь: <span>${player.equipment.chest ? player.equipment.chest.name + ' (+'+player.equipment.chest.def+')' : 'Нет'}</span>`;
+    document.getElementById('slot-hands').innerHTML = `Перчатки: <span>${player.equipment.hands ? player.equipment.hands.name : 'Нет'}</span>`;
+    document.getElementById('slot-legs').innerHTML = `Штаны: <span>${player.equipment.legs ? player.equipment.legs.name + ' (+'+player.equipment.legs.def+')' : 'Нет'}</span>`;
+    document.getElementById('slot-feet').innerHTML = `Обувь: <span>${player.equipment.feet ? player.equipment.feet.name + ' (+'+player.equipment.feet.def+')' : 'Нет'}</span>`;
+    
+    let wpnText = player.equipment.weapon ? player.equipment.weapon.name + ' (+'+player.baseDamage+')' : 'Нет';
+    document.getElementById('slot-weapon').innerHTML = `Оружие: <span style="color:#ffb300">${wpnText}</span>`;
+
+    // Обновляем статы
+    player.defense = (player.equipment.chest?.def || 0) + (player.equipment.legs?.def || 0) + (player.equipment.feet?.def || 0);
+    document.getElementById('stat-def').innerText = player.defense;
+    document.getElementById('stat-dmg').innerText = player.baseDamage;
+}
+
+function toggleInventory() {
+    if (currentState === 'PLAY') {
+        // Проверка на наличие живых врагов рядом
+        if (currentLocation === 'field' && enemies.some(e => e.state !== 'dead')) {
+            alert("Вы не можете копаться в рюкзаке во время боя!");
+            return;
+        }
+        currentState = 'INVENTORY';
+        keys.w = keys.a = keys.s = keys.d = false;
+        mobileControls.classList.add('hidden');
+        inventoryScreen.classList.remove('hidden');
+        updateInventoryUI();
+    } else if (currentState === 'INVENTORY') {
+        currentState = 'PLAY';
+        inventoryScreen.classList.add('hidden');
+        checkMobile();
+    }
+}
+
+btnInventory.addEventListener('click', toggleInventory);
+btnCloseInventory.addEventListener('click', toggleInventory);
 
 // ==========================================
 // --- ПОЛНОЭКРАННЫЙ РЕЖИМ ---
@@ -185,15 +232,9 @@ btnFullscreen.addEventListener('click', () => {
 
 document.addEventListener('fullscreenchange', updateFullscreenBtn);
 document.addEventListener('webkitfullscreenchange', updateFullscreenBtn);
-
 function updateFullscreenBtn() {
-    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-        btnFullscreen.innerText = '⛶';
-    } else {
-        btnFullscreen.innerText = '✖';
-    }
+    btnFullscreen.innerText = (!document.fullscreenElement && !document.webkitFullscreenElement) ? '⛶' : '✖';
 }
-
 
 // ==========================================
 // --- СИСТЕМА АНИМАЦИЙ ---
@@ -201,40 +242,27 @@ function updateFullscreenBtn() {
 function setAnimation(animName) {
     if (player.isLockAnim || player.currentAnim === animName) return;
     if (!animConfig.animations[animName]) return;
-
-    player.currentAnim = animName;
-    player.frameIndex = 0;
-    player.animTimer = 0;
+    player.currentAnim = animName; player.frameIndex = 0; player.animTimer = 0;
 }
 
 function setEntityAnimation(entity, animName) {
     if (entity.isLockAnim || entity.currentAnim === animName) return;
     if (!animConfig.animations[animName]) return;
-
-    entity.currentAnim = animName;
-    entity.frameIndex = 0;
-    entity.animTimer = 0;
+    entity.currentAnim = animName; entity.frameIndex = 0; entity.animTimer = 0;
 }
 
 function updateAnimation() {
     const config = animConfig.animations[player.currentAnim];
     if (!config) return;
-
     player.animTimer++;
     if (player.animTimer >= config.speed) {
-        player.animTimer = 0;
-        player.frameIndex++;
-
+        player.animTimer = 0; player.frameIndex++;
         if (player.frameIndex >= config.frames.length) {
             if (config.onComplete) {
-                player.isLockAnim = false;
-                player.state = 'idle'; 
+                player.isLockAnim = false; player.state = 'idle'; 
                 let nextIdle = player.hasWeapon ? 'idle_weapon' : 'idle_no_weapon';
-                player.currentAnim = nextIdle;
-                player.frameIndex = 0;
-            } else {
-                player.frameIndex = 0; 
-            }
+                player.currentAnim = nextIdle; player.frameIndex = 0;
+            } else { player.frameIndex = 0; }
         }
     }
 }
@@ -242,36 +270,27 @@ function updateAnimation() {
 function updateEnemyAnimation(entity) {
     const config = animConfig.animations[entity.currentAnim];
     if (!config) return;
-
     entity.animTimer++;
     if (entity.animTimer >= config.speed) {
-        entity.animTimer = 0;
-        entity.frameIndex++;
-
+        entity.animTimer = 0; entity.frameIndex++;
         if (entity.frameIndex >= config.frames.length) {
             if (config.onComplete) {
                 entity.isLockAnim = false;
-                
                 if (config.onComplete === 'attack') {
-                    setEntityAnimation(entity, 'enemy_attack');
-                    entity.isLockAnim = true; 
-                    
+                    setEntityAnimation(entity, 'enemy_attack'); entity.isLockAnim = true; 
                     if (Math.hypot(player.x - entity.x, player.y - entity.y) < 60 && player.state !== 'roll') {
-                        player.hp -= entity.damage; player.hurtTimer = 40; updateHUD();
+                        // Урон снижается за счет защиты (минимум 1 урон)
+                        let finalDamage = Math.max(1, entity.damage - player.defense);
+                        player.hp -= finalDamage; player.hurtTimer = 40; updateHUD();
                         if (player.hp <= 0) { player.state = 'dead'; currentState = 'GAMEOVER'; mobileControls.classList.add('hidden'); gameOverScreen.classList.remove('hidden'); }
                     }
                 } else if (config.onComplete === 'walk') {
-                    entity.state = 'chase';
-                    setEntityAnimation(entity, 'enemy_walk');
+                    entity.state = 'chase'; setEntityAnimation(entity, 'enemy_walk');
                 } else if (config.onComplete === 'dead') {
-                    entity.frameIndex = config.frames.length - 1; 
-                    return; 
-                } else {
-                    entity.frameIndex = 0;
-                }
+                    entity.frameIndex = config.frames.length - 1; return; 
+                } else { entity.frameIndex = 0; }
             } else {
-                if (entity.state === 'dead') entity.frameIndex = config.frames.length - 1;
-                else entity.frameIndex = 0; 
+                if (entity.state === 'dead') entity.frameIndex = config.frames.length - 1; else entity.frameIndex = 0; 
             }
         }
     }
@@ -297,7 +316,13 @@ function updateDialogueUI() { speakerName.innerText = dialogueLines[currentLine]
 function openShop() { currentState = 'SHOP'; keys.w = keys.a = keys.s = keys.d = false; shopScreen.classList.remove('hidden'); mobileControls.classList.add('hidden'); }
 function closeShop() { currentState = 'PLAY'; shopScreen.classList.add('hidden'); checkMobile(); }
 btnPotion.addEventListener('click', () => { if (player.coins >= 2) { player.coins -= 2; player.potions++; updateHUD(); } else alert("Не хватает монет!"); });
-btnUpgrade.addEventListener('click', () => { if (player.seeds >= 5) { player.seeds -= 5; player.baseDamage += 10; updateHUD(); alert("Оружие улучшено!"); } else alert("Не хватает семян!"); });
+btnUpgrade.addEventListener('click', () => { 
+    if (player.seeds >= 5) { 
+        player.seeds -= 5; player.baseDamage += 10; 
+        if (player.equipment.weapon) player.equipment.weapon.name = "Заточенный топор";
+        updateHUD(); alert("Оружие улучшено!"); 
+    } else alert("Не хватает семян!"); 
+});
 btnCloseShop.addEventListener('click', closeShop);
 function usePotion() { if (player.potions > 0 && player.hp < player.maxHp) { player.potions--; player.hp = Math.min(player.maxHp, player.hp + 50); updateHUD(); } }
 function updateHUD() { let hpPercent = Math.max(0, (player.hp / player.maxHp) * 100); hpBarFill.style.width = hpPercent + '%'; xpText.innerText = 'Опыт: ' + player.xp; inventoryText.innerText = `Монеты: ${player.coins} | Семена: ${player.seeds} | Зелья (E): ${player.potions}`; }
@@ -310,13 +335,19 @@ function checkMobile() {
 }
 
 window.addEventListener('pointerdown', (e) => { 
-    if (e.target.closest('.mob-btn') || e.target.closest('.shop-btn') || e.target.closest('.fullscreen-btn')) return; 
+    if (e.target.closest('.mob-btn') || e.target.closest('.shop-btn') || e.target.closest('.top-btn') || e.target.closest('.inventory-box')) return; 
     if (currentState === 'STORY' || currentState === 'DIALOGUE') advanceDialogue(); 
 });
 
 window.addEventListener('keydown', (e) => {
     if (currentState === 'GAMEOVER' || currentState === 'SHOP') return;
     if (currentState === 'STORY' || currentState === 'DIALOGUE') { if (e.code === 'Space' || e.code === 'Enter') advanceDialogue(); return; }
+    
+    // Хоткей Инвентаря
+    if (e.code === 'KeyI' && (currentState === 'PLAY' || currentState === 'INVENTORY')) {
+        toggleInventory(); return;
+    }
+
     if (currentState === 'PLAY') {
         if (e.code === 'KeyW' || e.code === 'ArrowUp') keys.w = true;
         if (e.code === 'KeyA' || e.code === 'ArrowLeft') keys.a = true;
@@ -390,6 +421,10 @@ function checkInteraction() {
         if (dist < 80 && obj.interactable) {
             if (obj.type === 'shed' && player.questStatus === 'get_weapon') {
                 player.hasWeapon = true; obj.interactable = false;
+                
+                // ИЗМЕНЕНИЕ: Даем оружие в инвентарь!
+                player.equipment.weapon = { name: "Старый топор", dmg: 10 };
+
                 player.questStatus = 'kill_monsters'; objectiveText.innerText = "Цель: Иди направо, на дальнее поле ->";
                 setAnimation('idle_weapon');
             }
@@ -523,7 +558,6 @@ function update() {
     });
 }
 
-// --- МАРКЕРЫ КВЕСТА ---
 function drawQuestMark(x, y, markStr) {
     ctx.save();
     let floatOffset = Math.sin(Date.now() / 200) * 5;
@@ -542,13 +576,6 @@ function draw() {
     ctx.fillStyle = loc.bgColor || '#000'; 
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    if (loc.groundImage // --- ОТРИСОВКА ---
-function draw() {
-    const loc = locations[currentLocation];
-    
-    ctx.fillStyle = loc.bgColor || '#000'; 
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
     if (loc.groundImage && loc.groundImage.complete && loc.groundImage.naturalWidth > 0) {
         ctx.drawImage(loc.groundImage, 0, 180, canvas.width, canvas.height - 180);
     }
@@ -560,7 +587,7 @@ function draw() {
         ctx.fillRect(0, 0, canvas.width, 180);
     }
 
-    if (currentState === 'PLAY' || currentState === 'GAMEOVER' || currentState === 'SHOP') {
+    if (currentState === 'PLAY' || currentState === 'GAMEOVER' || currentState === 'SHOP' || currentState === 'INVENTORY') {
         lootItems.forEach(item => { ctx.fillStyle = item.type === 'coin' ? '#ffca28' : '#69f0ae'; ctx.beginPath(); ctx.arc(item.x, item.y, 6, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.stroke(); });
 
         let renderQueue = [player, ...environment, ...enemies];
@@ -570,21 +597,13 @@ function draw() {
             if (obj === player) drawPlayer();
             else if (enemies.includes(obj)) drawEnemy(obj);
             else {
-                // --- ОТРИСОВКА САРАЯ (БЕЗ ЗАТЕМНЕНИЯ) ---
                 if (obj.type === 'shed') {
                     const frames = buildingSprites.shed;
                     if (frames && frames.length > 0 && frames[0].complete && frames[0].naturalWidth > 0) {
                         ctx.drawImage(frames[0], obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height);
-                    } else { 
-                        ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); 
-                    }
-                    
-                    // ЕСЛИ НУЖНО ВЗЯТЬ ТОПОР -> ЖЕЛТЫЙ ВОСКЛИЦАТЕЛЬНЫЙ ЗНАК
-                    if (player.questStatus === 'get_weapon') {
-                        drawQuestMark(obj.x, obj.y - obj.height - 20, '!');
-                    }
+                    } else { ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
+                    if (player.questStatus === 'get_weapon') { drawQuestMark(obj.x, obj.y - obj.height - 20, '!'); }
                 }
-                // --- ОТРИСОВКА ТОРГОВЦА ---
                 else if (obj.type === 'merchant') {
                     ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(obj.x, obj.y, 25, 8, 0, 0, Math.PI * 2); ctx.fill();
                     const frames = npcSprites.merchant_idle;
@@ -598,7 +617,6 @@ function draw() {
                         } else { ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
                     }
                 } 
-                // --- ОТРИСОВКА ДЯДЮШКИ ВЕЙЛАНДА ---
                 else if (obj.type === 'uncle') {
                     ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(obj.x, obj.y, 20, 6, 0, 0, Math.PI * 2); ctx.fill();
                     const frames = npcSprites.uncle_idle;
@@ -611,18 +629,14 @@ function draw() {
                             ctx.restore();
                         } else { ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
                     }
-                    
-                    // МАРКЕРЫ КВЕСТОВ ДЛЯ ДЯДЮШКИ
-                    if (player.questStatus === 'return') {
-                        drawQuestMark(obj.x, obj.y - obj.height - 20, '!');
-                    } else if (player.questStatus === 'done') {
-                        drawQuestMark(obj.x, obj.y - obj.height - 20, '?');
-                    }
+                    if (player.questStatus === 'return') { drawQuestMark(obj.x, obj.y - obj.height - 20, '!'); }
+                    else if (player.questStatus === 'done') { drawQuestMark(obj.x, obj.y - obj.height - 20, '?'); }
                 }
             }
         }
     }
 }
+
 function drawPlayer() {
     if (player.state === 'dead') { ctx.fillStyle = '#4a0000'; ctx.fillRect(player.x - player.width/2, player.y - 10, player.width, 15); return; }
     ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(player.x, player.y, player.width / 1.2, 8, 0, 0, Math.PI * 2); ctx.fill();
