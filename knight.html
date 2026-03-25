@@ -73,6 +73,17 @@
             </div>
         </div>
 
+        <div id="craft-screen" class="overlay hidden">
+            <div class="dialogue-box shop-box">
+                <div class="speaker" style="color: #ffb300;">Вейланд (Верстак)</div>
+                <div class="text" style="margin-bottom: 15px;">Я могу смастерить тебе сносную броню, если принесешь нужные материалы.</div>
+                <div class="shop-items">
+                    <button id="btn-craft-chest" class="shop-btn">Нагрудник из панциря (+5 Защита) — 15 Панцирей + 10 Монет</button>
+                    <button id="btn-close-craft" class="shop-btn close-btn">Уйти</button>
+                </div>
+            </div>
+        </div>
+
         <div id="game-over-screen" class="overlay hidden">
             <div class="story-text">
                 <h1 style="color: #d32f2f; font-size: 32px;">ТАРН ПАЛ</h1>
@@ -85,7 +96,7 @@
             <div id="player-stats">
                 <div class="hp-bar-bg"><div id="hp-bar-fill"></div></div>
                 <div id="xp-text">Опыт: 0</div>
-                <div id="inventory-text">Монеты: 0 | Семена: 0 | Зелья (E): 0</div>
+                <div id="inventory-text">Монеты: 0 | Семена: 0 | Панцири: 0</div>
             </div>
             <div id="objective">Цель: Поговорить с дядюшкой</div>
             <div id="controls" class="desktop-only">WASD | J - Атака | K - Тяжелая | L - Кувырок | F - Действие | I - Инвентарь</div>
@@ -116,6 +127,6 @@
         </div>
 
     </div>
-    <script src="knight.js?v=112"></script>
+    <script src="knight.js"></script>
 </body>
 </html>
