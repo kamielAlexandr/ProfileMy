@@ -8,11 +8,41 @@
 </head>
 <body>
     <div id="game-container">
-        <button id="btn-fullscreen" class="fullscreen-btn" title="На весь экран">⛶</button>
+        <button id="btn-inventory" class="top-btn" style="right: 60px;" title="Инвентарь (I)">🎒</button>
+        <button id="btn-fullscreen" class="top-btn" style="right: 10px;" title="На весь экран">⛶</button>
 
         <canvas id="gameCanvas" width="800" height="450"></canvas>
         
         <div id="fade-overlay" class="overlay hidden"></div>
+
+        <div id="inventory-screen" class="overlay hidden">
+            <div class="dialogue-box inventory-box">
+                <h2 style="color: #ffb300; text-align: center; margin-top: 0;">Рюкзак и Экипировка</h2>
+                <div class="inventory-layout">
+                    <div class="equipment-panel">
+                        <div class="equip-slot" id="slot-head">Шлем: <span>Нет</span></div>
+                        <div class="equip-slot" id="slot-chest">Грудь: <span>Нет</span></div>
+                        <div class="equip-slot" id="slot-hands">Перчатки: <span>Нет</span></div>
+                        <div class="equip-slot" id="slot-legs">Штаны: <span>Нет</span></div>
+                        <div class="equip-slot" id="slot-feet">Обувь: <span>Нет</span></div>
+                        <div class="equip-slot" id="slot-weapon" style="border-color: #ffb300;">Оружие: <span>Нет</span></div>
+                    </div>
+                    <div class="bag-panel">
+                        <div id="player-details" style="margin-bottom: 10px; color: #69f0ae; font-size: clamp(10px, 2vw, 14px);">
+                            Защита: <span id="stat-def">0</span> | Урон: <span id="stat-dmg">10</span>
+                        </div>
+                        <div class="bag-grid" id="bag-grid">
+                            <div class="bag-item"></div><div class="bag-item"></div><div class="bag-item"></div><div class="bag-item"></div>
+                            <div class="bag-item"></div><div class="bag-item"></div><div class="bag-item"></div><div class="bag-item"></div>
+                            <div class="bag-item"></div><div class="bag-item"></div><div class="bag-item"></div><div class="bag-item"></div>
+                        </div>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 15px;">
+                    <button id="btn-close-inventory" class="shop-btn close-btn">Закрыть (I)</button>
+                </div>
+            </div>
+        </div>
 
         <div id="story-screen" class="overlay">
             <div class="story-text">
@@ -36,7 +66,6 @@
             <div class="dialogue-box shop-box">
                 <div class="speaker" style="color: #69f0ae;">Снаг (Торговец-Жаболюд)</div>
                 <div class="text" style="margin-bottom: 15px;">Ква-а-а... Земля гниет, а мои карманы пустеют. Что принес, фермер?</div>
-                
                 <div class="shop-items">
                     <button id="btn-buy-potion" class="shop-btn">Зелье лечения (+50 HP) — 2 Монеты</button>
                     <button id="btn-buy-upgrade" class="shop-btn">Заточка для топора (+10 Урон) — 5 Семян гнили</button>
@@ -60,7 +89,7 @@
                 <div id="inventory-text">Монеты: 0 | Семена: 0 | Зелья (E): 0</div>
             </div>
             <div id="objective">Цель: Поговорить с дядюшкой</div>
-            <div id="controls" class="desktop-only">WASD | J - Атака | K - Тяжелая | L - Кувырок | F - Действие | E - Зелье</div>
+            <div id="controls" class="desktop-only">WASD | J - Атака | K - Тяжелая | L - Кувырок | F - Действие | I - Инвентарь</div>
         </div>
 
         <div id="mobile-controls" class="hidden">
