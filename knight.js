@@ -50,13 +50,16 @@ const tarnSprites = {
     roll: loadFrames('img/GG_perevorot', 5)                            
 };
 
-// НОВОЕ: Спрайты Орка (пока будет искать orc_idle)
 const npcSprites = { 
     merchant_idle: loadFrames('img/frog_idle', 3), 
     uncle_idle: loadFrames('img/dad_idle', 3),
-    orc_idle: loadFrames('img/techer_idle', 3) 
+    orc_idle: loadFrames('img/orc_idle', 3) 
 };
-const buildingSprites = { shed: loadFrames('img/Home', 1) };
+// НОВОЕ: Добавлен спрайт манекена
+const buildingSprites = { 
+    shed: loadFrames('img/Home', 1),
+    dummy: loadFrames('img/dummy_idle', 1) 
+};
 
 const enemySprites = {
     walk: loadFrames('img/hroshevik_walk', 4), preAttack: loadFrames('img/hroshevik_Pre-Attack', 3),
@@ -102,10 +105,14 @@ const player = {
     state: 'idle', facingRight: true, rollTimer: 0, rollDuration: 0, rollSpeedMult: 2, hasWeapon: false, attackHitboxActive: false,
     hp: 100, maxHp: 100, hurtTimer: 0, xp: 0, baseDamage: 10, 
     
+    // НОВОЕ: Уровень
+    level: 0, 
+
     coins: 0, seeds: 0, potions: 0, shell: 0, bones: 0,
 
     questStatus: 'get_weapon',
-    orcUnlocked: false, // НОВОЕ: Переменная, появился ли орк в деревне
+    orcUnlocked: false, 
+    dummyUnlocked: false, // НОВОЕ: Флаг для спавна манекена
     currentAnim: 'idle_no_weapon', frameIndex: 0, animTimer: 0, isLockAnim: false,
 
     equipment: {
@@ -128,14 +135,13 @@ function updateObjectiveText() {
     else if (player.questStatus === 'kill_undead') objectiveText.innerText = "Цель: Упокой нежить на старом Погосте!";
     else if (player.questStatus === 'return_graveyard') objectiveText.innerText = currentLocation === 'graveyard' ? "Цель: Вернись в деревню (Иди влево <-)" : "Цель: Возвращайся к дядюшке!";
     
-    // НОВАЯ СЮЖЕТНАЯ ВЕТКА ОРКА
     else if (player.questStatus === 'reach_level_2') objectiveText.innerText = `Цель: Набери 1500 Опыта (${player.xp}/1500)`;
     else if (player.questStatus === 'talk_uncle_3') objectiveText.innerText = "Цель: Поговори с дядюшкой об учителе (F)";
     else if (player.questStatus === 'talk_orc') objectiveText.innerText = "Цель: Поговори с Орком-ветераном (F)";
     else if (player.questStatus === 'orc_test') objectiveText.innerText = `Цель: Принеси кости с Погоста (${player.bones}/5)`;
     else if (player.questStatus === 'return_orc') objectiveText.innerText = "Цель: Отдай кости Орку (F)";
 
-    else if (player.questStatus === 'done') objectiveText.innerText = "Свободная игра: охоться и торгуй!";
+    else if (player.questStatus === 'done') objectiveText.innerText = `Свободная игра: Уровень ${player.level}/3`;
 }
 
 const locations = {
@@ -147,9 +153,12 @@ const locations = {
                 { x: 200, y: 280, width: 40, height: 80, color: '#ffb300', interactable: true, type: 'uncle' },
                 { x: 450, y: 240, width: 45, height: 60, interactable: true, type: 'merchant' }
             ];
-            // НОВОЕ: Если орк разблокирован, спавним его правее дядюшки
             if (player.orcUnlocked) {
                 environment.push({ x: 280, y: 280, width: 45, height: 85, color: '#4caf50', interactable: true, type: 'orc' });
+            }
+            // НОВОЕ: Спавн тренировочного манекена
+            if (player.dummyUnlocked) {
+                environment.push({ x: 350, y: 280, width: 30, height: 60, color: '#8d6e63', interactable: true, type: 'dummy' });
             }
 
             enemies = []; lootItems = []; updateObjectiveText();
@@ -328,7 +337,7 @@ function advanceDialogue() {
         } else updateDialogueUI();
     }
 }
-function updateDialogueUI() { speakerName.innerText = dialogueLines[currentLine].name; dialogueText.innerText = dialogueLines[currentLine].text; speakerName.style.color = dialogueLines[currentLine].name === "Тарн" ? "#a1887f" : (dialogueLines[currentLine].name.includes("Орк") ? "#4caf50" : "#ffb300"); }
+function updateDialogueUI() { speakerName.innerText = dialogueLines[currentLine].name; dialogueText.innerText = dialogueLines[currentLine].text; speakerName.style.color = dialogueLines[currentLine].name === "Тарн" ? "#a1887f" : (dialogueLines[currentLine].name.includes("Орк") || dialogueLines[currentLine].name === "Система" ? "#4caf50" : "#ffb300"); }
 function openShop() { currentState = 'SHOP'; keys.w = keys.a = keys.s = keys.d = false; shopScreen.classList.remove('hidden'); mobileControls.classList.add('hidden'); }
 function closeShop() { currentState = 'PLAY'; shopScreen.classList.add('hidden'); checkMobile(); }
 
@@ -352,10 +361,9 @@ function usePotion() { if (player.potions > 0 && player.hp < player.maxHp) { pla
 
 function updateHUD() { 
     let hpPercent = Math.max(0, (player.hp / player.maxHp) * 100); hpBarFill.style.width = hpPercent + '%'; 
-    xpText.innerText = 'Опыт: ' + player.xp; 
+    xpText.innerText = `Опыт: ${player.xp} (Ур.${player.level})`; 
     let text = `Монеты: ${player.coins} | Семена: ${player.seeds}`;
     
-    // ДИНАМИЧЕСКИЕ ЦЕЛИ ДЛЯ ОПЫТА И КОСТЕЙ
     if (player.questStatus === 'reach_level_2') objectiveText.innerText = `Цель: Набери 1500 Опыта (${player.xp}/1500)`;
     if (player.questStatus === 'gather_seeds') objectiveText.innerText = `Цель: Собери 10 семян для Снага (${player.seeds}/10)`;
     if (player.questStatus === 'orc_test') objectiveText.innerText = `Цель: Принеси кости с Погоста (${player.bones}/5)`;
@@ -453,8 +461,6 @@ function checkInteraction() {
                         { name: "Вейланд", text: "Ступай туда и упокой мертвецов, пока они не добрались до деревни! Твой новый топор как раз пригодится." }
                     ]);
                 }
-                
-                // НОВАЯ СЮЖЕТНАЯ ВЕТКА
                 else if (player.questStatus === 'return_graveyard') {
                     player.xp += 300; updateHUD(); 
                     
@@ -492,7 +498,6 @@ function checkInteraction() {
                 }
             }
             
-            // ВЗАИМОДЕЙСТВИЕ С ОРКОМ
             else if (obj.type === 'orc') {
                 if (player.questStatus === 'talk_orc') {
                     player.questStatus = 'orc_test'; updateObjectiveText();
@@ -509,18 +514,46 @@ function checkInteraction() {
                 }
                 else if (player.questStatus === 'return_orc') {
                     player.bones -= 5;
-                    player.questStatus = 'done'; // Конец текущей сюжетки
+                    player.questStatus = 'done';
+                    player.dummyUnlocked = true; // Открываем манекен
+                    locations.village.setup(); // Пересоздаем деревню, чтобы манекен появился
                     updateHUD(); updateInventoryUI(); updateObjectiveText();
                     startDialogue([
                         { name: "Грум (Орк)", text: "А ты не трус, фермер. Ладно, начнем тренировки." },
-                        { name: "Грум (Орк)", text: "(Скоро здесь появится меню прокачки характеристик!)" }
+                        { name: "Грум (Орк)", text: "Я поставил для тебя тренировочный манекен. Как только накопишь достаточно опыта в боях — подходи к нему и бей изо всех сил!" }
                     ]);
                 }
                 else if (player.questStatus === 'done') {
-                    startDialogue([{ name: "Грум (Орк)", text: "(Окно тренировки в разработке...)" }]);
+                    startDialogue([{ name: "Грум (Орк)", text: "Чего уставился? Бей манекен, когда будешь готов! Хррр!" }]);
                 }
             }
             
+            // НОВОЕ: ВЗАИМОДЕЙСТВИЕ С МАНЕКЕНОМ (LEVEL UP)
+            else if (obj.type === 'dummy') {
+                const thresholds = [1500, 5000, 10000];
+                if (player.level >= 3) {
+                    startDialogue([{ name: "Тарн", text: "Я выжал из этого манекена всё, что мог. Я достиг предела своих сил... пока что." }]);
+                } else {
+                    let neededXp = thresholds[player.level];
+                    if (player.xp >= neededXp) {
+                        player.level++;
+                        player.maxHp += 20;
+                        player.hp = player.maxHp;
+                        player.baseDamage += 5;
+                        updateHUD(); updateInventoryUI();
+                        startDialogue([
+                            { name: "Грум (Орк)", text: "Вот так! Вложи вес тела в удар! Твои мышцы крепчают, а шкура становится толще." },
+                            { name: "Система", text: `УРОВЕНЬ ПОВЫШЕН! (Уровень ${player.level}/3)\n+20 Макс. Здоровье\n+5 Урон` }
+                        ]);
+                    } else {
+                        startDialogue([
+                            { name: "Тарн", text: `Мне еще рано тренироваться. Нужно набраться опыта в бою.` },
+                            { name: "Грум (Орк)", text: `Хррр... Рано машешь! Возвращайся, когда накопишь ${neededXp} опыта. У тебя только ${player.xp}.` }
+                        ]);
+                    }
+                }
+            }
+
             else if (obj.type === 'merchant') {
                 if (player.questStatus === 'talk_merchant') {
                     player.questStatus = player.seeds >= 10 ? 'return_merchant' : 'gather_seeds'; updateObjectiveText();
@@ -650,7 +683,6 @@ function update() {
                     } else {
                         enemy.state = 'dead'; 
                         
-                        // НОВАЯ ЛОГИКА ОПЫТА И ЛЕВЕЛАПА
                         player.xp += (enemy.type === 'undead' ? 40 : 20); 
                         if (player.questStatus === 'reach_level_2' && player.xp >= 1500) {
                             player.questStatus = 'talk_uncle_3'; updateObjectiveText();
@@ -660,7 +692,7 @@ function update() {
                         let dropType = null;
                         if (rand < 0.4) dropType = 'coin'; 
                         else if (rand < 0.7) dropType = 'seed'; 
-                        else if (rand < 0.8) { // 10% шанс
+                        else if (rand < 0.8) { 
                             dropType = enemy.type === 'hroshevik' ? 'shell' : 'bone';
                         }
                         if(dropType) lootItems.push({ x: enemy.x, y: enemy.y, type: dropType }); 
@@ -776,6 +808,18 @@ function draw() {
                     
                     if (['talk_orc', 'return_orc'].includes(player.questStatus)) { drawQuestMark(obj.x, obj.y - obj.height - 20, '!'); }
                     else if (player.questStatus === 'orc_test') { drawQuestMark(obj.x, obj.y - obj.height - 20, '?', '#ccc'); } 
+                }
+                // НОВОЕ: ОТРИСОВКА МАНЕКЕНА И СТРЕЛКИ UP
+                else if (obj.type === 'dummy') {
+                    const frames = buildingSprites.dummy;
+                    if (frames && frames.length > 0 && frames[0].complete) {
+                        ctx.drawImage(frames[0], obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height);
+                    } else { ctx.fillStyle = '#8d6e63'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
+                    
+                    const thresholds = [1500, 5000, 10000];
+                    if (player.level < 3 && player.xp >= thresholds[player.level]) {
+                        drawQuestMark(obj.x, obj.y - obj.height - 20, '⬆', '#69f0ae'); // Зеленая стрелка вверх
+                    }
                 }
             }
         }
