@@ -542,6 +542,13 @@ function draw() {
     ctx.fillStyle = loc.bgColor || '#000'; 
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    if (loc.groundImage // --- ОТРИСОВКА ---
+function draw() {
+    const loc = locations[currentLocation];
+    
+    ctx.fillStyle = loc.bgColor || '#000'; 
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
     if (loc.groundImage && loc.groundImage.complete && loc.groundImage.naturalWidth > 0) {
         ctx.drawImage(loc.groundImage, 0, 180, canvas.width, canvas.height - 180);
     }
@@ -563,18 +570,21 @@ function draw() {
             if (obj === player) drawPlayer();
             else if (enemies.includes(obj)) drawEnemy(obj);
             else {
+                // --- ОТРИСОВКА САРАЯ (БЕЗ ЗАТЕМНЕНИЯ) ---
                 if (obj.type === 'shed') {
                     const frames = buildingSprites.shed;
                     if (frames && frames.length > 0 && frames[0].complete && frames[0].naturalWidth > 0) {
                         ctx.drawImage(frames[0], obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height);
-                        if (player.hasWeapon) {
-                            ctx.fillStyle = 'rgba(0,0,0,0.5)';
-                            ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height);
-                        }
-                    } else { ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
+                    } else { 
+                        ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); 
+                    }
                     
-                    if (player.questStatus === 'get_weapon') { drawQuestMark(obj.x, obj.y - obj.height - 20, '!'); }
+                    // ЕСЛИ НУЖНО ВЗЯТЬ ТОПОР -> ЖЕЛТЫЙ ВОСКЛИЦАТЕЛЬНЫЙ ЗНАК
+                    if (player.questStatus === 'get_weapon') {
+                        drawQuestMark(obj.x, obj.y - obj.height - 20, '!');
+                    }
                 }
+                // --- ОТРИСОВКА ТОРГОВЦА ---
                 else if (obj.type === 'merchant') {
                     ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(obj.x, obj.y, 25, 8, 0, 0, Math.PI * 2); ctx.fill();
                     const frames = npcSprites.merchant_idle;
@@ -588,6 +598,7 @@ function draw() {
                         } else { ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
                     }
                 } 
+                // --- ОТРИСОВКА ДЯДЮШКИ ВЕЙЛАНДА ---
                 else if (obj.type === 'uncle') {
                     ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(obj.x, obj.y, 20, 6, 0, 0, Math.PI * 2); ctx.fill();
                     const frames = npcSprites.uncle_idle;
@@ -600,14 +611,18 @@ function draw() {
                             ctx.restore();
                         } else { ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
                     }
-                    if (player.questStatus === 'return') { drawQuestMark(obj.x, obj.y - obj.height - 20, '!'); }
-                    else if (player.questStatus === 'done') { drawQuestMark(obj.x, obj.y - obj.height - 20, '?'); }
+                    
+                    // МАРКЕРЫ КВЕСТОВ ДЛЯ ДЯДЮШКИ
+                    if (player.questStatus === 'return') {
+                        drawQuestMark(obj.x, obj.y - obj.height - 20, '!');
+                    } else if (player.questStatus === 'done') {
+                        drawQuestMark(obj.x, obj.y - obj.height - 20, '?');
+                    }
                 }
             }
         }
     }
 }
-
 function drawPlayer() {
     if (player.state === 'dead') { ctx.fillStyle = '#4a0000'; ctx.fillRect(player.x - player.width/2, player.y - 10, player.width, 15); return; }
     ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(player.x, player.y, player.width / 1.2, 8, 0, 0, Math.PI * 2); ctx.fill();
