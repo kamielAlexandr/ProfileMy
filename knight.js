@@ -1,7 +1,6 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// Отключаем сглаживание для четких пикселей
 ctx.imageSmoothingEnabled = false;
 
 const storyScreen = document.getElementById('story-screen');
@@ -18,9 +17,7 @@ const xpText = document.getElementById('xp-text');
 const inventoryText = document.getElementById('inventory-text');
 const gameOverScreen = document.getElementById('game-over-screen');
 
-// Кнопки интерфейса
 const btnPotion = document.getElementById('btn-buy-potion');
-const btnUpgrade = document.getElementById('btn-buy-upgrade');
 const btnCloseShop = document.getElementById('btn-close-shop');
 const mobileControls = document.getElementById('mobile-controls');
 const btnFullscreen = document.getElementById('btn-fullscreen');
@@ -113,7 +110,8 @@ const player = {
     state: 'idle', facingRight: true,
     rollTimer: 0, rollDuration: 0, 
     rollSpeedMult: 2, hasWeapon: false, attackHitboxActive: false,
-    hp: 100, maxHp: 100, hurtTimer: 0, xp: 0, coins: 0, seeds: 0, potions: 0, baseDamage: 10, questStatus: 'get_weapon',
+    hp: 100, maxHp: 100, hurtTimer: 0, xp: 0, coins: 0, seeds: 0, potions: 0, baseDamage: 10, 
+    questStatus: 'get_weapon', // Возможные статусы: get_weapon, kill_monsters, return, talk_merchant, gather_seeds, return_merchant, done
     
     currentAnim: 'idle_no_weapon', frameIndex: 0, animTimer: 0, isLockAnim: false,
 
@@ -132,6 +130,17 @@ let environment = [];
 let enemies = [];
 let lootItems = []; 
 
+// --- УМНАЯ СИСТЕМА ОБНОВЛЕНИЯ ЦЕЛЕЙ ---
+function updateObjectiveText() {
+    if (player.questStatus === 'get_weapon') objectiveText.innerText = "Цель: Забери топор у сарая (F)";
+    else if (player.questStatus === 'kill_monsters') objectiveText.innerText = currentLocation === 'village' ? "Цель: Иди направо, на дальнее поле ->" : "Цель: Выживи и выкорчуй нечисть!";
+    else if (player.questStatus === 'return') objectiveText.innerText = currentLocation === 'field' ? "Цель: Вернись к дядюшке (Иди влево <-)" : "Цель: Поговори с дядюшкой (F)";
+    else if (player.questStatus === 'talk_merchant') objectiveText.innerText = currentLocation === 'field' ? "Цель: Вернись в деревню (Иди влево <-)" : "Цель: Поговори с торговцем Снагом (F)";
+    else if (player.questStatus === 'gather_seeds') objectiveText.innerText = `Цель: Собери 10 семян для Снага (${player.seeds}/10)`;
+    else if (player.questStatus === 'return_merchant') objectiveText.innerText = currentLocation === 'field' ? "Цель: Вернись к торговцу (Иди влево <-)" : "Цель: Отнеси семена Снагу (F)";
+    else if (player.questStatus === 'done') objectiveText.innerText = "Свободная игра: охоться и торгуй!";
+}
+
 const locations = {
     village: {
         bgColor: '#5d4037', horizonColor: '#1b1b1b',
@@ -143,9 +152,7 @@ const locations = {
                 { x: 450, y: 240, width: 45, height: 60, interactable: true, type: 'merchant' }
             ];
             enemies = []; lootItems = [];
-            if (player.questStatus === 'get_weapon') objectiveText.innerText = "Цель: Забери топор у сарая (F)";
-            else if (player.questStatus === 'return') objectiveText.innerText = "Цель: Поговори с дядюшкой (F)";
-            else if (player.questStatus === 'done') objectiveText.innerText = "Свободная игра: охоться и торгуй!";
+            updateObjectiveText();
         }
     },
     field: {
@@ -154,8 +161,7 @@ const locations = {
         setup: () => {
             environment = []; lootItems = [];
             enemies = [createEnemy(500, 300), createEnemy(650, 250), createEnemy(750, 380)];
-            if (player.questStatus === 'kill_monsters') objectiveText.innerText = "Цель: Выживи и выкорчуй нечисть!";
-            else objectiveText.innerText = "Охота на Хвощевиков продолжается...";
+            updateObjectiveText();
         }
     }
 };
@@ -189,28 +195,18 @@ function updateInventoryUI() {
     document.getElementById('stat-def').innerText = player.defense;
     document.getElementById('stat-dmg').innerText = player.baseDamage;
 
-    // --- ОТРИСОВКА ЗЕЛИЙ В СУМКЕ ---
     const bagGrid = document.getElementById('bag-grid');
-    bagGrid.innerHTML = ''; // Очищаем слоты
+    bagGrid.innerHTML = ''; 
     const totalSlots = 12; 
 
     for (let i = 0; i < totalSlots; i++) {
         const slot = document.createElement('div');
         slot.className = 'bag-item';
+        slot.style.display = 'flex'; slot.style.justifyContent = 'center'; slot.style.alignItems = 'center'; slot.style.fontSize = 'clamp(16px, 3vw, 24px)';
         
-        // Задаем стили для центрирования иконок внутри слота
-        slot.style.display = 'flex';
-        slot.style.justifyContent = 'center';
-        slot.style.alignItems = 'center';
-        slot.style.fontSize = 'clamp(16px, 3vw, 24px)';
-        
-        // Если в этом слоте должно быть зелье
         if (i < player.potions) {
-            slot.innerHTML = '🧪';
-            slot.title = 'Зелье лечения (+50 HP)';
-            slot.style.cursor = 'help';
+            slot.innerHTML = '🧪'; slot.title = 'Зелье лечения (+50 HP)'; slot.style.cursor = 'help';
         }
-        
         bagGrid.appendChild(slot);
     }
 }
@@ -236,9 +232,6 @@ function toggleInventory() {
 btnInventory.addEventListener('click', toggleInventory);
 btnCloseInventory.addEventListener('click', toggleInventory);
 
-// ==========================================
-// --- ПОЛНОЭКРАННЫЙ РЕЖИМ ---
-// ==========================================
 btnFullscreen.addEventListener('click', () => {
     if (!document.fullscreenElement && !document.webkitFullscreenElement) {
         if (gameContainer.requestFullscreen) { gameContainer.requestFullscreen(); } 
@@ -253,9 +246,7 @@ btnFullscreen.addEventListener('click', () => {
 
 document.addEventListener('fullscreenchange', updateFullscreenBtn);
 document.addEventListener('webkitfullscreenchange', updateFullscreenBtn);
-function updateFullscreenBtn() {
-    btnFullscreen.innerText = (!document.fullscreenElement && !document.webkitFullscreenElement) ? '⛶' : '✖';
-}
+function updateFullscreenBtn() { btnFullscreen.innerText = (!document.fullscreenElement && !document.webkitFullscreenElement) ? '⛶' : '✖'; }
 
 // ==========================================
 // --- СИСТЕМА АНИМАЦИЙ ---
@@ -316,7 +307,7 @@ function updateEnemyAnimation(entity) {
     }
 }
 
-// --- ДИАЛОГИ И МАГАЗИН ---
+// --- ДИАЛОГИ И КВЕСТЫ ---
 function startDialogue(lines) { dialogueLines = lines; currentLine = 0; currentState = 'DIALOGUE'; hud.classList.add('hidden'); mobileControls.classList.add('hidden'); dialogueScreen.classList.remove('hidden'); updateDialogueUI(); }
 function advanceDialogue() {
     if (currentState === 'STORY') {
@@ -335,15 +326,10 @@ function advanceDialogue() {
 function updateDialogueUI() { speakerName.innerText = dialogueLines[currentLine].name; dialogueText.innerText = dialogueLines[currentLine].text; speakerName.style.color = dialogueLines[currentLine].name === "Тарн" ? "#a1887f" : "#ffb300"; }
 function openShop() { currentState = 'SHOP'; keys.w = keys.a = keys.s = keys.d = false; shopScreen.classList.remove('hidden'); mobileControls.classList.add('hidden'); }
 function closeShop() { currentState = 'PLAY'; shopScreen.classList.add('hidden'); checkMobile(); }
+
 btnPotion.addEventListener('click', () => { if (player.coins >= 2) { player.coins -= 2; player.potions++; updateHUD(); updateInventoryUI(); } else alert("Не хватает монет!"); });
-btnUpgrade.addEventListener('click', () => { 
-    if (player.seeds >= 5) { 
-        player.seeds -= 5; player.baseDamage += 10; 
-        if (player.equipment.weapon) player.equipment.weapon.name = "Заточенный топор";
-        updateHUD(); updateInventoryUI(); alert("Оружие улучшено!"); 
-    } else alert("Не хватает семян!"); 
-});
 btnCloseShop.addEventListener('click', closeShop);
+
 function usePotion() { if (player.potions > 0 && player.hp < player.maxHp) { player.potions--; player.hp = Math.min(player.maxHp, player.hp + 50); updateHUD(); updateInventoryUI(); } }
 function updateHUD() { let hpPercent = Math.max(0, (player.hp / player.maxHp) * 100); hpBarFill.style.width = hpPercent + '%'; xpText.innerText = 'Опыт: ' + player.xp; inventoryText.innerText = `Монеты: ${player.coins} | Семена: ${player.seeds} | Зелья (E): ${player.potions}`; }
 
@@ -362,10 +348,7 @@ window.addEventListener('pointerdown', (e) => {
 window.addEventListener('keydown', (e) => {
     if (currentState === 'GAMEOVER' || currentState === 'SHOP') return;
     if (currentState === 'STORY' || currentState === 'DIALOGUE') { if (e.code === 'Space' || e.code === 'Enter') advanceDialogue(); return; }
-    
-    if (e.code === 'KeyI' && (currentState === 'PLAY' || currentState === 'INVENTORY')) {
-        toggleInventory(); return;
-    }
+    if (e.code === 'KeyI' && (currentState === 'PLAY' || currentState === 'INVENTORY')) { toggleInventory(); return; }
 
     if (currentState === 'PLAY') {
         if (e.code === 'KeyW' || e.code === 'ArrowUp') keys.w = true;
@@ -399,15 +382,9 @@ function bindTouch(id, keyProp, actionFunc) {
     btn.addEventListener('touchcancel', (e) => { e.preventDefault(); if (keyProp) keys[keyProp] = false; }, { passive: false });
 }
 
-bindTouch('btn-up', 'w', null);
-bindTouch('btn-down', 's', null);
-bindTouch('btn-left', 'a', null);
-bindTouch('btn-right', 'd', null);
-bindTouch('btn-j', null, () => performAction('attackLight'));
-bindTouch('btn-k', null, () => performAction('attackHeavy'));
-bindTouch('btn-l', null, () => performAction('roll'));
-bindTouch('btn-f', null, () => checkInteraction());
-bindTouch('btn-e', null, () => usePotion());
+bindTouch('btn-up', 'w', null); bindTouch('btn-down', 's', null); bindTouch('btn-left', 'a', null); bindTouch('btn-right', 'd', null);
+bindTouch('btn-j', null, () => performAction('attackLight')); bindTouch('btn-k', null, () => performAction('attackHeavy'));
+bindTouch('btn-l', null, () => performAction('roll')); bindTouch('btn-f', null, () => checkInteraction()); bindTouch('btn-e', null, () => usePotion());
 
 function performAction(action) {
     if (player.state !== 'idle' && player.state !== 'walk') return;
@@ -415,49 +392,107 @@ function performAction(action) {
 
     if (action === 'roll') {
         player.state = 'roll'; 
-        let config = animConfig.animations.roll;
-        player.rollTimer = config.frames.length * config.speed;
-        setAnimation('roll');
-        player.isLockAnim = true;
+        let config = animConfig.animations.roll; player.rollTimer = config.frames.length * config.speed;
+        setAnimation('roll'); player.isLockAnim = true;
     } else if (action === 'attackLight') {
-        player.state = 'attackLight'; 
-        player.attackHitboxActive = true; 
+        player.state = 'attackLight'; player.attackHitboxActive = true; 
         let attackAnim = player.hasWeapon ? 'attack1_weapon' : 'attack1_no_weapon';
-        setAnimation(attackAnim);
-        player.isLockAnim = true; 
+        setAnimation(attackAnim); player.isLockAnim = true; 
     } else if (action === 'attackHeavy') {
-        player.state = 'attackHeavy'; 
-        player.attackHitboxActive = true; 
+        player.state = 'attackHeavy'; player.attackHitboxActive = true; 
         let attackAnim = player.hasWeapon ? 'attack2_weapon' : 'attack2_no_weapon';
-        setAnimation(attackAnim);
-        player.isLockAnim = true; 
+        setAnimation(attackAnim); player.isLockAnim = true; 
     }
 }
 
+// --- ЛОГИКА ВЗАИМОДЕЙСТВИЯ СО СЦЕНОЙ И NPC ---
 function checkInteraction() {
     for (let obj of environment) {
         let dist = Math.hypot(player.x - obj.x, player.y - obj.y);
         if (dist < 80 && obj.interactable) {
+            
+            // ВЗАИМОДЕЙСТВИЕ С САРАЕМ
             if (obj.type === 'shed' && player.questStatus === 'get_weapon') {
                 player.hasWeapon = true; obj.interactable = false;
-                
                 player.equipment.weapon = { name: "Старый топор", dmg: 10 };
-
-                player.questStatus = 'kill_monsters'; objectiveText.innerText = "Цель: Иди направо, на дальнее поле ->";
+                player.questStatus = 'kill_monsters'; 
+                updateObjectiveText();
                 setAnimation('idle_weapon');
             }
+            
+            // ВЗАИМОДЕЙСТВИЕ С ДЯДЮШКОЙ
             else if (obj.type === 'uncle') {
-                if (player.questStatus === 'get_weapon' || player.questStatus === 'kill_monsters') startDialogue([{ name: "Вейланд", text: "Очисти поле!" }]);
-                else if (player.questStatus === 'return') { player.questStatus = 'done'; player.xp += 100; updateHUD(); startDialogue([{ name: "Вейланд", text: "Хорошая работа, Тарн. (+100 ОПЫТА)" }]); objectiveText.innerText = "Фарми лут!"; }
-                else startDialogue([{ name: "Вейланд", text: "Поговори со Снагом." }]);
+                if (player.questStatus === 'get_weapon' || player.questStatus === 'kill_monsters') {
+                    startDialogue([{ name: "Вейланд", text: "Очисти поле!" }]);
+                }
+                else if (player.questStatus === 'return') { 
+                    player.questStatus = 'talk_merchant'; // Новый шаг квеста
+                    player.xp += 100; updateHUD(); 
+                    updateObjectiveText();
+                    startDialogue([
+                        { name: "Вейланд", text: "Хорошая работа, Тарн. (+100 ОПЫТА)" },
+                        { name: "Вейланд", text: "Но твой топор совсем затупился о панцири этих тварей. Ступай к Снагу, пусть он его подлатает." }
+                    ]); 
+                }
+                else {
+                    startDialogue([{ name: "Вейланд", text: "Ступай к Снагу." }]);
+                }
             }
-            else if (obj.type === 'merchant') openShop();
+            
+            // ВЗАИМОДЕЙСТВИЕ С ТОРГОВЦЕМ
+            else if (obj.type === 'merchant') {
+                if (player.questStatus === 'talk_merchant') {
+                    startDialogue([
+                        { name: "Снаг", text: "Ква! Твой дядюшка прав, топор никуда не годится. Я наточу его и он даст +2 к урону." },
+                        { name: "Снаг", text: "Но мне нужны 10 семян гнили. Моя тетушка держит ферму в родной деревне, ей они очень пригодятся." }
+                    ]);
+                    // Проверяем, может игрок УЖЕ собрал 10 семян
+                    if (player.seeds >= 10) player.questStatus = 'return_merchant';
+                    else player.questStatus = 'gather_seeds';
+                    updateObjectiveText();
+                }
+                else if (player.questStatus === 'gather_seeds') {
+                    startDialogue([{ name: "Снаг", text: `Ква... Мне нужно 10 семян. У тебя пока только ${player.seeds}.` }]);
+                }
+                else if (player.questStatus === 'return_merchant') {
+                    player.seeds -= 10;
+                    player.baseDamage += 2;
+                    if (player.equipment.weapon) player.equipment.weapon.name = "Наточенный топор";
+                    player.questStatus = 'done';
+                    updateHUD(); updateInventoryUI();
+                    updateObjectiveText();
+                    startDialogue([{ name: "Снаг", text: "Отлично! Вот, держи свой топор. Теперь он рубит как надо! (+2 УРОНА)" }]);
+                }
+                else if (player.questStatus === 'done') {
+                    openShop();
+                }
+                else {
+                    // Если подошли до того, как дядюшка отправил к нему
+                    startDialogue([{ name: "Снаг", text: "Ква-а-а... Я пока занят, фермер. Поговори с дядюшкой." }]);
+                }
+            }
         }
     }
 }
 
-function checkQuestProgress() { if (player.questStatus === 'kill_monsters') { let allDead = enemies.every(e => e.state === 'dead'); if (allDead) { player.questStatus = 'return'; objectiveText.innerText = "Цель: Вернись к дядюшке (Иди влево <-)"; } } }
-function transitionLocation(newLoc, spawnSide = 'left') { currentState = 'TRANSITION'; fadeOverlay.classList.remove('hidden'); mobileControls.classList.add('hidden'); setTimeout(() => { currentLocation = newLoc; locations[newLoc].setup(); player.x = spawnSide === 'left' ? 50 : canvas.width - 50; fadeOverlay.classList.add('hidden'); currentState = 'PLAY'; checkMobile(); }, 600); }
+function checkQuestProgress() { 
+    if (player.questStatus === 'kill_monsters') { 
+        let allDead = enemies.every(e => e.state === 'dead'); 
+        if (allDead) { 
+            player.questStatus = 'return'; 
+            updateObjectiveText(); 
+        } 
+    } 
+}
+
+function transitionLocation(newLoc, spawnSide = 'left') { 
+    currentState = 'TRANSITION'; fadeOverlay.classList.remove('hidden'); mobileControls.classList.add('hidden'); 
+    setTimeout(() => { 
+        currentLocation = newLoc; locations[newLoc].setup(); 
+        player.x = spawnSide === 'left' ? 50 : canvas.width - 50; 
+        fadeOverlay.classList.add('hidden'); currentState = 'PLAY'; checkMobile(); 
+    }, 600); 
+}
 
 // --- ИГРОВОЙ ЦИКЛ ---
 function update() {
@@ -465,27 +500,14 @@ function update() {
     if (player.hurtTimer > 0) player.hurtTimer--;
 
     updateAnimation();
-
-    globalNpcTimer++;
-    if (globalNpcTimer >= npcAnimSpeed) {
-        globalNpcTimer = 0;
-        globalNpcFrame++;
-    }
+    globalNpcTimer++; if (globalNpcTimer >= npcAnimSpeed) { globalNpcTimer = 0; globalNpcFrame++; }
 
     let currentSpeed = player.speed;
 
-    if (player.state === 'roll') {
-        currentSpeed *= player.rollSpeedMult; player.rollTimer--;
-    } else if (player.state === 'idle' || player.state === 'walk') {
-        if (keys.w || keys.a || keys.s || keys.d) {
-            player.state = 'walk';
-            let walkAnim = player.hasWeapon ? 'walk_weapon' : 'walk_no_weapon';
-            setAnimation(walkAnim);
-        } else {
-            player.state = 'idle';
-            let idleAnim = player.hasWeapon ? 'idle_weapon' : 'idle_no_weapon';
-            setAnimation(idleAnim);
-        }
+    if (player.state === 'roll') { currentSpeed *= player.rollSpeedMult; player.rollTimer--; } 
+    else if (player.state === 'idle' || player.state === 'walk') {
+        if (keys.w || keys.a || keys.s || keys.d) { player.state = 'walk'; setAnimation(player.hasWeapon ? 'walk_weapon' : 'walk_no_weapon'); } 
+        else { player.state = 'idle'; setAnimation(player.hasWeapon ? 'idle_weapon' : 'idle_no_weapon'); }
     }
 
     if (player.state === 'walk' || player.state === 'roll') {
@@ -508,7 +530,21 @@ function update() {
         }
     }
 
-    for (let i = lootItems.length - 1; i >= 0; i--) { let item = lootItems[i]; let dist = Math.hypot(player.x - item.x, player.y - item.y); if (dist < 30) { if (item.type === 'coin') player.coins++; else if (item.type === 'seed') player.seeds++; lootItems.splice(i, 1); updateHUD(); } }
+    // ПОДБОР ЛУТА И ОБНОВЛЕНИЕ КВЕСТА
+    for (let i = lootItems.length - 1; i >= 0; i--) { 
+        let item = lootItems[i]; 
+        if (Math.hypot(player.x - item.x, player.y - item.y) < 30) { 
+            if (item.type === 'coin') player.coins++; 
+            else if (item.type === 'seed') {
+                player.seeds++; 
+                if (player.questStatus === 'gather_seeds') {
+                    if (player.seeds >= 10) { player.questStatus = 'return_merchant'; }
+                    updateObjectiveText();
+                }
+            }
+            lootItems.splice(i, 1); updateHUD(); 
+        } 
+    }
     
     if ((player.state === 'attackLight' || player.state === 'attackHeavy') && player.attackHitboxActive) {
         player.attackHitboxActive = false; 
@@ -524,62 +560,42 @@ function update() {
                 enemy.hp -= attackDamage; 
                 
                 if (enemy.hp <= 0) { 
-                    enemy.state = 'dead'; 
-                    player.xp += 20; 
+                    enemy.state = 'dead'; player.xp += 20; 
                     let dropType = Math.random() > 0.5 ? 'coin' : 'seed'; lootItems.push({ x: enemy.x, y: enemy.y, type: dropType }); 
                     updateHUD(); checkQuestProgress(); 
-                    
-                    setEntityAnimation(enemy, 'enemy_death');
-                    enemy.isLockAnim = true;
+                    setEntityAnimation(enemy, 'enemy_death'); enemy.isLockAnim = true;
                 } else {
-                    enemy.state = 'hurt'; 
-                    enemy.hurtTimer = 15; 
-                    enemy.x += player.facingRight ? 20 : -20;
-                    
-                    setEntityAnimation(enemy, 'enemy_hurt');
-                    enemy.isLockAnim = true;
+                    enemy.state = 'hurt'; enemy.hurtTimer = 15; enemy.x += player.facingRight ? 20 : -20;
+                    setEntityAnimation(enemy, 'enemy_hurt'); enemy.isLockAnim = true;
                 }
             }
         });
     }
 
     enemies.forEach(enemy => {
-        if (enemy.state === 'dead') {
-            updateEnemyAnimation(enemy);
-            return;
-        }
+        if (enemy.state === 'dead') { updateEnemyAnimation(enemy); return; }
         
-        updateEnemyAnimation(enemy);
-        enemy.facingRight = player.x > enemy.x; 
-
+        updateEnemyAnimation(enemy); enemy.facingRight = player.x > enemy.x; 
         if (enemy.attackTimer > 0) enemy.attackTimer--;
         
         if (enemy.state === 'chase' && !enemy.isLockAnim) {
             let dx = player.x - enemy.x; let dy = player.y - enemy.y; let dist = Math.hypot(dx, dy);
             if (dist > 45) { 
-                enemy.x += (dx / dist) * enemy.speed; enemy.y += (dy / dist) * enemy.speed;
-                setEntityAnimation(enemy, 'enemy_walk');
+                enemy.x += (dx / dist) * enemy.speed; enemy.y += (dy / dist) * enemy.speed; setEntityAnimation(enemy, 'enemy_walk');
             } else {
                 if (enemy.attackTimer <= 0 && player.state !== 'dead' && player.state !== 'roll') {
-                    enemy.state = 'attack';
-                    enemy.attackTimer = 100; 
-                    
-                    setEntityAnimation(enemy, 'enemy_preAttack'); 
-                    enemy.isLockAnim = true;
-                } else {
-                    setEntityAnimation(enemy, 'enemy_walk');
-                }
+                    enemy.state = 'attack'; enemy.attackTimer = 100; setEntityAnimation(enemy, 'enemy_preAttack'); enemy.isLockAnim = true;
+                } else { setEntityAnimation(enemy, 'enemy_walk'); }
             }
         }
     });
 }
 
-function drawQuestMark(x, y, markStr) {
+function drawQuestMark(x, y, markStr, color = '#ffb300') {
     ctx.save();
     let floatOffset = Math.sin(Date.now() / 200) * 5;
-    ctx.fillStyle = '#ffb300';
-    ctx.font = 'bold 24px "Russo One", Arial, sans-serif';
-    ctx.textAlign = 'center';
+    ctx.fillStyle = color;
+    ctx.font = 'bold 24px "Russo One", Arial, sans-serif'; ctx.textAlign = 'center';
     ctx.shadowColor = '#000'; ctx.shadowBlur = 4; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2;
     ctx.fillText(markStr, x, y + floatOffset);
     ctx.restore();
@@ -588,20 +604,10 @@ function drawQuestMark(x, y, markStr) {
 // --- ОТРИСОВКА ---
 function draw() {
     const loc = locations[currentLocation];
-    
-    ctx.fillStyle = loc.bgColor || '#000'; 
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    if (loc.groundImage && loc.groundImage.complete && loc.groundImage.naturalWidth > 0) {
-        ctx.drawImage(loc.groundImage, 0, 180, canvas.width, canvas.height - 180);
-    }
-
-    if (backgroundImages.horizon && backgroundImages.horizon.complete && backgroundImages.horizon.naturalWidth > 0) {
-        ctx.drawImage(backgroundImages.horizon, 0, 0, canvas.width, 180);
-    } else if (loc.horizonColor) {
-        ctx.fillStyle = loc.horizonColor; 
-        ctx.fillRect(0, 0, canvas.width, 180);
-    }
+    ctx.fillStyle = loc.bgColor || '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    if (loc.groundImage && loc.groundImage.complete && loc.groundImage.naturalWidth > 0) { ctx.drawImage(loc.groundImage, 0, 180, canvas.width, canvas.height - 180); }
+    if (backgroundImages.horizon && backgroundImages.horizon.complete && backgroundImages.horizon.naturalWidth > 0) { ctx.drawImage(backgroundImages.horizon, 0, 0, canvas.width, 180);
+    } else if (loc.horizonColor) { ctx.fillStyle = loc.horizonColor; ctx.fillRect(0, 0, canvas.width, 180); }
 
     if (currentState === 'PLAY' || currentState === 'GAMEOVER' || currentState === 'SHOP' || currentState === 'INVENTORY') {
         lootItems.forEach(item => { ctx.fillStyle = item.type === 'coin' ? '#ffca28' : '#69f0ae'; ctx.beginPath(); ctx.arc(item.x, item.y, 6, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.stroke(); });
@@ -615,38 +621,31 @@ function draw() {
             else {
                 if (obj.type === 'shed') {
                     const frames = buildingSprites.shed;
-                    if (frames && frames.length > 0 && frames[0].complete && frames[0].naturalWidth > 0) {
-                        ctx.drawImage(frames[0], obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height);
+                    if (frames && frames.length > 0 && frames[0].complete && frames[0].naturalWidth > 0) { ctx.drawImage(frames[0], obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height);
                     } else { ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
                     if (player.questStatus === 'get_weapon') { drawQuestMark(obj.x, obj.y - obj.height - 20, '!'); }
                 }
                 else if (obj.type === 'merchant') {
                     ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(obj.x, obj.y, 25, 8, 0, 0, Math.PI * 2); ctx.fill();
                     const frames = npcSprites.merchant_idle;
-                    if (frames && frames.length > 0) {
-                        const currentFrame = frames[globalNpcFrame % frames.length]; 
-                        if (currentFrame && currentFrame.complete && currentFrame.naturalWidth > 0) {
-                            ctx.save(); ctx.translate(obj.x, obj.y);
-                            const dX = -animConfig.w_frame / 2; const dY = -animConfig.h_frame + 10;
-                            ctx.drawImage(currentFrame, dX, dY, animConfig.w_frame, animConfig.h_frame);
-                            ctx.restore();
-                        } else { ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
-                    }
+                    if (frames && frames.length > 0 && frames[0].complete) {
+                        ctx.save(); ctx.translate(obj.x, obj.y); const dX = -animConfig.w_frame / 2; const dY = -animConfig.h_frame + 10;
+                        ctx.drawImage(frames[globalNpcFrame % frames.length], dX, dY, animConfig.w_frame, animConfig.h_frame); ctx.restore();
+                    } else { ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
+                    
+                    // МАРКЕРЫ ДЛЯ СНАГА
+                    if (player.questStatus === 'talk_merchant' || player.questStatus === 'return_merchant') { drawQuestMark(obj.x, obj.y - obj.height - 20, '!'); }
+                    else if (player.questStatus === 'gather_seeds') { drawQuestMark(obj.x, obj.y - obj.height - 20, '?', '#ccc'); } // Серый вопрос для незаконченного квеста
                 } 
                 else if (obj.type === 'uncle') {
                     ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(obj.x, obj.y, 20, 6, 0, 0, Math.PI * 2); ctx.fill();
                     const frames = npcSprites.uncle_idle;
-                    if (frames && frames.length > 0) {
-                        const currentFrame = frames[globalNpcFrame % frames.length]; 
-                        if (currentFrame && currentFrame.complete && currentFrame.naturalWidth > 0) {
-                            ctx.save(); ctx.translate(obj.x, obj.y);
-                            const dX = -animConfig.w_frame / 2; const dY = -animConfig.h_frame + 10;
-                            ctx.drawImage(currentFrame, dX, dY, animConfig.w_frame, animConfig.h_frame);
-                            ctx.restore();
-                        } else { ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
-                    }
+                    if (frames && frames.length > 0 && frames[0].complete) {
+                        ctx.save(); ctx.translate(obj.x, obj.y); const dX = -animConfig.w_frame / 2; const dY = -animConfig.h_frame + 10;
+                        ctx.drawImage(frames[globalNpcFrame % frames.length], dX, dY, animConfig.w_frame, animConfig.h_frame); ctx.restore();
+                    } else { ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
+                    
                     if (player.questStatus === 'return') { drawQuestMark(obj.x, obj.y - obj.height - 20, '!'); }
-                    else if (player.questStatus === 'done') { drawQuestMark(obj.x, obj.y - obj.height - 20, '?'); }
                 }
             }
         }
@@ -661,37 +660,22 @@ function drawPlayer() {
     const anim = animConfig.animations[player.currentAnim];
     const currentFrameImg = anim.frames[player.frameIndex];
 
-    if (!currentFrameImg || !currentFrameImg.complete || currentFrameImg.naturalWidth === 0) {
-        ctx.fillStyle = '#ff00ff'; ctx.fillRect(player.x - player.width/2, player.y - player.height, player.width, player.height);
-        ctx.fillStyle = '#fff'; ctx.font = '10px Arial'; ctx.fillText("IMG ERR", player.x - 20, player.y - player.height/2); return;
-    }
+    if (!currentFrameImg || !currentFrameImg.complete || currentFrameImg.naturalWidth === 0) { ctx.fillStyle = '#ff00ff'; ctx.fillRect(player.x - player.width/2, player.y - player.height, player.width, player.height); return; }
 
     ctx.save(); ctx.translate(player.x, player.y);
     if (!player.facingRight) ctx.scale(-1, 1);
-    const dX = -animConfig.w_frame / 2; const dY = -animConfig.h_frame + 10; 
-    ctx.drawImage(currentFrameImg, dX, dY, animConfig.w_frame, animConfig.h_frame);
+    ctx.drawImage(currentFrameImg, -animConfig.w_frame / 2, -animConfig.h_frame + 10, animConfig.w_frame, animConfig.h_frame);
     ctx.restore();
 }
 
 function drawEnemy(enemy) {
-    if (enemy.state !== 'dead') {
-        ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(enemy.x, enemy.y, enemy.width/1.5, 8, 0, 0, Math.PI * 2); ctx.fill();
-    }
-    
+    if (enemy.state !== 'dead') { ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(enemy.x, enemy.y, enemy.width/1.5, 8, 0, 0, Math.PI * 2); ctx.fill(); }
     const anim = animConfig.animations[enemy.currentAnim];
-    
-    if (!anim || !anim.frames[enemy.frameIndex] || !anim.frames[enemy.frameIndex].complete || anim.frames[enemy.frameIndex].naturalWidth === 0) {
-        ctx.fillStyle = '#ff00ff'; ctx.fillRect(enemy.x - enemy.width/2, enemy.y - enemy.height, enemy.width, enemy.height);
-        ctx.fillStyle = '#fff'; ctx.font = '10px Arial'; ctx.fillText("ERR", enemy.x - 10, enemy.y - enemy.height/2);
-        return;
-    }
-
-    const currentFrameImg = anim.frames[enemy.frameIndex];
+    if (!anim || !anim.frames[enemy.frameIndex] || !anim.frames[enemy.frameIndex].complete || anim.frames[enemy.frameIndex].naturalWidth === 0) { ctx.fillStyle = '#ff00ff'; ctx.fillRect(enemy.x - enemy.width/2, enemy.y - enemy.height, enemy.width, enemy.height); return; }
 
     ctx.save(); ctx.translate(enemy.x, enemy.y);
     if (!enemy.facingRight) ctx.scale(-1, 1);
-    const dX = -animConfig.w_frame / 2; const dY = -animConfig.h_frame + 10; 
-    ctx.drawImage(currentFrameImg, dX, dY, animConfig.w_frame, animConfig.h_frame);
+    ctx.drawImage(anim.frames[enemy.frameIndex], -animConfig.w_frame / 2, -animConfig.h_frame + 10, animConfig.w_frame, animConfig.h_frame);
     ctx.restore();
 }
 
