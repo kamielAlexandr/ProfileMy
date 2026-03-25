@@ -56,7 +56,6 @@ const tarnSprites = {
 const npcSprites = { merchant_idle: loadFrames('img/frog_idle', 3), uncle_idle: loadFrames('img/dad_idle', 3) };
 const buildingSprites = { shed: loadFrames('img/Home', 1) };
 
-// --- СПРАЙТЫ ВРАГОВ ---
 const enemySprites = {
     walk: loadFrames('img/hroshevik_walk', 4),
     preAttack: loadFrames('img/hroshevik_Pre-Attack', 3),
@@ -65,7 +64,6 @@ const enemySprites = {
     death: loadFrames('img/hroshevik_Death', 5)
 };
 
-// НОВОЕ: СПРАЙТЫ НЕЖИТИ
 const undeadSprites = {
     walk: loadFrames('img/undead_walk', 4),
     preAttack: loadFrames('img/undead_Pre-Attack', 3),
@@ -74,7 +72,6 @@ const undeadSprites = {
     death: loadFrames('img/undead_Death', 5)
 };
 
-// --- ФОНЫ ЛОКАЦИЙ ---
 const backgroundImages = {
     horizon: new Image(), villageGround: new Image(), fieldGround: new Image(),
     graveyardHorizon: new Image(), graveyardGround: new Image()
@@ -82,8 +79,8 @@ const backgroundImages = {
 backgroundImages.horizon.src = 'img/BG_farm.png'; 
 backgroundImages.villageGround.src = 'img/zemly_1.png'; 
 backgroundImages.fieldGround.src = 'img/BG2_1.png'; 
-backgroundImages.graveyardHorizon.src = 'img/BG3_1.png'; // Фон погоста
-backgroundImages.graveyardGround.src = 'img/zemly_2.png'; // Земля погоста
+backgroundImages.graveyardHorizon.src = 'img/BG3_1.png'; 
+backgroundImages.graveyardGround.src = 'img/zemly_2.png'; 
 
 let globalNpcTimer = 0; let globalNpcFrame = 0; const npcAnimSpeed = 12;
 
@@ -106,7 +103,7 @@ const animConfig = {
         'enemy_hurt':       { frames: enemySprites.hurt,      speed: 6,  onComplete: 'walk' },
         'enemy_death':      { frames: enemySprites.death,     speed: 8,  onComplete: 'dead' },
 
-        'undead_walk':      { frames: undeadSprites.walk,      speed: 14 }, // Медленнее идут
+        'undead_walk':      { frames: undeadSprites.walk,      speed: 14 }, 
         'undead_preAttack': { frames: undeadSprites.preAttack, speed: 15, onComplete: 'attack' }, 
         'undead_attack':    { frames: undeadSprites.attack,    speed: 6,  onComplete: 'walk' },   
         'undead_hurt':      { frames: undeadSprites.hurt,      speed: 6,  onComplete: 'walk' },
@@ -118,7 +115,7 @@ const player = {
     x: 300, y: 300, width: 30, height: 70, speed: 3.5, color: '#8D6E63',
     state: 'idle', facingRight: true, rollTimer: 0, rollDuration: 0, rollSpeedMult: 2, hasWeapon: false, attackHitboxActive: false,
     hp: 100, maxHp: 100, hurtTimer: 0, xp: 0, coins: 0, seeds: 0, potions: 0, baseDamage: 10, 
-    questStatus: 'get_weapon', // Новые статусы: go_graveyard, kill_undead, return_graveyard
+    questStatus: 'get_weapon', // НОВЫЙ СТАТУС В ЦЕПОЧКЕ: talk_uncle_2
     currentAnim: 'idle_no_weapon', frameIndex: 0, animTimer: 0, isLockAnim: false,
 
     equipment: {
@@ -136,11 +133,11 @@ function updateObjectiveText() {
     else if (player.questStatus === 'talk_merchant') objectiveText.innerText = currentLocation === 'field' ? "Цель: Вернись в деревню (Иди влево <-)" : "Цель: Поговори с торговцем Снагом (F)";
     else if (player.questStatus === 'gather_seeds') objectiveText.innerText = `Цель: Собери 10 семян для Снага (${player.seeds}/10)`;
     else if (player.questStatus === 'return_merchant') objectiveText.innerText = currentLocation === 'field' ? "Цель: Вернись к торговцу (Иди влево <-)" : "Цель: Отнеси семена Снагу (F)";
-    // НОВОЕ
+    // НОВАЯ ЛОГИКА ЦЕЛЕЙ
+    else if (player.questStatus === 'talk_uncle_2') objectiveText.innerText = "Цель: Выслушай дядюшку (F)";
     else if (player.questStatus === 'go_graveyard') objectiveText.innerText = "Цель: Иди дальше на восток, на Погост ->";
     else if (player.questStatus === 'kill_undead') objectiveText.innerText = "Цель: Упокой нежить на старом Погосте!";
-    else if (player.questStatus === 'return_graveyard') objectiveText.innerText = "Цель: Возвращайся к дядюшке!";
-    
+    else if (player.questStatus === 'return_graveyard') objectiveText.innerText = currentLocation === 'graveyard' ? "Цель: Вернись в деревню (Иди влево <-)" : "Цель: Возвращайся к дядюшке!";
     else if (player.questStatus === 'done') objectiveText.innerText = "Свободная игра: охоться и торгуй!";
 }
 
@@ -160,7 +157,6 @@ const locations = {
         bgColor: '#4e5e3d', horizonColor: '#0a1a0f', groundImage: backgroundImages.fieldGround, horizonImage: backgroundImages.horizon,
         setup: () => {
             environment = []; lootItems = [];
-            // Хвощевики
             enemies = [createEnemy('hroshevik', 400, 300), createEnemy('hroshevik', 600, 250), createEnemy('hroshevik', 750, 380)];
             updateObjectiveText();
         }
@@ -169,7 +165,6 @@ const locations = {
         bgColor: '#263238', horizonColor: '#111', groundImage: backgroundImages.graveyardGround, horizonImage: backgroundImages.graveyardHorizon,
         setup: () => {
             environment = []; lootItems = [];
-            // Нежить (больше, сильнее, воскресают)
             enemies = [createEnemy('undead', 300, 280), createEnemy('undead', 500, 350), createEnemy('undead', 650, 250), createEnemy('undead', 800, 320)];
             if (player.questStatus === 'go_graveyard') player.questStatus = 'kill_undead';
             updateObjectiveText();
@@ -177,19 +172,18 @@ const locations = {
     }
 };
 
-// Фабрика врагов: теперь создает разных монстров
 function createEnemy(type, x, y) { 
     if (type === 'hroshevik') {
         return { 
             type: 'hroshevik', baseAnim: 'enemy', x: x, y: y, width: 35, height: 60, speed: 1.2, hp: 30, color: '#689f38', 
             state: 'chase', hurtTimer: 0, damage: 15, attackTimer: 0, currentAnim: 'enemy_walk', frameIndex: 0, animTimer: 0, isLockAnim: false, facingRight: false,
-            revives: 0 // Хвощевик умирает сразу
+            revives: 0 
         }; 
     } else if (type === 'undead') {
         return { 
             type: 'undead', baseAnim: 'undead', x: x, y: y, width: 40, height: 65, speed: 0.6, hp: 50, color: '#9e9e9e', 
             state: 'chase', hurtTimer: 0, damage: 25, attackTimer: 0, currentAnim: 'undead_walk', frameIndex: 0, animTimer: 0, isLockAnim: false, facingRight: false,
-            revives: 1, reviveTimer: 0 // Нежить один раз воскресает!
+            revives: 1, reviveTimer: 0 
         }; 
     }
 }
@@ -394,33 +388,48 @@ function performAction(action) {
     }
 }
 
+// --- ЛОГИКА ВЗАИМОДЕЙСТВИЯ СО СЦЕНОЙ И NPC ---
 function checkInteraction() {
     for (let obj of environment) {
         if (Math.hypot(player.x - obj.x, player.y - obj.y) < 80 && obj.interactable) {
             
+            // САРАЙ
             if (obj.type === 'shed' && player.questStatus === 'get_weapon') {
                 player.hasWeapon = true; obj.interactable = false;
                 player.equipment.weapon = { name: "Старый топор", dmg: 10 };
                 player.questStatus = 'kill_monsters'; updateObjectiveText(); setAnimation('idle_weapon');
             }
+            
+            // ДЯДЮШКА
             else if (obj.type === 'uncle') {
                 if (player.questStatus === 'get_weapon' || player.questStatus === 'kill_monsters') {
                     startDialogue([{ name: "Вейланд", text: "Очисти поле!" }]);
-                } else if (player.questStatus === 'return') { 
+                } 
+                else if (player.questStatus === 'return') { 
                     player.questStatus = 'talk_merchant'; player.xp += 100; updateHUD(); updateObjectiveText();
                     startDialogue([
                         { name: "Вейланд", text: "Хорошая работа, Тарн. (+100 ОПЫТА)" },
                         { name: "Вейланд", text: "Но твой топор совсем затупился о панцири этих тварей. Ступай к Снагу, пусть подлатает." }
                     ]); 
-                } else if (player.questStatus === 'return_graveyard') {
-                    player.questStatus = 'done'; player.xp += 300; updateHUD(); updateObjectiveText();
+                }
+                // ИЗМЕНЕНИЕ: Вейланд выдает квест на зомби ПОСЛЕ того как улучшен топор
+                else if (player.questStatus === 'talk_uncle_2') {
+                    player.questStatus = 'go_graveyard'; updateObjectiveText();
                     startDialogue([
-                        { name: "Вейланд", text: "Ты упокоил мертвецов... Невероятно! Ты стал настоящим воином. (+300 ОПЫТА)" }
-                    ]); 
-                } else {
-                    startDialogue([{ name: "Вейланд", text: "Ступай к Снагу." }]);
+                        { name: "Вейланд", text: "Тарн! Хвощевики были только началом. Гниль ползет со старого Погоста на востоке." },
+                        { name: "Вейланд", text: "Ступай туда и упокой мертвецов, пока они не добрались до деревни! Твой новый топор как раз пригодится." }
+                    ]);
+                }
+                else if (player.questStatus === 'return_graveyard') {
+                    player.questStatus = 'done'; player.xp += 300; updateHUD(); updateObjectiveText();
+                    startDialogue([{ name: "Вейланд", text: "Ты упокоил мертвецов... Невероятно! Ты стал настоящим воином. (+300 ОПЫТА)" }]); 
+                } 
+                else {
+                    startDialogue([{ name: "Вейланд", text: "Будь осторожен, Тарн." }]);
                 }
             }
+            
+            // СНАГ (ТОРГОВЕЦ)
             else if (obj.type === 'merchant') {
                 if (player.questStatus === 'talk_merchant') {
                     player.questStatus = player.seeds >= 10 ? 'return_merchant' : 'gather_seeds'; updateObjectiveText();
@@ -430,17 +439,22 @@ function checkInteraction() {
                     ]);
                 } else if (player.questStatus === 'gather_seeds') {
                     startDialogue([{ name: "Снаг", text: `Ква... Мне нужно 10 семян. У тебя пока только ${player.seeds}.` }]);
-                } else if (player.questStatus === 'return_merchant') {
+                } 
+                // ИЗМЕНЕНИЕ: Снаг улучшает топор, открывает магаз и отправляет к Дядюшке
+                else if (player.questStatus === 'return_merchant') {
                     player.seeds -= 10; player.baseDamage += 2;
                     if (player.equipment.weapon) player.equipment.weapon.name = "Наточенный топор";
-                    player.questStatus = 'go_graveyard'; updateHUD(); updateInventoryUI(); updateObjectiveText();
+                    
+                    player.questStatus = 'talk_uncle_2'; 
+                    updateHUD(); updateInventoryUI(); updateObjectiveText();
+                    
                     startDialogue([
                         { name: "Снаг", text: "Отлично! Держи свой топор. Теперь он рубит как надо! (+2 УРОНА)" },
-                        { name: "Снаг", text: "Но есть проблема похуже. Гниль ползет со старого Погоста на востоке. Сходи туда и проверь, что происходит." }
+                        { name: "Снаг", text: "Ква... Мой магазин теперь открыт. Кстати, твой дядюшка только что звал тебя. Поговори с ним, а потом возвращайся ко мне за зельями!" }
                     ]);
-                } else if (player.questStatus === 'go_graveyard' || player.questStatus === 'kill_undead') {
-                    startDialogue([{ name: "Снаг", text: "Ква! Осторожнее на Погосте, мертвецы там не всегда лежат смирно." }]);
-                } else if (player.questStatus === 'done' || player.questStatus === 'return_graveyard') {
+                } 
+                // ИЗМЕНЕНИЕ: Магазин открыт на всех этапах ПОСЛЕ сдачи семян
+                else if (['talk_uncle_2', 'go_graveyard', 'kill_undead', 'return_graveyard', 'done'].includes(player.questStatus)) {
                     openShop();
                 } else {
                     startDialogue([{ name: "Снаг", text: "Ква-а-а... Я пока занят, фермер. Поговори с дядюшкой." }]);
@@ -494,10 +508,9 @@ function update() {
         
         const horizon = 200; if (player.y < horizon) player.y = horizon; if (player.y > canvas.height) player.y = canvas.height;
         
-        // ПЕРЕХОДЫ МЕЖДУ ЛОКАЦИЯМИ
         if (player.x > canvas.width + 20) { 
             if (currentLocation === 'village' && player.hasWeapon) transitionLocation('field', 'left'); 
-            else if (currentLocation === 'field' && (player.questStatus === 'go_graveyard' || player.questStatus === 'kill_undead' || player.questStatus === 'return_graveyard' || player.questStatus === 'done')) {
+            else if (currentLocation === 'field' && (['go_graveyard', 'kill_undead', 'return_graveyard', 'done'].includes(player.questStatus))) {
                 transitionLocation('graveyard', 'left');
             }
             else player.x = canvas.width - player.width/2; 
@@ -527,7 +540,6 @@ function update() {
         let attackDamage = player.baseDamage * (player.state === 'attackLight' ? 1 : 2);
         
         enemies.forEach(enemy => {
-            // Если враг мертв ИЛИ воскрешается на земле, его нельзя бить
             if (enemy.state === 'dead' || enemy.state === 'resurrecting') return;
             
             let inRangeX = player.facingRight ? (enemy.x > player.x && enemy.x - player.x < reach) : (enemy.x < player.x && player.x - enemy.x < reach);
@@ -538,13 +550,9 @@ function update() {
                 
                 if (enemy.hp <= 0) { 
                     if (enemy.revives > 0) {
-                        // ВОСКРЕШЕНИЕ: Падает на землю, но не умирает насовсем
-                        enemy.state = 'resurrecting';
-                        enemy.revives--;
-                        enemy.reviveTimer = 150; // Лежит 2.5 секунды
+                        enemy.state = 'resurrecting'; enemy.revives--; enemy.reviveTimer = 150; 
                         setEntityAnimation(enemy, enemy.baseAnim + '_death'); enemy.isLockAnim = true;
                     } else {
-                        // ОКОНЧАТЕЛЬНАЯ СМЕРТЬ
                         enemy.state = 'dead'; player.xp += (enemy.type === 'undead' ? 40 : 20); 
                         let dropType = Math.random() > 0.5 ? 'coin' : 'seed'; lootItems.push({ x: enemy.x, y: enemy.y, type: dropType }); 
                         updateHUD(); checkQuestProgress(); 
@@ -561,23 +569,16 @@ function update() {
     enemies.forEach(enemy => {
         if (enemy.state === 'dead') { updateEnemyAnimation(enemy); return; }
         
-        // Логика таймера воскрешения
         if (enemy.state === 'resurrecting') {
-            updateEnemyAnimation(enemy);
-            enemy.reviveTimer--;
+            updateEnemyAnimation(enemy); enemy.reviveTimer--;
             if (enemy.reviveTimer <= 0) {
-                // Встает с половиной ХП
-                enemy.hp = 25;
-                enemy.state = 'chase';
-                enemy.isLockAnim = false;
+                enemy.hp = 25; enemy.state = 'chase'; enemy.isLockAnim = false;
                 setEntityAnimation(enemy, enemy.baseAnim + '_walk');
             }
-            return; // Больше ничего не делает, пока лежит
+            return; 
         }
 
-        updateEnemyAnimation(enemy); 
-        enemy.facingRight = player.x > enemy.x; 
-
+        updateEnemyAnimation(enemy); enemy.facingRight = player.x > enemy.x; 
         if (enemy.attackTimer > 0) enemy.attackTimer--;
         
         if (enemy.state === 'chase' && !enemy.isLockAnim) {
@@ -631,6 +632,7 @@ function draw() {
                         ctx.drawImage(frames[globalNpcFrame % frames.length], dX, dY, animConfig.w_frame, animConfig.h_frame); ctx.restore();
                     } else { ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
                     
+                    // ИЗМЕНЕНИЕ: Обновлены маркеры Снага
                     if (player.questStatus === 'talk_merchant' || player.questStatus === 'return_merchant') { drawQuestMark(obj.x, obj.y - obj.height - 20, '!'); }
                     else if (player.questStatus === 'gather_seeds') { drawQuestMark(obj.x, obj.y - obj.height - 20, '?', '#ccc'); } 
                 } 
@@ -642,7 +644,8 @@ function draw() {
                         ctx.drawImage(frames[globalNpcFrame % frames.length], dX, dY, animConfig.w_frame, animConfig.h_frame); ctx.restore();
                     } else { ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
                     
-                    if (player.questStatus === 'return' || player.questStatus === 'return_graveyard') { drawQuestMark(obj.x, obj.y - obj.height - 20, '!'); }
+                    // ИЗМЕНЕНИЕ: Обновлены маркеры Дядюшки
+                    if (['return', 'return_graveyard', 'talk_uncle_2'].includes(player.questStatus)) { drawQuestMark(obj.x, obj.y - obj.height - 20, '!'); }
                 }
             }
         }
