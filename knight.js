@@ -50,7 +50,12 @@ const tarnSprites = {
     roll: loadFrames('img/GG_perevorot', 5)                            
 };
 
-const npcSprites = { merchant_idle: loadFrames('img/frog_idle', 3), uncle_idle: loadFrames('img/dad_idle', 3) };
+// НОВОЕ: Спрайты Орка (пока будет искать orc_idle)
+const npcSprites = { 
+    merchant_idle: loadFrames('img/frog_idle', 3), 
+    uncle_idle: loadFrames('img/dad_idle', 3),
+    orc_idle: loadFrames('img/techer_idle', 3) 
+};
 const buildingSprites = { shed: loadFrames('img/Home', 1) };
 
 const enemySprites = {
@@ -100,6 +105,7 @@ const player = {
     coins: 0, seeds: 0, potions: 0, shell: 0, bones: 0,
 
     questStatus: 'get_weapon',
+    orcUnlocked: false, // НОВОЕ: Переменная, появился ли орк в деревне
     currentAnim: 'idle_no_weapon', frameIndex: 0, animTimer: 0, isLockAnim: false,
 
     equipment: {
@@ -121,6 +127,14 @@ function updateObjectiveText() {
     else if (player.questStatus === 'go_graveyard') objectiveText.innerText = "Цель: Иди дальше на восток, на Погост ->";
     else if (player.questStatus === 'kill_undead') objectiveText.innerText = "Цель: Упокой нежить на старом Погосте!";
     else if (player.questStatus === 'return_graveyard') objectiveText.innerText = currentLocation === 'graveyard' ? "Цель: Вернись в деревню (Иди влево <-)" : "Цель: Возвращайся к дядюшке!";
+    
+    // НОВАЯ СЮЖЕТНАЯ ВЕТКА ОРКА
+    else if (player.questStatus === 'reach_level_2') objectiveText.innerText = `Цель: Набери 1500 Опыта (${player.xp}/1500)`;
+    else if (player.questStatus === 'talk_uncle_3') objectiveText.innerText = "Цель: Поговори с дядюшкой об учителе (F)";
+    else if (player.questStatus === 'talk_orc') objectiveText.innerText = "Цель: Поговори с Орком-ветераном (F)";
+    else if (player.questStatus === 'orc_test') objectiveText.innerText = `Цель: Принеси кости с Погоста (${player.bones}/5)`;
+    else if (player.questStatus === 'return_orc') objectiveText.innerText = "Цель: Отдай кости Орку (F)";
+
     else if (player.questStatus === 'done') objectiveText.innerText = "Свободная игра: охоться и торгуй!";
 }
 
@@ -133,6 +147,11 @@ const locations = {
                 { x: 200, y: 280, width: 40, height: 80, color: '#ffb300', interactable: true, type: 'uncle' },
                 { x: 450, y: 240, width: 45, height: 60, interactable: true, type: 'merchant' }
             ];
+            // НОВОЕ: Если орк разблокирован, спавним его правее дядюшки
+            if (player.orcUnlocked) {
+                environment.push({ x: 280, y: 280, width: 45, height: 85, color: '#4caf50', interactable: true, type: 'orc' });
+            }
+
             enemies = []; lootItems = []; updateObjectiveText();
         }
     },
@@ -193,38 +212,19 @@ function updateInventoryUI() {
     const bagGrid = document.getElementById('bag-grid'); bagGrid.innerHTML = ''; 
     let slotIndex = 0;
     
-    // --- ИЗМЕНЕНИЕ: СТАКАЮЩИЕСЯ СЛОТЫ ---
     function addStackedItem(iconHTML, title, count) {
         if (count <= 0 || slotIndex >= 12) return;
-        let slot = document.createElement('div'); 
-        slot.className = 'bag-item';
-        slot.style.position = 'relative';
-        slot.style.display = 'flex'; 
-        slot.style.justifyContent = 'center'; 
-        slot.style.alignItems = 'center'; 
-        slot.title = title;
-        slot.innerHTML = iconHTML;
-
-        let countText = document.createElement('div');
-        countText.innerText = count;
-        countText.style.position = 'absolute';
-        countText.style.bottom = '2px';
-        countText.style.right = '4px';
-        countText.style.fontSize = '10px';
-        countText.style.color = '#fff';
-        countText.style.textShadow = '1px 1px 0 #000';
-        countText.style.fontFamily = 'monospace';
-        slot.appendChild(countText);
-        
-        bagGrid.appendChild(slot);
-        slotIndex++;
+        let slot = document.createElement('div'); slot.className = 'bag-item';
+        slot.style.position = 'relative'; slot.style.display = 'flex'; slot.style.justifyContent = 'center'; slot.style.alignItems = 'center'; 
+        slot.title = title; slot.innerHTML = iconHTML;
+        let countText = document.createElement('div'); countText.innerText = count; countText.style.position = 'absolute'; countText.style.bottom = '2px'; countText.style.right = '4px'; countText.style.fontSize = '10px'; countText.style.color = '#fff'; countText.style.textShadow = '1px 1px 0 #000'; countText.style.fontFamily = 'monospace';
+        slot.appendChild(countText); bagGrid.appendChild(slot); slotIndex++;
     }
 
     addStackedItem('<div style="font-size: 24px; cursor: help;">🧪</div>', 'Зелье лечения', player.potions);
     addStackedItem('<div style="width:15px; height:15px; background:#4fc3f7; border: 1px solid #000;"></div>', 'Панцирь Хвощевика', player.shell);
     addStackedItem('<div style="width:15px; height:15px; background:#fff; border: 1px solid #000;"></div>', 'Старая кость', player.bones);
 
-    // Добиваем пустые слоты
     for (; slotIndex < 12; slotIndex++) {
         let slot = document.createElement('div'); slot.className = 'bag-item'; bagGrid.appendChild(slot);
     }
@@ -255,9 +255,6 @@ btnFullscreen.addEventListener('click', () => {
 document.addEventListener('fullscreenchange', updateFullscreenBtn); document.addEventListener('webkitfullscreenchange', updateFullscreenBtn);
 function updateFullscreenBtn() { btnFullscreen.innerText = (!document.fullscreenElement && !document.webkitFullscreenElement) ? '⛶' : '✖'; }
 
-// ==========================================
-// --- АНИМАЦИИ ---
-// ==========================================
 function setAnimation(animName) {
     if (player.isLockAnim || player.currentAnim === animName) return;
     if (!animConfig.animations[animName]) return;
@@ -331,7 +328,7 @@ function advanceDialogue() {
         } else updateDialogueUI();
     }
 }
-function updateDialogueUI() { speakerName.innerText = dialogueLines[currentLine].name; dialogueText.innerText = dialogueLines[currentLine].text; speakerName.style.color = dialogueLines[currentLine].name === "Тарн" ? "#a1887f" : "#ffb300"; }
+function updateDialogueUI() { speakerName.innerText = dialogueLines[currentLine].name; dialogueText.innerText = dialogueLines[currentLine].text; speakerName.style.color = dialogueLines[currentLine].name === "Тарн" ? "#a1887f" : (dialogueLines[currentLine].name.includes("Орк") ? "#4caf50" : "#ffb300"); }
 function openShop() { currentState = 'SHOP'; keys.w = keys.a = keys.s = keys.d = false; shopScreen.classList.remove('hidden'); mobileControls.classList.add('hidden'); }
 function closeShop() { currentState = 'PLAY'; shopScreen.classList.add('hidden'); checkMobile(); }
 
@@ -353,11 +350,17 @@ btnCloseCraft.addEventListener('click', closeCraft);
 
 function usePotion() { if (player.potions > 0 && player.hp < player.maxHp) { player.potions--; player.hp = Math.min(player.maxHp, player.hp + 50); updateHUD(); updateInventoryUI(); } }
 
-// --- ИЗМЕНЕНИЕ: Очищенный HUD (Монеты, Семена, Зелья) ---
 function updateHUD() { 
     let hpPercent = Math.max(0, (player.hp / player.maxHp) * 100); hpBarFill.style.width = hpPercent + '%'; 
     xpText.innerText = 'Опыт: ' + player.xp; 
-    inventoryText.innerText = `Монеты: ${player.coins} | Семена: ${player.seeds} | Зелья (E): ${player.potions}`;
+    let text = `Монеты: ${player.coins} | Семена: ${player.seeds}`;
+    
+    // ДИНАМИЧЕСКИЕ ЦЕЛИ ДЛЯ ОПЫТА И КОСТЕЙ
+    if (player.questStatus === 'reach_level_2') objectiveText.innerText = `Цель: Набери 1500 Опыта (${player.xp}/1500)`;
+    if (player.questStatus === 'gather_seeds') objectiveText.innerText = `Цель: Собери 10 семян для Снага (${player.seeds}/10)`;
+    if (player.questStatus === 'orc_test') objectiveText.innerText = `Цель: Принеси кости с Погоста (${player.bones}/5)`;
+
+    inventoryText.innerText = text;
 }
 
 function checkMobile() {
@@ -431,6 +434,7 @@ function checkInteraction() {
                 player.equipment.weapon = { name: "Старый топор", dmg: 10 };
                 player.questStatus = 'kill_monsters'; updateObjectiveText(); setAnimation('idle_weapon');
             }
+            
             else if (obj.type === 'uncle') {
                 if (player.questStatus === 'get_weapon' || player.questStatus === 'kill_monsters') {
                     startDialogue([{ name: "Вейланд", text: "Очисти поле!" }]);
@@ -449,15 +453,71 @@ function checkInteraction() {
                         { name: "Вейланд", text: "Ступай туда и упокой мертвецов, пока они не добрались до деревни! Твой новый топор как раз пригодится." }
                     ]);
                 }
+                
+                // НОВАЯ СЮЖЕТНАЯ ВЕТКА
                 else if (player.questStatus === 'return_graveyard') {
-                    player.questStatus = 'done'; player.xp += 300; updateHUD(); updateObjectiveText();
-                    startDialogue([{ name: "Вейланд", text: "Ты упокоил мертвецов... Невероятно! Ты стал настоящим воином. (+300 ОПЫТА)" }]); 
+                    player.xp += 300; updateHUD(); 
+                    
+                    if (player.xp >= 1500) {
+                        player.questStatus = 'talk_orc'; player.orcUnlocked = true; locations.village.setup();
+                        startDialogue([
+                            { name: "Вейланд", text: "Ты выжил на Погосте! И стал гораздо сильнее. (+300 ОПЫТА)" },
+                            { name: "Вейланд", text: "Я вижу в тебе большой потенциал, поэтому нашел для тебя учителя. Он стоит справа." },
+                            { name: "Грум (Орк)", text: "Хррр... Пацан вроде крепкий. Подойди-ка ко мне." }
+                        ]); 
+                    } else {
+                        player.questStatus = 'reach_level_2'; updateObjectiveText();
+                        startDialogue([
+                            { name: "Вейланд", text: "Ты выжил на Погосте! Отличная работа. (+300 ОПЫТА)" },
+                            { name: "Вейланд", text: "Я нашел для тебя учителя — старого орка-ветерана. Но он слишком горд." },
+                            { name: "Вейланд", text: "Он начнет тренировать тебя, только когда ты наберешь 1500 опыта. Иди фармись!" }
+                        ]); 
+                    }
                 } 
-                else if (player.questStatus === 'done') {
+                else if (player.questStatus === 'reach_level_2') {
+                    startDialogue([{ name: "Вейланд", text: "Тебе нужно больше опыта. Возвращайся на Погост или Поле." }]);
+                }
+                else if (player.questStatus === 'talk_uncle_3') {
+                    player.questStatus = 'talk_orc'; player.orcUnlocked = true; locations.village.setup();
+                    startDialogue([
+                        { name: "Вейланд", text: "Ты достиг нужного уровня! Теперь орк готов с тобой поговорить." },
+                        { name: "Вейланд", text: "Его зовут Грум. Он стоит справа от меня." }
+                    ]);
+                }
+                else if (player.questStatus === 'done' || player.questStatus === 'talk_orc' || player.questStatus === 'orc_test' || player.questStatus === 'return_orc') {
                     openCraft();
                 }
                 else {
                     startDialogue([{ name: "Вейланд", text: "Будь осторожен, Тарн." }]);
+                }
+            }
+            
+            // ВЗАИМОДЕЙСТВИЕ С ОРКОМ
+            else if (obj.type === 'orc') {
+                if (player.questStatus === 'talk_orc') {
+                    player.questStatus = 'orc_test'; updateObjectiveText();
+                    startDialogue([
+                        { name: "Грум (Орк)", text: "Слушай сюда, щенок. Битва — это не просто махание железкой." },
+                        { name: "Грум (Орк)", text: "Сила делает твои удары смертельными. Защита спасает шкуру. Здоровье позволяет пережить ошибку." },
+                        { name: "Грум (Орк)", text: "Говорят, умные еще какую-то магию используют... Вздор! Настоящий орк решает всё сталью и мышцами!" },
+                        { name: "Грум (Орк)", text: "Хочешь, чтобы я научил тебя бить по-настоящему? Докажи, что не боишься." },
+                        { name: "Грум (Орк)", text: "Иди на Погост и принеси мне 5 костей мертвецов. Я сделаю из них тренировочный манекен." }
+                    ]);
+                }
+                else if (player.questStatus === 'orc_test') {
+                    startDialogue([{ name: "Грум (Орк)", text: `Хррр... Принеси 5 костей! У тебя пока ${player.bones}.` }]);
+                }
+                else if (player.questStatus === 'return_orc') {
+                    player.bones -= 5;
+                    player.questStatus = 'done'; // Конец текущей сюжетки
+                    updateHUD(); updateInventoryUI(); updateObjectiveText();
+                    startDialogue([
+                        { name: "Грум (Орк)", text: "А ты не трус, фермер. Ладно, начнем тренировки." },
+                        { name: "Грум (Орк)", text: "(Скоро здесь появится меню прокачки характеристик!)" }
+                    ]);
+                }
+                else if (player.questStatus === 'done') {
+                    startDialogue([{ name: "Грум (Орк)", text: "(Окно тренировки в разработке...)" }]);
                 }
             }
             
@@ -483,7 +543,7 @@ function checkInteraction() {
                         { name: "Снаг", text: "Ква... Мой магазин теперь открыт. Кстати, твой дядюшка только что звал тебя. Поговори с ним, а потом возвращайся ко мне за зельями!" }
                     ]);
                 } 
-                else if (['talk_uncle_2', 'go_graveyard', 'kill_undead', 'return_graveyard', 'done'].includes(player.questStatus)) {
+                else if (['talk_uncle_2', 'go_graveyard', 'kill_undead', 'return_graveyard', 'reach_level_2', 'talk_uncle_3', 'talk_orc', 'orc_test', 'return_orc', 'done'].includes(player.questStatus)) {
                     openShop();
                 } else {
                     startDialogue([{ name: "Снаг", text: "Ква-а-а... Я пока занят, фермер. Поговори с дядюшкой." }]);
@@ -538,7 +598,7 @@ function update() {
         
         if (player.x > canvas.width + 20) { 
             if (currentLocation === 'village' && player.hasWeapon) transitionLocation('field', 'left'); 
-            else if (currentLocation === 'field' && (['go_graveyard', 'kill_undead', 'return_graveyard', 'done'].includes(player.questStatus))) {
+            else if (currentLocation === 'field' && (['go_graveyard', 'kill_undead', 'return_graveyard', 'reach_level_2', 'talk_uncle_3', 'talk_orc', 'orc_test', 'return_orc', 'done'].includes(player.questStatus))) {
                 transitionLocation('graveyard', 'left');
             }
             else player.x = canvas.width - player.width/2; 
@@ -559,7 +619,10 @@ function update() {
                 if (player.questStatus === 'gather_seeds' && player.seeds >= 10) { player.questStatus = 'return_merchant'; updateObjectiveText(); }
             }
             else if (item.type === 'shell') player.shell++;
-            else if (item.type === 'bone') player.bones++;
+            else if (item.type === 'bone') {
+                player.bones++;
+                if (player.questStatus === 'orc_test' && player.bones >= 5) { player.questStatus = 'return_orc'; updateObjectiveText(); }
+            }
 
             lootItems.splice(i, 1); updateHUD(); 
         } 
@@ -585,14 +648,19 @@ function update() {
                         enemy.isLockAnim = false; 
                         setEntityAnimation(enemy, enemy.baseAnim + '_death'); enemy.isLockAnim = true;
                     } else {
-                        enemy.state = 'dead'; player.xp += (enemy.type === 'undead' ? 40 : 20); 
+                        enemy.state = 'dead'; 
                         
-                        // --- ИЗМЕНЕНИЕ: ШАНС ДРОПА РЕДКИХ РЕСУРСОВ 10% ---
+                        // НОВАЯ ЛОГИКА ОПЫТА И ЛЕВЕЛАПА
+                        player.xp += (enemy.type === 'undead' ? 40 : 20); 
+                        if (player.questStatus === 'reach_level_2' && player.xp >= 1500) {
+                            player.questStatus = 'talk_uncle_3'; updateObjectiveText();
+                        }
+                        
                         let rand = Math.random();
                         let dropType = null;
                         if (rand < 0.4) dropType = 'coin'; 
                         else if (rand < 0.7) dropType = 'seed'; 
-                        else if (rand < 0.8) {
+                        else if (rand < 0.8) { // 10% шанс
                             dropType = enemy.type === 'hroshevik' ? 'shell' : 'bone';
                         }
                         if(dropType) lootItems.push({ x: enemy.x, y: enemy.y, type: dropType }); 
@@ -695,8 +763,19 @@ function draw() {
                         ctx.drawImage(frames[globalNpcFrame % frames.length], dX, dY, animConfig.w_frame, animConfig.h_frame); ctx.restore();
                     } else { ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
                     
-                    if (['return', 'return_graveyard', 'talk_uncle_2'].includes(player.questStatus)) { drawQuestMark(obj.x, obj.y - obj.height - 20, '!'); }
-                    else if (player.questStatus === 'done') { drawQuestMark(obj.x, obj.y - obj.height - 20, '⚒', '#4fc3f7'); } 
+                    if (['return', 'return_graveyard', 'talk_uncle_2', 'talk_uncle_3'].includes(player.questStatus)) { drawQuestMark(obj.x, obj.y - obj.height - 20, '!'); }
+                    else if (['done', 'talk_orc', 'orc_test', 'return_orc'].includes(player.questStatus)) { drawQuestMark(obj.x, obj.y - obj.height - 20, '⚒', '#4fc3f7'); } 
+                }
+                else if (obj.type === 'orc') {
+                    ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(obj.x, obj.y, 20, 6, 0, 0, Math.PI * 2); ctx.fill();
+                    const frames = npcSprites.orc_idle;
+                    if (frames && frames.length > 0 && frames[0].complete) {
+                        ctx.save(); ctx.translate(obj.x, obj.y); const dX = -animConfig.w_frame / 2; const dY = -animConfig.h_frame + 10;
+                        ctx.drawImage(frames[globalNpcFrame % frames.length], dX, dY, animConfig.w_frame, animConfig.h_frame); ctx.restore();
+                    } else { ctx.fillStyle = '#4caf50'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
+                    
+                    if (['talk_orc', 'return_orc'].includes(player.questStatus)) { drawQuestMark(obj.x, obj.y - obj.height - 20, '!'); }
+                    else if (player.questStatus === 'orc_test') { drawQuestMark(obj.x, obj.y - obj.height - 20, '?', '#ccc'); } 
                 }
             }
         }
