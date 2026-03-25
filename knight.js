@@ -193,24 +193,38 @@ function updateInventoryUI() {
     const bagGrid = document.getElementById('bag-grid'); bagGrid.innerHTML = ''; 
     let slotIndex = 0;
     
-    for (let i = 0; i < player.potions; i++) {
-        if(slotIndex >= 12) break;
-        let slot = document.createElement('div'); slot.className = 'bag-item';
-        slot.style.display = 'flex'; slot.style.justifyContent = 'center'; slot.style.alignItems = 'center'; slot.style.fontSize = '24px';
-        slot.innerHTML = '🧪'; slot.title = 'Зелье лечения'; bagGrid.appendChild(slot); slotIndex++;
+    // --- ИЗМЕНЕНИЕ: СТАКАЮЩИЕСЯ СЛОТЫ ---
+    function addStackedItem(iconHTML, title, count) {
+        if (count <= 0 || slotIndex >= 12) return;
+        let slot = document.createElement('div'); 
+        slot.className = 'bag-item';
+        slot.style.position = 'relative';
+        slot.style.display = 'flex'; 
+        slot.style.justifyContent = 'center'; 
+        slot.style.alignItems = 'center'; 
+        slot.title = title;
+        slot.innerHTML = iconHTML;
+
+        let countText = document.createElement('div');
+        countText.innerText = count;
+        countText.style.position = 'absolute';
+        countText.style.bottom = '2px';
+        countText.style.right = '4px';
+        countText.style.fontSize = '10px';
+        countText.style.color = '#fff';
+        countText.style.textShadow = '1px 1px 0 #000';
+        countText.style.fontFamily = 'monospace';
+        slot.appendChild(countText);
+        
+        bagGrid.appendChild(slot);
+        slotIndex++;
     }
-    for (let i = 0; i < player.shell; i++) {
-        if(slotIndex >= 12) break;
-        let slot = document.createElement('div'); slot.className = 'bag-item';
-        slot.style.display = 'flex'; slot.style.justifyContent = 'center'; slot.style.alignItems = 'center'; 
-        slot.innerHTML = '<div style="width:15px; height:15px; background:#4fc3f7; border: 1px solid #000;"></div>'; slot.title = 'Панцирь Хвощевика'; bagGrid.appendChild(slot); slotIndex++;
-    }
-    for (let i = 0; i < player.bones; i++) {
-        if(slotIndex >= 12) break;
-        let slot = document.createElement('div'); slot.className = 'bag-item';
-        slot.style.display = 'flex'; slot.style.justifyContent = 'center'; slot.style.alignItems = 'center'; 
-        slot.innerHTML = '<div style="width:15px; height:15px; background:#fff; border: 1px solid #000;"></div>'; slot.title = 'Старая кость'; bagGrid.appendChild(slot); slotIndex++;
-    }
+
+    addStackedItem('<div style="font-size: 24px; cursor: help;">🧪</div>', 'Зелье лечения', player.potions);
+    addStackedItem('<div style="width:15px; height:15px; background:#4fc3f7; border: 1px solid #000;"></div>', 'Панцирь Хвощевика', player.shell);
+    addStackedItem('<div style="width:15px; height:15px; background:#fff; border: 1px solid #000;"></div>', 'Старая кость', player.bones);
+
+    // Добиваем пустые слоты
     for (; slotIndex < 12; slotIndex++) {
         let slot = document.createElement('div'); slot.className = 'bag-item'; bagGrid.appendChild(slot);
     }
@@ -339,14 +353,11 @@ btnCloseCraft.addEventListener('click', closeCraft);
 
 function usePotion() { if (player.potions > 0 && player.hp < player.maxHp) { player.potions--; player.hp = Math.min(player.maxHp, player.hp + 50); updateHUD(); updateInventoryUI(); } }
 
+// --- ИЗМЕНЕНИЕ: Очищенный HUD (Монеты, Семена, Зелья) ---
 function updateHUD() { 
     let hpPercent = Math.max(0, (player.hp / player.maxHp) * 100); hpBarFill.style.width = hpPercent + '%'; 
     xpText.innerText = 'Опыт: ' + player.xp; 
-    let text = `Монеты: ${player.coins} | Семена: ${player.seeds}`;
-    if (player.shell > 0 || player.bones > 0) {
-        text += ` | Панцири: ${player.shell} | Кости: ${player.bones}`;
-    }
-    inventoryText.innerText = text;
+    inventoryText.innerText = `Монеты: ${player.coins} | Семена: ${player.seeds} | Зелья (E): ${player.potions}`;
 }
 
 function checkMobile() {
@@ -571,27 +582,28 @@ function update() {
                 if (enemy.hp <= 0) { 
                     if (enemy.revives > 0) {
                         enemy.state = 'resurrecting'; enemy.revives--; enemy.reviveTimer = 150; 
-                        enemy.isLockAnim = false; // ИСПРАВЛЕНИЕ ЗАВИСАНИЯ
+                        enemy.isLockAnim = false; 
                         setEntityAnimation(enemy, enemy.baseAnim + '_death'); enemy.isLockAnim = true;
                     } else {
                         enemy.state = 'dead'; player.xp += (enemy.type === 'undead' ? 40 : 20); 
                         
+                        // --- ИЗМЕНЕНИЕ: ШАНС ДРОПА РЕДКИХ РЕСУРСОВ 10% ---
                         let rand = Math.random();
                         let dropType = null;
                         if (rand < 0.4) dropType = 'coin'; 
                         else if (rand < 0.7) dropType = 'seed'; 
-                        else {
+                        else if (rand < 0.8) {
                             dropType = enemy.type === 'hroshevik' ? 'shell' : 'bone';
                         }
                         if(dropType) lootItems.push({ x: enemy.x, y: enemy.y, type: dropType }); 
                         
                         updateHUD(); checkQuestProgress(); 
-                        enemy.isLockAnim = false; // ИСПРАВЛЕНИЕ ЗАВИСАНИЯ
+                        enemy.isLockAnim = false; 
                         setEntityAnimation(enemy, enemy.baseAnim + '_death'); enemy.isLockAnim = true;
                     }
                 } else {
                     enemy.state = 'hurt'; enemy.hurtTimer = 15; enemy.x += player.facingRight ? 20 : -20;
-                    enemy.isLockAnim = false; // ИСПРАВЛЕНИЕ ЗАВИСАНИЯ
+                    enemy.isLockAnim = false; 
                     setEntityAnimation(enemy, enemy.baseAnim + '_hurt'); enemy.isLockAnim = true;
                 }
             }
