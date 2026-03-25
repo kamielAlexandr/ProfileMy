@@ -19,7 +19,6 @@ body {
 
 canvas { width: 100%; height: 100%; display: block; object-fit: contain; }
 
-/* ВЕРХНИЕ КНОПКИ (Фуллскрин и Инвентарь) */
 .top-btn {
     position: absolute; top: 10px; 
     background: rgba(46, 30, 25, 0.7); border: 2px solid rgba(141, 110, 99, 0.8);
@@ -55,7 +54,7 @@ canvas { width: 100%; height: 100%; display: block; object-fit: contain; }
 .hint { text-align: right; font-size: 10px; color: #aaa; margin-top: 10px; }
 
 /* МАГАЗИН И ИНВЕНТАРЬ */
-.shop-box, .inventory-box { bottom: auto; top: 50%; transform: translateY(-50%); cursor: default; }
+.shop-box, .inventory-box, #craft-screen .shop-box { bottom: auto; top: 50%; transform: translateY(-50%); cursor: default; }
 .inventory-box { width: 85%; max-width: 600px; }
 .shop-box { display: flex; flex-direction: column; align-items: center; }
 
@@ -83,13 +82,12 @@ canvas { width: 100%; height: 100%; display: block; object-fit: contain; }
 }
 .bag-item { aspect-ratio: 1; background: #3e2723; border: 1px solid #2e1e19; border-radius: 3px; }
 
-/* HUD */
 #hud {
     position: absolute; top: 10px; left: 10px; right: 110px; 
     font-family: monospace; font-size: clamp(10px, 2vw, 14px); color: rgba(255, 255, 255, 0.8);
     z-index: 5; display: flex; justify-content: space-between; align-items: flex-start;
 }
-#player-stats { width: 30%; max-width: 200px; margin-right: 10px; }
+#player-stats { width: 40%; max-width: 250px; margin-right: 10px; }
 .hp-bar-bg { width: 100%; height: 10px; background-color: #3e2723; border: 2px solid #111; border-radius: 5px; overflow: hidden; }
 #hp-bar-fill { width: 100%; height: 100%; background-color: #d32f2f; transition: width 0.2s ease-out; }
 #xp-text, #inventory-text { color: #4fc3f7; font-size: clamp(8px, 1.5vw, 12px); margin-top: 5px; text-shadow: 1px 1px 0 #000; }
@@ -97,7 +95,6 @@ canvas { width: 100%; height: 100%; display: block; object-fit: contain; }
 #objective { color: #ffb300; font-weight: bold; flex-grow: 1; text-align: center; }
 #controls { font-size: 10px; opacity: 0.6; text-align: right; max-width: 250px; }
 
-/* МОБИЛЬНЫЕ КНОПКИ */
 #mobile-controls {
     position: absolute; bottom: 10px; left: 0; width: 100%;
     display: flex; justify-content: space-between; padding: 0 15px; box-sizing: border-box;
