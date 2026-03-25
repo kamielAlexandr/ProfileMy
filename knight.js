@@ -7,6 +7,7 @@ const storyScreen = document.getElementById('story-screen');
 const dialogueScreen = document.getElementById('dialogue-screen');
 const fadeOverlay = document.getElementById('fade-overlay');
 const shopScreen = document.getElementById('shop-screen');
+const craftScreen = document.getElementById('craft-screen'); // НОВОЕ: Экран крафта
 const inventoryScreen = document.getElementById('inventory-screen'); 
 const hud = document.getElementById('hud');
 const objectiveText = document.getElementById('objective');
@@ -19,6 +20,8 @@ const gameOverScreen = document.getElementById('game-over-screen');
 
 const btnPotion = document.getElementById('btn-buy-potion');
 const btnCloseShop = document.getElementById('btn-close-shop');
+const btnCraftChest = document.getElementById('btn-craft-chest'); // НОВОЕ: Кнопка крафта брони
+const btnCloseCraft = document.getElementById('btn-close-craft'); // НОВОЕ: Кнопка закрытия крафта
 const mobileControls = document.getElementById('mobile-controls');
 const btnFullscreen = document.getElementById('btn-fullscreen');
 const btnInventory = document.getElementById('btn-inventory'); 
@@ -34,22 +37,16 @@ const keys = { w: false, a: false, s: false, d: false };
 function loadFrames(prefix, count) {
     let frames = [];
     for (let i = 1; i <= count; i++) {
-        let img = new Image();
-        img.src = `${prefix}_${i}.png`; 
-        frames.push(img);
+        let img = new Image(); img.src = `${prefix}_${i}.png`; frames.push(img);
     }
     return frames;
 }
 
 const tarnSprites = {
-    idle_no_weapon: loadFrames('img/GG_idle_None', 1),
-    idle_weapon: loadFrames('img/GG_idle', 1),
-    walk_no_weapon: loadFrames('img/GG_idle_None', 6), 
-    walk_weapon: loadFrames('img/GG_idle', 6),       
-    attack1_no_weapon: loadFrames('img/GG_Attack_ryka', 6), 
-    attack1_weapon: loadFrames('img/GG_Attack_Axe', 6),       
-    attack2_no_weapon: loadFrames('img/GG_Attack_superRyka', 6), 
-    attack2_weapon: loadFrames('img/GG_Attack_SuperAxe', 6),       
+    idle_no_weapon: loadFrames('img/GG_idle_None', 1), idle_weapon: loadFrames('img/GG_idle', 1),
+    walk_no_weapon: loadFrames('img/GG_idle_None', 6), walk_weapon: loadFrames('img/GG_idle', 6),       
+    attack1_no_weapon: loadFrames('img/GG_Attack_ryka', 6), attack1_weapon: loadFrames('img/GG_Attack_Axe', 6),       
+    attack2_no_weapon: loadFrames('img/GG_Attack_superRyka', 6), attack2_weapon: loadFrames('img/GG_Attack_SuperAxe', 6),       
     roll: loadFrames('img/GG_perevorot', 5)                            
 };
 
@@ -57,29 +54,21 @@ const npcSprites = { merchant_idle: loadFrames('img/frog_idle', 3), uncle_idle: 
 const buildingSprites = { shed: loadFrames('img/Home', 1) };
 
 const enemySprites = {
-    walk: loadFrames('img/hroshevik_walk', 4),
-    preAttack: loadFrames('img/hroshevik_Pre-Attack', 3),
-    attack: loadFrames('img/hroshevik_Attack', 3),
-    hurt: loadFrames('img/hroshevik_Hurt', 3),
-    death: loadFrames('img/hroshevik_Death', 5)
+    walk: loadFrames('img/hroshevik_walk', 4), preAttack: loadFrames('img/hroshevik_Pre-Attack', 3),
+    attack: loadFrames('img/hroshevik_Attack', 3), hurt: loadFrames('img/hroshevik_Hurt', 3), death: loadFrames('img/hroshevik_Death', 5)
 };
 
 const undeadSprites = {
-    walk: loadFrames('img/undead_walk', 4),
-    preAttack: loadFrames('img/undead_Pre-Attack', 3),
-    attack: loadFrames('img/undead_Attack', 3),
-    hurt: loadFrames('img/undead_Hurt', 3),
-    death: loadFrames('img/undead_Death', 5)
+    walk: loadFrames('img/undead_walk', 5), preAttack: loadFrames('img/undead_Pre-Attack', 3),
+    attack: loadFrames('img/undead_Attack', 3), hurt: loadFrames('img/undead_Hurt', 3), death: loadFrames('img/undead_Death', 5)
 };
 
 const backgroundImages = {
     horizon: new Image(), villageGround: new Image(), fieldGround: new Image(),
     graveyardHorizon: new Image(), graveyardGround: new Image()
 };
-backgroundImages.horizon.src = 'img/BG_farm.png'; 
-backgroundImages.villageGround.src = 'img/zemly_1.png'; 
-backgroundImages.fieldGround.src = 'img/BG2_1.png'; 
-backgroundImages.graveyardHorizon.src = 'img/BG3_1.png'; 
+backgroundImages.horizon.src = 'img/BG_farm.png'; backgroundImages.villageGround.src = 'img/zemly_1.png'; 
+backgroundImages.fieldGround.src = 'img/BG2_1.png'; backgroundImages.graveyardHorizon.src = 'img/BG3_1.png'; 
 backgroundImages.graveyardGround.src = 'img/zemly_2.png'; 
 
 let globalNpcTimer = 0; let globalNpcFrame = 0; const npcAnimSpeed = 12;
@@ -87,26 +76,18 @@ let globalNpcTimer = 0; let globalNpcFrame = 0; const npcAnimSpeed = 12;
 const animConfig = {
     w_frame: 96, h_frame: 96, 
     animations: {
-        'idle_no_weapon':   { frames: tarnSprites.idle_no_weapon, speed: 12 },
-        'idle_weapon':      { frames: tarnSprites.idle_weapon,    speed: 12 },
-        'walk_no_weapon':   { frames: tarnSprites.walk_no_weapon, speed: 8 }, 
-        'walk_weapon':      { frames: tarnSprites.walk_weapon,    speed: 8 }, 
-        'attack1_no_weapon':{ frames: tarnSprites.attack1_no_weapon, speed: 6, onComplete: 'idle' },
-        'attack1_weapon':   { frames: tarnSprites.attack1_weapon, speed: 6, onComplete: 'idle' },
-        'attack2_no_weapon':{ frames: tarnSprites.attack2_no_weapon, speed: 5, onComplete: 'idle' },
-        'attack2_weapon':   { frames: tarnSprites.attack2_weapon, speed: 5, onComplete: 'idle' },
+        'idle_no_weapon':   { frames: tarnSprites.idle_no_weapon, speed: 12 }, 'idle_weapon':      { frames: tarnSprites.idle_weapon,    speed: 12 },
+        'walk_no_weapon':   { frames: tarnSprites.walk_no_weapon, speed: 8 }, 'walk_weapon':      { frames: tarnSprites.walk_weapon,    speed: 8 }, 
+        'attack1_no_weapon':{ frames: tarnSprites.attack1_no_weapon, speed: 6, onComplete: 'idle' }, 'attack1_weapon':   { frames: tarnSprites.attack1_weapon, speed: 6, onComplete: 'idle' },
+        'attack2_no_weapon':{ frames: tarnSprites.attack2_no_weapon, speed: 5, onComplete: 'idle' }, 'attack2_weapon':   { frames: tarnSprites.attack2_weapon, speed: 5, onComplete: 'idle' },
         'roll':             { frames: tarnSprites.roll,           speed: 4, onComplete: 'idle' },
         
-        'enemy_walk':       { frames: enemySprites.walk,      speed: 10 },
-        'enemy_preAttack':  { frames: enemySprites.preAttack, speed: 12, onComplete: 'attack' }, 
-        'enemy_attack':     { frames: enemySprites.attack,    speed: 5,  onComplete: 'walk' },   
-        'enemy_hurt':       { frames: enemySprites.hurt,      speed: 6,  onComplete: 'walk' },
+        'enemy_walk':       { frames: enemySprites.walk,      speed: 10 }, 'enemy_preAttack':  { frames: enemySprites.preAttack, speed: 12, onComplete: 'attack' }, 
+        'enemy_attack':     { frames: enemySprites.attack,    speed: 5,  onComplete: 'walk' }, 'enemy_hurt':       { frames: enemySprites.hurt,      speed: 6,  onComplete: 'walk' },
         'enemy_death':      { frames: enemySprites.death,     speed: 8,  onComplete: 'dead' },
 
-        'undead_walk':      { frames: undeadSprites.walk,      speed: 14 }, 
-        'undead_preAttack': { frames: undeadSprites.preAttack, speed: 15, onComplete: 'attack' }, 
-        'undead_attack':    { frames: undeadSprites.attack,    speed: 6,  onComplete: 'walk' },   
-        'undead_hurt':      { frames: undeadSprites.hurt,      speed: 6,  onComplete: 'walk' },
+        'undead_walk':      { frames: undeadSprites.walk,      speed: 14 }, 'undead_preAttack': { frames: undeadSprites.preAttack, speed: 15, onComplete: 'attack' }, 
+        'undead_attack':    { frames: undeadSprites.attack,    speed: 6,  onComplete: 'walk' }, 'undead_hurt':      { frames: undeadSprites.hurt,      speed: 6,  onComplete: 'walk' },
         'undead_death':     { frames: undeadSprites.death,     speed: 10, onComplete: 'dead' }
     }
 };
@@ -114,8 +95,12 @@ const animConfig = {
 const player = {
     x: 300, y: 300, width: 30, height: 70, speed: 3.5, color: '#8D6E63',
     state: 'idle', facingRight: true, rollTimer: 0, rollDuration: 0, rollSpeedMult: 2, hasWeapon: false, attackHitboxActive: false,
-    hp: 100, maxHp: 100, hurtTimer: 0, xp: 0, coins: 0, seeds: 0, potions: 0, baseDamage: 10, 
-    questStatus: 'get_weapon', // НОВЫЙ СТАТУС В ЦЕПОЧКЕ: talk_uncle_2
+    hp: 100, maxHp: 100, hurtTimer: 0, xp: 0, baseDamage: 10, 
+    
+    // НОВОЕ: Ресурсы
+    coins: 0, seeds: 0, potions: 0, shell: 0, bones: 0,
+
+    questStatus: 'get_weapon',
     currentAnim: 'idle_no_weapon', frameIndex: 0, animTimer: 0, isLockAnim: false,
 
     equipment: {
@@ -133,7 +118,6 @@ function updateObjectiveText() {
     else if (player.questStatus === 'talk_merchant') objectiveText.innerText = currentLocation === 'field' ? "Цель: Вернись в деревню (Иди влево <-)" : "Цель: Поговори с торговцем Снагом (F)";
     else if (player.questStatus === 'gather_seeds') objectiveText.innerText = `Цель: Собери 10 семян для Снага (${player.seeds}/10)`;
     else if (player.questStatus === 'return_merchant') objectiveText.innerText = currentLocation === 'field' ? "Цель: Вернись к торговцу (Иди влево <-)" : "Цель: Отнеси семена Снагу (F)";
-    // НОВАЯ ЛОГИКА ЦЕЛЕЙ
     else if (player.questStatus === 'talk_uncle_2') objectiveText.innerText = "Цель: Выслушай дядюшку (F)";
     else if (player.questStatus === 'go_graveyard') objectiveText.innerText = "Цель: Иди дальше на восток, на Погост ->";
     else if (player.questStatus === 'kill_undead') objectiveText.innerText = "Цель: Упокой нежить на старом Погосте!";
@@ -197,7 +181,7 @@ updateHUD();
 // ==========================================
 function updateInventoryUI() {
     document.getElementById('slot-head').innerHTML = `Шлем: <span>${player.equipment.head ? player.equipment.head.name : 'Нет'}</span>`;
-    document.getElementById('slot-chest').innerHTML = `Грудь: <span>${player.equipment.chest ? player.equipment.chest.name + ' (+'+player.equipment.chest.def+')' : 'Нет'}</span>`;
+    document.getElementById('slot-chest').innerHTML = `Грудь: <span style="color: ${player.equipment.chest.def > 0 ? '#4fc3f7' : '#fff'}">${player.equipment.chest ? player.equipment.chest.name + ' (+'+player.equipment.chest.def+')' : 'Нет'}</span>`;
     document.getElementById('slot-hands').innerHTML = `Перчатки: <span>${player.equipment.hands ? player.equipment.hands.name : 'Нет'}</span>`;
     document.getElementById('slot-legs').innerHTML = `Штаны: <span>${player.equipment.legs ? player.equipment.legs.name + ' (+'+player.equipment.legs.def+')' : 'Нет'}</span>`;
     document.getElementById('slot-feet').innerHTML = `Обувь: <span>${player.equipment.feet ? player.equipment.feet.name + ' (+'+player.equipment.feet.def+')' : 'Нет'}</span>`;
@@ -208,10 +192,35 @@ function updateInventoryUI() {
     document.getElementById('stat-def').innerText = player.defense; document.getElementById('stat-dmg').innerText = player.baseDamage;
 
     const bagGrid = document.getElementById('bag-grid'); bagGrid.innerHTML = ''; 
-    for (let i = 0; i < 12; i++) {
-        const slot = document.createElement('div'); slot.className = 'bag-item';
-        slot.style.display = 'flex'; slot.style.justifyContent = 'center'; slot.style.alignItems = 'center'; slot.style.fontSize = 'clamp(16px, 3vw, 24px)';
-        if (i < player.potions) { slot.innerHTML = '🧪'; slot.title = 'Зелье лечения (+50 HP)'; slot.style.cursor = 'help'; }
+    
+    // Заполняем слоты сумки ресурсами
+    let slotIndex = 0;
+    
+    // Зелья
+    for (let i = 0; i < player.potions; i++) {
+        if(slotIndex >= 12) break;
+        let slot = document.createElement('div'); slot.className = 'bag-item';
+        slot.style.display = 'flex'; slot.style.justifyContent = 'center'; slot.style.alignItems = 'center'; slot.style.fontSize = '24px';
+        slot.innerHTML = '🧪'; slot.title = 'Зелье лечения'; bagGrid.appendChild(slot); slotIndex++;
+    }
+    // Панцири
+    for (let i = 0; i < player.shell; i++) {
+        if(slotIndex >= 12) break;
+        let slot = document.createElement('div'); slot.className = 'bag-item';
+        slot.style.display = 'flex'; slot.style.justifyContent = 'center'; slot.style.alignItems = 'center'; 
+        slot.innerHTML = '<div style="width:15px; height:15px; background:#4fc3f7; border: 1px solid #000;"></div>'; slot.title = 'Панцирь Хвощевика'; bagGrid.appendChild(slot); slotIndex++;
+    }
+    // Кости
+    for (let i = 0; i < player.bones; i++) {
+        if(slotIndex >= 12) break;
+        let slot = document.createElement('div'); slot.className = 'bag-item';
+        slot.style.display = 'flex'; slot.style.justifyContent = 'center'; slot.style.alignItems = 'center'; 
+        slot.innerHTML = '<div style="width:15px; height:15px; background:#fff; border: 1px solid #000;"></div>'; slot.title = 'Старая кость'; bagGrid.appendChild(slot); slotIndex++;
+    }
+
+    // Пустые слоты
+    for (; slotIndex < 12; slotIndex++) {
+        let slot = document.createElement('div'); slot.className = 'bag-item';
         bagGrid.appendChild(slot);
     }
 }
@@ -228,6 +237,7 @@ function toggleInventory() {
 }
 
 btnInventory.addEventListener('click', toggleInventory); btnCloseInventory.addEventListener('click', toggleInventory);
+
 btnFullscreen.addEventListener('click', () => {
     if (!document.fullscreenElement && !document.webkitFullscreenElement) {
         if (gameContainer.requestFullscreen) { gameContainer.requestFullscreen(); } else if (gameContainer.webkitRequestFullscreen) { gameContainer.webkitRequestFullscreen(); }
@@ -300,7 +310,7 @@ function updateEnemyAnimation(entity) {
     }
 }
 
-// --- ДИАЛОГИ И МАГАЗИН ---
+// --- ДИАЛОГИ И МАГАЗИНЫ ---
 function startDialogue(lines) { dialogueLines = lines; currentLine = 0; currentState = 'DIALOGUE'; hud.classList.add('hidden'); mobileControls.classList.add('hidden'); dialogueScreen.classList.remove('hidden'); updateDialogueUI(); }
 function advanceDialogue() {
     if (currentState === 'STORY') {
@@ -320,11 +330,36 @@ function updateDialogueUI() { speakerName.innerText = dialogueLines[currentLine]
 function openShop() { currentState = 'SHOP'; keys.w = keys.a = keys.s = keys.d = false; shopScreen.classList.remove('hidden'); mobileControls.classList.add('hidden'); }
 function closeShop() { currentState = 'PLAY'; shopScreen.classList.add('hidden'); checkMobile(); }
 
+// ОТКРЫТИЕ ВЕРСТАКА
+function openCraft() { currentState = 'SHOP'; keys.w = keys.a = keys.s = keys.d = false; craftScreen.classList.remove('hidden'); mobileControls.classList.add('hidden'); }
+function closeCraft() { currentState = 'PLAY'; craftScreen.classList.add('hidden'); checkMobile(); }
+
 btnPotion.addEventListener('click', () => { if (player.coins >= 2) { player.coins -= 2; player.potions++; updateHUD(); updateInventoryUI(); } else alert("Не хватает монет!"); });
 btnCloseShop.addEventListener('click', closeShop);
 
+// КРАФТ БРОНИ
+btnCraftChest.addEventListener('click', () => { 
+    if (player.shell >= 15 && player.coins >= 10) { 
+        player.shell -= 15; player.coins -= 10;
+        player.equipment.chest = { name: "Нагрудник из панциря", def: 5 };
+        btnCraftChest.innerText = "ПРОДАНО";
+        btnCraftChest.disabled = true;
+        updateHUD(); updateInventoryUI(); alert("Скрафчен Нагрудник из панциря (+5 Защиты)!"); 
+    } else alert("Не хватает материалов (нужно 15 панцирей и 10 монет)!"); 
+});
+btnCloseCraft.addEventListener('click', closeCraft);
+
 function usePotion() { if (player.potions > 0 && player.hp < player.maxHp) { player.potions--; player.hp = Math.min(player.maxHp, player.hp + 50); updateHUD(); updateInventoryUI(); } }
-function updateHUD() { let hpPercent = Math.max(0, (player.hp / player.maxHp) * 100); hpBarFill.style.width = hpPercent + '%'; xpText.innerText = 'Опыт: ' + player.xp; inventoryText.innerText = `Монеты: ${player.coins} | Семена: ${player.seeds} | Зелья (E): ${player.potions}`; }
+// ИЗМЕНЕНИЕ: Обновленный текст HUD
+function updateHUD() { 
+    let hpPercent = Math.max(0, (player.hp / player.maxHp) * 100); hpBarFill.style.width = hpPercent + '%'; 
+    xpText.innerText = 'Опыт: ' + player.xp; 
+    let text = `Монеты: ${player.coins} | Семена: ${player.seeds}`;
+    if (player.shell > 0 || player.bones > 0) {
+        text += ` | Панцири: ${player.shell} | Кости: ${player.bones}`;
+    }
+    inventoryText.innerText = text;
+}
 
 function checkMobile() {
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
@@ -388,19 +423,15 @@ function performAction(action) {
     }
 }
 
-// --- ЛОГИКА ВЗАИМОДЕЙСТВИЯ СО СЦЕНОЙ И NPC ---
 function checkInteraction() {
     for (let obj of environment) {
         if (Math.hypot(player.x - obj.x, player.y - obj.y) < 80 && obj.interactable) {
             
-            // САРАЙ
             if (obj.type === 'shed' && player.questStatus === 'get_weapon') {
                 player.hasWeapon = true; obj.interactable = false;
                 player.equipment.weapon = { name: "Старый топор", dmg: 10 };
                 player.questStatus = 'kill_monsters'; updateObjectiveText(); setAnimation('idle_weapon');
             }
-            
-            // ДЯДЮШКА
             else if (obj.type === 'uncle') {
                 if (player.questStatus === 'get_weapon' || player.questStatus === 'kill_monsters') {
                     startDialogue([{ name: "Вейланд", text: "Очисти поле!" }]);
@@ -412,7 +443,6 @@ function checkInteraction() {
                         { name: "Вейланд", text: "Но твой топор совсем затупился о панцири этих тварей. Ступай к Снагу, пусть подлатает." }
                     ]); 
                 }
-                // ИЗМЕНЕНИЕ: Вейланд выдает квест на зомби ПОСЛЕ того как улучшен топор
                 else if (player.questStatus === 'talk_uncle_2') {
                     player.questStatus = 'go_graveyard'; updateObjectiveText();
                     startDialogue([
@@ -424,12 +454,15 @@ function checkInteraction() {
                     player.questStatus = 'done'; player.xp += 300; updateHUD(); updateObjectiveText();
                     startDialogue([{ name: "Вейланд", text: "Ты упокоил мертвецов... Невероятно! Ты стал настоящим воином. (+300 ОПЫТА)" }]); 
                 } 
+                else if (player.questStatus === 'done') {
+                    // Открываем Верстак
+                    openCraft();
+                }
                 else {
                     startDialogue([{ name: "Вейланд", text: "Будь осторожен, Тарн." }]);
                 }
             }
             
-            // СНАГ (ТОРГОВЕЦ)
             else if (obj.type === 'merchant') {
                 if (player.questStatus === 'talk_merchant') {
                     player.questStatus = player.seeds >= 10 ? 'return_merchant' : 'gather_seeds'; updateObjectiveText();
@@ -440,7 +473,6 @@ function checkInteraction() {
                 } else if (player.questStatus === 'gather_seeds') {
                     startDialogue([{ name: "Снаг", text: `Ква... Мне нужно 10 семян. У тебя пока только ${player.seeds}.` }]);
                 } 
-                // ИЗМЕНЕНИЕ: Снаг улучшает топор, открывает магаз и отправляет к Дядюшке
                 else if (player.questStatus === 'return_merchant') {
                     player.seeds -= 10; player.baseDamage += 2;
                     if (player.equipment.weapon) player.equipment.weapon.name = "Наточенный топор";
@@ -453,7 +485,6 @@ function checkInteraction() {
                         { name: "Снаг", text: "Ква... Мой магазин теперь открыт. Кстати, твой дядюшка только что звал тебя. Поговори с ним, а потом возвращайся ко мне за зельями!" }
                     ]);
                 } 
-                // ИЗМЕНЕНИЕ: Магазин открыт на всех этапах ПОСЛЕ сдачи семян
                 else if (['talk_uncle_2', 'go_graveyard', 'kill_undead', 'return_graveyard', 'done'].includes(player.questStatus)) {
                     openShop();
                 } else {
@@ -482,7 +513,6 @@ function transitionLocation(newLoc, spawnSide = 'left') {
     }, 600); 
 }
 
-// --- ИГРОВОЙ ЦИКЛ ---
 function update() {
     if (currentState !== 'PLAY') return;
     if (player.hurtTimer > 0) player.hurtTimer--;
@@ -530,6 +560,10 @@ function update() {
                 player.seeds++; 
                 if (player.questStatus === 'gather_seeds' && player.seeds >= 10) { player.questStatus = 'return_merchant'; updateObjectiveText(); }
             }
+            // НОВЫЙ ЛУТ
+            else if (item.type === 'shell') player.shell++;
+            else if (item.type === 'bone') player.bones++;
+
             lootItems.splice(i, 1); updateHUD(); 
         } 
     }
@@ -554,7 +588,18 @@ function update() {
                         setEntityAnimation(enemy, enemy.baseAnim + '_death'); enemy.isLockAnim = true;
                     } else {
                         enemy.state = 'dead'; player.xp += (enemy.type === 'undead' ? 40 : 20); 
-                        let dropType = Math.random() > 0.5 ? 'coin' : 'seed'; lootItems.push({ x: enemy.x, y: enemy.y, type: dropType }); 
+                        
+                        // ИЗМЕНЕННАЯ СИСТЕМА ДРОПА
+                        let rand = Math.random();
+                        let dropType = null;
+                        if (rand < 0.4) dropType = 'coin'; // 40% монета
+                        else if (rand < 0.7) dropType = 'seed'; // 30% семя
+                        else {
+                            // 30% шанс на редкий лут
+                            dropType = enemy.type === 'hroshevik' ? 'shell' : 'bone';
+                        }
+                        if(dropType) lootItems.push({ x: enemy.x, y: enemy.y, type: dropType }); 
+                        
                         updateHUD(); checkQuestProgress(); 
                         setEntityAnimation(enemy, enemy.baseAnim + '_death'); enemy.isLockAnim = true;
                     }
@@ -609,7 +654,17 @@ function draw() {
     } else if (loc.horizonColor) { ctx.fillStyle = loc.horizonColor; ctx.fillRect(0, 0, canvas.width, 180); }
 
     if (currentState === 'PLAY' || currentState === 'GAMEOVER' || currentState === 'SHOP' || currentState === 'INVENTORY') {
-        lootItems.forEach(item => { ctx.fillStyle = item.type === 'coin' ? '#ffca28' : '#69f0ae'; ctx.beginPath(); ctx.arc(item.x, item.y, 6, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.stroke(); });
+        
+        // ОТРИСОВКА ЛУТА
+        lootItems.forEach(item => { 
+            ctx.beginPath(); 
+            if (item.type === 'coin') { ctx.fillStyle = '#ffca28'; ctx.arc(item.x, item.y, 6, 0, Math.PI * 2); ctx.fill(); }
+            else if (item.type === 'seed') { ctx.fillStyle = '#69f0ae'; ctx.arc(item.x, item.y, 6, 0, Math.PI * 2); ctx.fill(); }
+            else if (item.type === 'shell') { ctx.fillStyle = '#4fc3f7'; ctx.rect(item.x-5, item.y-5, 10, 10); ctx.fill(); } // Синий квадрат
+            else if (item.type === 'bone') { ctx.fillStyle = '#fff'; ctx.rect(item.x-5, item.y-5, 10, 10); ctx.fill(); } // Белый квадрат
+            
+            ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.stroke(); 
+        });
 
         let renderQueue = [player, ...environment, ...enemies];
         renderQueue.sort((a, b) => a.y - b.y);
@@ -632,7 +687,6 @@ function draw() {
                         ctx.drawImage(frames[globalNpcFrame % frames.length], dX, dY, animConfig.w_frame, animConfig.h_frame); ctx.restore();
                     } else { ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
                     
-                    // ИЗМЕНЕНИЕ: Обновлены маркеры Снага
                     if (player.questStatus === 'talk_merchant' || player.questStatus === 'return_merchant') { drawQuestMark(obj.x, obj.y - obj.height - 20, '!'); }
                     else if (player.questStatus === 'gather_seeds') { drawQuestMark(obj.x, obj.y - obj.height - 20, '?', '#ccc'); } 
                 } 
@@ -644,8 +698,8 @@ function draw() {
                         ctx.drawImage(frames[globalNpcFrame % frames.length], dX, dY, animConfig.w_frame, animConfig.h_frame); ctx.restore();
                     } else { ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
                     
-                    // ИЗМЕНЕНИЕ: Обновлены маркеры Дядюшки
                     if (['return', 'return_graveyard', 'talk_uncle_2'].includes(player.questStatus)) { drawQuestMark(obj.x, obj.y - obj.height - 20, '!'); }
+                    else if (player.questStatus === 'done') { drawQuestMark(obj.x, obj.y - obj.height - 20, '⚒', '#4fc3f7'); } // Значок крафта
                 }
             }
         }
