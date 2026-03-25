@@ -8,6 +8,7 @@ const dialogueScreen = document.getElementById('dialogue-screen');
 const fadeOverlay = document.getElementById('fade-overlay');
 const shopScreen = document.getElementById('shop-screen');
 const craftScreen = document.getElementById('craft-screen'); 
+const trainingScreen = document.getElementById('training-screen'); // ЭКРАН ТРЕНИРОВКИ
 const inventoryScreen = document.getElementById('inventory-screen'); 
 const hud = document.getElementById('hud');
 const objectiveText = document.getElementById('objective');
@@ -22,6 +23,14 @@ const btnPotion = document.getElementById('btn-buy-potion');
 const btnCloseShop = document.getElementById('btn-close-shop');
 const btnCraftChest = document.getElementById('btn-craft-chest'); 
 const btnCloseCraft = document.getElementById('btn-close-craft'); 
+
+// КНОПКИ ТРЕНИРОВКИ
+const btnTrainStr = document.getElementById('btn-train-str');
+const btnTrainDef = document.getElementById('btn-train-def');
+const btnTrainHp = document.getElementById('btn-train-hp');
+const btnCloseTraining = document.getElementById('btn-close-training');
+const spCount = document.getElementById('sp-count');
+
 const mobileControls = document.getElementById('mobile-controls');
 const btnFullscreen = document.getElementById('btn-fullscreen');
 const btnInventory = document.getElementById('btn-inventory'); 
@@ -53,7 +62,6 @@ const tarnSprites = {
 const npcSprites = { 
     merchant_idle: loadFrames('img/frog_idle', 3), 
     uncle_idle: loadFrames('img/dad_idle', 3),
-    // ИСПРАВЛЕНИЕ: Теперь игра ищет файлы techer_idle_1.png и т.д.
     orc_idle: loadFrames('img/techer_idle', 3) 
 };
 const buildingSprites = { 
@@ -103,14 +111,17 @@ const animConfig = {
 const player = {
     x: 300, y: 300, width: 30, height: 70, speed: 3.5, color: '#8D6E63',
     state: 'idle', facingRight: true, rollTimer: 0, rollDuration: 0, rollSpeedMult: 2, hasWeapon: false, attackHitboxActive: false,
-    hp: 100, maxHp: 100, hurtTimer: 0, xp: 0, baseDamage: 10, 
+    hp: 100, maxHp: 100, hurtTimer: 0, xp: 0, 
     
-    level: 0, 
+    // БАЗОВЫЕ И ДОПОЛНИТЕЛЬНЫЕ ХАРАКТЕРИСТИКИ
+    baseDamage: 10, bonusDamage: 0,
+    bonusDefense: 0, bonusHp: 0,
+
+    level: 0, skillPoints: 0,
     coins: 0, seeds: 0, potions: 0, shell: 0, bones: 0,
 
     questStatus: 'get_weapon',
-    orcUnlocked: false, 
-    dummyUnlocked: false, 
+    orcUnlocked: false, dummyUnlocked: false, 
     currentAnim: 'idle_no_weapon', frameIndex: 0, animTimer: 0, isLockAnim: false,
 
     equipment: {
@@ -201,7 +212,7 @@ locations.village.setup();
 updateHUD();
 
 // ==========================================
-// --- ИНВЕНТАРЬ И ИНТЕРФЕЙС ---
+// --- ИНВЕНТАРЬ И ХАРАКТЕРИСТИКИ ---
 // ==========================================
 function updateInventoryUI() {
     document.getElementById('slot-head').innerHTML = `Шлем: <span>${player.equipment.head ? player.equipment.head.name : 'Нет'}</span>`;
@@ -212,8 +223,12 @@ function updateInventoryUI() {
     let wpnText = player.equipment.weapon ? player.equipment.weapon.name + ' (+'+player.baseDamage+')' : 'Нет';
     document.getElementById('slot-weapon').innerHTML = `Оружие: <span style="color:#ffb300">${wpnText}</span>`;
 
-    player.defense = (player.equipment.chest?.def || 0) + (player.equipment.legs?.def || 0) + (player.equipment.feet?.def || 0);
-    document.getElementById('stat-def').innerText = player.defense; document.getElementById('stat-dmg').innerText = player.baseDamage;
+    player.defense = (player.equipment.chest?.def || 0) + (player.equipment.legs?.def || 0) + (player.equipment.feet?.def || 0) + player.bonusDefense;
+    let totalDmg = player.baseDamage + player.bonusDamage;
+    
+    document.getElementById('stat-hp').innerText = `${Math.floor(player.hp)}/${player.maxHp}`;
+    document.getElementById('stat-def').innerHTML = `${player.defense} <span style="font-size:10px; color:#aaa;">(Броня: ${player.defense - player.bonusDefense} + Тело: ${player.bonusDefense})</span>`; 
+    document.getElementById('stat-dmg').innerHTML = `${totalDmg} <span style="font-size:10px; color:#aaa;">(Оружие: ${player.baseDamage} + Сила: ${player.bonusDamage})</span>`;
 
     const bagGrid = document.getElementById('bag-grid'); bagGrid.innerHTML = ''; 
     let slotIndex = 0;
@@ -318,7 +333,7 @@ function updateEnemyAnimation(entity) {
     }
 }
 
-// --- ДИАЛОГИ И МАГАЗИНЫ ---
+// --- ДИАЛОГИ И МЕНЮ ---
 function startDialogue(lines) { dialogueLines = lines; currentLine = 0; currentState = 'DIALOGUE'; hud.classList.add('hidden'); mobileControls.classList.add('hidden'); dialogueScreen.classList.remove('hidden'); updateDialogueUI(); }
 function advanceDialogue() {
     if (currentState === 'STORY') {
@@ -340,6 +355,29 @@ function closeShop() { currentState = 'PLAY'; shopScreen.classList.add('hidden')
 
 function openCraft() { currentState = 'SHOP'; keys.w = keys.a = keys.s = keys.d = false; craftScreen.classList.remove('hidden'); mobileControls.classList.add('hidden'); }
 function closeCraft() { currentState = 'PLAY'; craftScreen.classList.add('hidden'); checkMobile(); }
+
+// ЛОГИКА ТРЕНИРОВКИ
+function openTraining() { 
+    currentState = 'SHOP'; keys.w = keys.a = keys.s = keys.d = false; 
+    trainingScreen.classList.remove('hidden'); mobileControls.classList.add('hidden'); 
+    updateTrainingUI();
+}
+function closeTraining() { currentState = 'PLAY'; trainingScreen.classList.add('hidden'); checkMobile(); }
+
+function updateTrainingUI() {
+    spCount.innerText = player.skillPoints;
+    [btnTrainStr, btnTrainDef, btnTrainHp].forEach(btn => {
+        btn.disabled = player.skillPoints <= 0;
+        btn.style.opacity = player.skillPoints <= 0 ? '0.5' : '1';
+        btn.style.cursor = player.skillPoints <= 0 ? 'not-allowed' : 'pointer';
+    });
+}
+
+btnTrainStr.addEventListener('click', () => { if(player.skillPoints > 0) { player.skillPoints--; player.bonusDamage += 5; updateTrainingUI(); updateHUD(); updateInventoryUI(); } });
+btnTrainDef.addEventListener('click', () => { if(player.skillPoints > 0) { player.skillPoints--; player.bonusDefense += 2; updateTrainingUI(); updateHUD(); updateInventoryUI(); } });
+btnTrainHp.addEventListener('click', () => { if(player.skillPoints > 0) { player.skillPoints--; player.maxHp += 20; player.hp += 20; updateTrainingUI(); updateHUD(); updateInventoryUI(); } });
+btnCloseTraining.addEventListener('click', closeTraining);
+
 
 btnPotion.addEventListener('click', () => { if (player.coins >= 2) { player.coins -= 2; player.potions++; updateHUD(); updateInventoryUI(); } else alert("Не хватает монет!"); });
 btnCloseShop.addEventListener('click', closeShop);
@@ -438,7 +476,7 @@ function checkInteraction() {
                 player.hasWeapon = true; obj.interactable = false;
                 player.equipment.weapon = { name: "Старый топор", dmg: 10 };
                 player.questStatus = 'kill_monsters'; updateObjectiveText(); setAnimation('idle_weapon');
-                return; 
+                return; // ВАЖНО: Прерываем цикл, чтобы не задеть других NPC
             }
             
             else if (obj.type === 'uncle') {
@@ -459,10 +497,8 @@ function checkInteraction() {
                         { name: "Вейланд", text: "Ступай туда и упокой мертвецов, пока они не добрались до деревни! Твой новый топор как раз пригодится." }
                     ]);
                 }
-                
                 else if (player.questStatus === 'return_graveyard') {
                     player.xp += 300; updateHUD(); 
-                    
                     if (player.xp >= 1500) {
                         player.questStatus = 'talk_orc'; player.orcUnlocked = true; locations.village.setup();
                         startDialogue([
@@ -470,7 +506,6 @@ function checkInteraction() {
                             { name: "Вейланд", text: "Я вижу в тебе большой потенциал, поэтому нашел для тебя учителя. Он стоит справа." },
                             { name: "Грум (Орк)", text: "Хррр... Пацан вроде крепкий. Подойди-ка ко мне." }
                         ]); 
-                        return; 
                     } else {
                         player.questStatus = 'reach_level_2'; updateObjectiveText();
                         startDialogue([
@@ -489,7 +524,6 @@ function checkInteraction() {
                         { name: "Вейланд", text: "Ты достиг нужного уровня! Теперь орк готов с тобой поговорить." },
                         { name: "Вейланд", text: "Его зовут Грум. Он стоит справа от меня." }
                     ]);
-                    return; 
                 }
                 else if (player.questStatus === 'done' || player.questStatus === 'talk_orc' || player.questStatus === 'orc_test' || player.questStatus === 'return_orc') {
                     openCraft();
@@ -497,6 +531,7 @@ function checkInteraction() {
                 else {
                     startDialogue([{ name: "Вейланд", text: "Будь осторожен, Тарн." }]);
                 }
+                return; // ЗАЩИТА ОТ ДВОЙНОГО ДИАЛОГА
             }
             
             else if (obj.type === 'orc') {
@@ -523,36 +558,39 @@ function checkInteraction() {
                         { name: "Грум (Орк)", text: "А ты не трус, фермер. Ладно, начнем тренировки." },
                         { name: "Грум (Орк)", text: "Я поставил для тебя тренировочный манекен. Как только накопишь достаточно опыта в боях — подходи к нему и бей изо всех сил!" }
                     ]);
-                    return; 
                 }
                 else if (player.questStatus === 'done') {
                     startDialogue([{ name: "Грум (Орк)", text: "Чего уставился? Бей манекен, когда будешь готов! Хррр!" }]);
                 }
+                return; // ЗАЩИТА ОТ ДВОЙНОГО ДИАЛОГА
             }
             
             else if (obj.type === 'dummy') {
                 const thresholds = [1500, 5000, 10000];
-                if (player.level >= 3) {
+                if (player.level >= 3 && player.skillPoints === 0) {
                     startDialogue([{ name: "Тарн", text: "Я выжал из этого манекена всё, что мог. Я достиг предела своих сил... пока что." }]);
-                } else {
-                    let neededXp = thresholds[player.level];
-                    if (player.xp >= neededXp) {
-                        player.level++;
-                        player.maxHp += 20;
-                        player.hp = player.maxHp;
-                        player.baseDamage += 5;
-                        updateHUD(); updateInventoryUI(); updateObjectiveText();
-                        startDialogue([
-                            { name: "Грум (Орк)", text: "Вот так! Вложи вес тела в удар! Твои мышцы крепчают, а шкура становится толще." },
-                            { name: "Система", text: `УРОВЕНЬ ПОВЫШЕН! (Уровень ${player.level}/3)\n+20 Макс. Здоровье\n+5 Урон` }
-                        ]);
-                    } else {
-                        startDialogue([
-                            { name: "Тарн", text: `Мне еще рано тренироваться. Нужно набраться опыта в бою.` },
-                            { name: "Грум (Орк)", text: `Хррр... Рано машешь! Возвращайся, когда накопишь ${neededXp} опыта. У тебя только ${player.xp}.` }
-                        ]);
-                    }
+                } 
+                else if (player.level < 3 && player.xp >= thresholds[player.level]) {
+                    player.level++;
+                    player.skillPoints++; // ДАЕМ ОЧКО НАВЫКОВ
+                    updateHUD(); updateInventoryUI(); updateObjectiveText();
+                    startDialogue([
+                        { name: "Система", text: `УРОВЕНЬ ПОВЫШЕН! (Уровень ${player.level}/3)\nВы получили 1 Очко Навыков.` },
+                        { name: "Грум (Орк)", text: "Неплохо! А теперь покажи мне, на что ты способен! Подойди к манекену еще раз, чтобы распределить силы." }
+                    ]);
+                } 
+                else if (player.skillPoints > 0 || player.level > 0) {
+                    // ОТКРЫВАЕМ ОРКА/МАНЕКЕН ТРЕНИРОВКУ
+                    openTraining();
                 }
+                else {
+                    let neededXp = thresholds[player.level];
+                    startDialogue([
+                        { name: "Тарн", text: `Мне еще рано тренироваться. Нужно набраться опыта в бою.` },
+                        { name: "Грум (Орк)", text: `Хррр... Рано машешь! Возвращайся, когда накопишь ${neededXp} опыта. У тебя только ${player.xp}.` }
+                    ]);
+                }
+                return; // ЗАЩИТА ОТ ДВОЙНОГО ДИАЛОГА
             }
 
             else if (obj.type === 'merchant') {
@@ -582,6 +620,7 @@ function checkInteraction() {
                 } else {
                     startDialogue([{ name: "Снаг", text: "Ква-а-а... Я пока занят, фермер. Поговори с дядюшкой." }]);
                 }
+                return; // ЗАЩИТА ОТ ДВОЙНОГО ДИАЛОГА
             }
         }
     }
@@ -665,7 +704,10 @@ function update() {
     if ((player.state === 'attackLight' || player.state === 'attackHeavy') && player.attackHitboxActive) {
         player.attackHitboxActive = false; 
         let reach = player.state === 'attackLight' ? 50 : 70;
-        let attackDamage = player.baseDamage * (player.state === 'attackLight' ? 1 : 2);
+        
+        // УЧЕТ ДОП УРОНА
+        let totalDmg = player.baseDamage + player.bonusDamage;
+        let attackDamage = totalDmg * (player.state === 'attackLight' ? 1 : 2);
         
         enemies.forEach(enemy => {
             if (enemy.state === 'dead' || enemy.state === 'resurrecting') return;
@@ -773,7 +815,6 @@ function draw() {
             else {
                 if (obj.type === 'shed') {
                     const frames = buildingSprites.shed;
-                    // ИСПРАВЛЕННАЯ ПРОВЕРКА ОТРИСОВКИ
                     if (frames && frames.length > 0 && frames[0] && frames[0].complete && frames[0].naturalWidth > 0) { 
                         ctx.drawImage(frames[0], obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height);
                     } else { ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
@@ -783,7 +824,6 @@ function draw() {
                     ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(obj.x, obj.y, 25, 8, 0, 0, Math.PI * 2); ctx.fill();
                     const frames = npcSprites.merchant_idle;
                     let currentImg = frames && frames.length > 0 ? frames[globalNpcFrame % frames.length] : null;
-                    // ИСПРАВЛЕННАЯ ПРОВЕРКА ОТРИСОВКИ
                     if (currentImg && currentImg.complete && currentImg.naturalWidth > 0) {
                         ctx.save(); ctx.translate(obj.x, obj.y); const dX = -animConfig.w_frame / 2; const dY = -animConfig.h_frame + 10;
                         ctx.drawImage(currentImg, dX, dY, animConfig.w_frame, animConfig.h_frame); ctx.restore();
@@ -796,7 +836,6 @@ function draw() {
                     ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(obj.x, obj.y, 20, 6, 0, 0, Math.PI * 2); ctx.fill();
                     const frames = npcSprites.uncle_idle;
                     let currentImg = frames && frames.length > 0 ? frames[globalNpcFrame % frames.length] : null;
-                    // ИСПРАВЛЕННАЯ ПРОВЕРКА ОТРИСОВКИ
                     if (currentImg && currentImg.complete && currentImg.naturalWidth > 0) {
                         ctx.save(); ctx.translate(obj.x, obj.y); const dX = -animConfig.w_frame / 2; const dY = -animConfig.h_frame + 10;
                         ctx.drawImage(currentImg, dX, dY, animConfig.w_frame, animConfig.h_frame); ctx.restore();
@@ -809,7 +848,6 @@ function draw() {
                     ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(obj.x, obj.y, 20, 6, 0, 0, Math.PI * 2); ctx.fill();
                     const frames = npcSprites.orc_idle;
                     let currentImg = frames && frames.length > 0 ? frames[globalNpcFrame % frames.length] : null;
-                    // ИСПРАВЛЕННАЯ ПРОВЕРКА ОТРИСОВКИ
                     if (currentImg && currentImg.complete && currentImg.naturalWidth > 0) {
                         ctx.save(); ctx.translate(obj.x, obj.y); const dX = -animConfig.w_frame / 2; const dY = -animConfig.h_frame + 10;
                         ctx.drawImage(currentImg, dX, dY, animConfig.w_frame, animConfig.h_frame); ctx.restore();
@@ -820,7 +858,6 @@ function draw() {
                 }
                 else if (obj.type === 'dummy') {
                     const frames = buildingSprites.dummy;
-                    // ИСПРАВЛЕННАЯ ПРОВЕРКА ОТРИСОВКИ
                     if (frames && frames.length > 0 && frames[0] && frames[0].complete && frames[0].naturalWidth > 0) {
                         ctx.drawImage(frames[0], obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height);
                     } else { ctx.fillStyle = '#8d6e63'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
@@ -828,6 +865,8 @@ function draw() {
                     const thresholds = [1500, 5000, 10000];
                     if (player.level < 3 && player.xp >= thresholds[player.level]) {
                         drawQuestMark(obj.x, obj.y - obj.height - 20, '⬆', '#69f0ae'); 
+                    } else if (player.skillPoints > 0) {
+                        drawQuestMark(obj.x, obj.y - obj.height - 20, '⬆', '#69f0ae');
                     }
                 }
             }
