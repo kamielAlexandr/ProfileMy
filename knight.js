@@ -8,7 +8,7 @@ const dialogueScreen = document.getElementById('dialogue-screen');
 const fadeOverlay = document.getElementById('fade-overlay');
 const shopScreen = document.getElementById('shop-screen');
 const craftScreen = document.getElementById('craft-screen'); 
-const trainingScreen = document.getElementById('training-screen'); // ЭКРАН ТРЕНИРОВКИ
+const trainingScreen = document.getElementById('training-screen');
 const inventoryScreen = document.getElementById('inventory-screen'); 
 const hud = document.getElementById('hud');
 const objectiveText = document.getElementById('objective');
@@ -24,7 +24,6 @@ const btnCloseShop = document.getElementById('btn-close-shop');
 const btnCraftChest = document.getElementById('btn-craft-chest'); 
 const btnCloseCraft = document.getElementById('btn-close-craft'); 
 
-// КНОПКИ ТРЕНИРОВКИ
 const btnTrainStr = document.getElementById('btn-train-str');
 const btnTrainDef = document.getElementById('btn-train-def');
 const btnTrainHp = document.getElementById('btn-train-hp');
@@ -113,7 +112,6 @@ const player = {
     state: 'idle', facingRight: true, rollTimer: 0, rollDuration: 0, rollSpeedMult: 2, hasWeapon: false, attackHitboxActive: false,
     hp: 100, maxHp: 100, hurtTimer: 0, xp: 0, 
     
-    // БАЗОВЫЕ И ДОПОЛНИТЕЛЬНЫЕ ХАРАКТЕРИСТИКИ
     baseDamage: 10, bonusDamage: 0,
     bonusDefense: 0, bonusHp: 0,
 
@@ -211,9 +209,6 @@ setTimeout(() => fadeOverlay.classList.add('hidden'), 500);
 locations.village.setup();
 updateHUD();
 
-// ==========================================
-// --- ИНВЕНТАРЬ И ХАРАКТЕРИСТИКИ ---
-// ==========================================
 function updateInventoryUI() {
     document.getElementById('slot-head').innerHTML = `Шлем: <span>${player.equipment.head ? player.equipment.head.name : 'Нет'}</span>`;
     document.getElementById('slot-chest').innerHTML = `Грудь: <span style="color: ${player.equipment.chest.def > 0 ? '#4fc3f7' : '#fff'}">${player.equipment.chest ? player.equipment.chest.name + ' (+'+player.equipment.chest.def+')' : 'Нет'}</span>`;
@@ -333,7 +328,6 @@ function updateEnemyAnimation(entity) {
     }
 }
 
-// --- ДИАЛОГИ И МЕНЮ ---
 function startDialogue(lines) { dialogueLines = lines; currentLine = 0; currentState = 'DIALOGUE'; hud.classList.add('hidden'); mobileControls.classList.add('hidden'); dialogueScreen.classList.remove('hidden'); updateDialogueUI(); }
 function advanceDialogue() {
     if (currentState === 'STORY') {
@@ -356,7 +350,6 @@ function closeShop() { currentState = 'PLAY'; shopScreen.classList.add('hidden')
 function openCraft() { currentState = 'SHOP'; keys.w = keys.a = keys.s = keys.d = false; craftScreen.classList.remove('hidden'); mobileControls.classList.add('hidden'); }
 function closeCraft() { currentState = 'PLAY'; craftScreen.classList.add('hidden'); checkMobile(); }
 
-// ЛОГИКА ТРЕНИРОВКИ
 function openTraining() { 
     currentState = 'SHOP'; keys.w = keys.a = keys.s = keys.d = false; 
     trainingScreen.classList.remove('hidden'); mobileControls.classList.add('hidden'); 
@@ -377,7 +370,6 @@ btnTrainStr.addEventListener('click', () => { if(player.skillPoints > 0) { playe
 btnTrainDef.addEventListener('click', () => { if(player.skillPoints > 0) { player.skillPoints--; player.bonusDefense += 2; updateTrainingUI(); updateHUD(); updateInventoryUI(); } });
 btnTrainHp.addEventListener('click', () => { if(player.skillPoints > 0) { player.skillPoints--; player.maxHp += 20; player.hp += 20; updateTrainingUI(); updateHUD(); updateInventoryUI(); } });
 btnCloseTraining.addEventListener('click', closeTraining);
-
 
 btnPotion.addEventListener('click', () => { if (player.coins >= 2) { player.coins -= 2; player.potions++; updateHUD(); updateInventoryUI(); } else alert("Не хватает монет!"); });
 btnCloseShop.addEventListener('click', closeShop);
@@ -476,7 +468,7 @@ function checkInteraction() {
                 player.hasWeapon = true; obj.interactable = false;
                 player.equipment.weapon = { name: "Старый топор", dmg: 10 };
                 player.questStatus = 'kill_monsters'; updateObjectiveText(); setAnimation('idle_weapon');
-                return; // ВАЖНО: Прерываем цикл, чтобы не задеть других NPC
+                return; 
             }
             
             else if (obj.type === 'uncle') {
@@ -506,6 +498,7 @@ function checkInteraction() {
                             { name: "Вейланд", text: "Я вижу в тебе большой потенциал, поэтому нашел для тебя учителя. Он стоит справа." },
                             { name: "Грум (Орк)", text: "Хррр... Пацан вроде крепкий. Подойди-ка ко мне." }
                         ]); 
+                        return; 
                     } else {
                         player.questStatus = 'reach_level_2'; updateObjectiveText();
                         startDialogue([
@@ -524,6 +517,7 @@ function checkInteraction() {
                         { name: "Вейланд", text: "Ты достиг нужного уровня! Теперь орк готов с тобой поговорить." },
                         { name: "Вейланд", text: "Его зовут Грум. Он стоит справа от меня." }
                     ]);
+                    return; 
                 }
                 else if (player.questStatus === 'done' || player.questStatus === 'talk_orc' || player.questStatus === 'orc_test' || player.questStatus === 'return_orc') {
                     openCraft();
@@ -531,7 +525,7 @@ function checkInteraction() {
                 else {
                     startDialogue([{ name: "Вейланд", text: "Будь осторожен, Тарн." }]);
                 }
-                return; // ЗАЩИТА ОТ ДВОЙНОГО ДИАЛОГА
+                return; 
             }
             
             else if (obj.type === 'orc') {
@@ -558,11 +552,12 @@ function checkInteraction() {
                         { name: "Грум (Орк)", text: "А ты не трус, фермер. Ладно, начнем тренировки." },
                         { name: "Грум (Орк)", text: "Я поставил для тебя тренировочный манекен. Как только накопишь достаточно опыта в боях — подходи к нему и бей изо всех сил!" }
                     ]);
+                    return; 
                 }
                 else if (player.questStatus === 'done') {
                     startDialogue([{ name: "Грум (Орк)", text: "Чего уставился? Бей манекен, когда будешь готов! Хррр!" }]);
                 }
-                return; // ЗАЩИТА ОТ ДВОЙНОГО ДИАЛОГА
+                return; 
             }
             
             else if (obj.type === 'dummy') {
@@ -572,7 +567,7 @@ function checkInteraction() {
                 } 
                 else if (player.level < 3 && player.xp >= thresholds[player.level]) {
                     player.level++;
-                    player.skillPoints++; // ДАЕМ ОЧКО НАВЫКОВ
+                    player.skillPoints++; 
                     updateHUD(); updateInventoryUI(); updateObjectiveText();
                     startDialogue([
                         { name: "Система", text: `УРОВЕНЬ ПОВЫШЕН! (Уровень ${player.level}/3)\nВы получили 1 Очко Навыков.` },
@@ -580,7 +575,6 @@ function checkInteraction() {
                     ]);
                 } 
                 else if (player.skillPoints > 0 || player.level > 0) {
-                    // ОТКРЫВАЕМ ОРКА/МАНЕКЕН ТРЕНИРОВКУ
                     openTraining();
                 }
                 else {
@@ -590,7 +584,7 @@ function checkInteraction() {
                         { name: "Грум (Орк)", text: `Хррр... Рано машешь! Возвращайся, когда накопишь ${neededXp} опыта. У тебя только ${player.xp}.` }
                     ]);
                 }
-                return; // ЗАЩИТА ОТ ДВОЙНОГО ДИАЛОГА
+                return; 
             }
 
             else if (obj.type === 'merchant') {
@@ -620,7 +614,7 @@ function checkInteraction() {
                 } else {
                     startDialogue([{ name: "Снаг", text: "Ква-а-а... Я пока занят, фермер. Поговори с дядюшкой." }]);
                 }
-                return; // ЗАЩИТА ОТ ДВОЙНОГО ДИАЛОГА
+                return; 
             }
         }
     }
@@ -705,7 +699,6 @@ function update() {
         player.attackHitboxActive = false; 
         let reach = player.state === 'attackLight' ? 50 : 70;
         
-        // УЧЕТ ДОП УРОНА
         let totalDmg = player.baseDamage + player.bonusDamage;
         let attackDamage = totalDmg * (player.state === 'attackLight' ? 1 : 2);
         
@@ -735,7 +728,7 @@ function update() {
                         let dropType = null;
                         if (rand < 0.4) dropType = 'coin'; 
                         else if (rand < 0.7) dropType = 'seed'; 
-                        else if (rand < 0.8) { 
+                        else if (rand < 1.0) { // ИЗМЕНЕНИЕ ДРОПА НА 30%
                             dropType = enemy.type === 'hroshevik' ? 'shell' : 'bone';
                         }
                         if(dropType) lootItems.push({ x: enemy.x, y: enemy.y, type: dropType }); 
