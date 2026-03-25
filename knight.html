@@ -28,7 +28,8 @@
                         <div class="equip-slot" id="slot-weapon" style="border-color: #ffb300;">Оружие: <span>Нет</span></div>
                     </div>
                     <div class="bag-panel">
-                        <div id="player-details" style="margin-bottom: 10px; color: #69f0ae; font-size: clamp(10px, 2vw, 14px);">
+                        <div id="player-details" style="margin-bottom: 10px; color: #69f0ae; font-size: clamp(10px, 1.8vw, 12px); line-height: 1.4;">
+                            Здоровье: <span id="stat-hp" style="color: #ff5252;">100/100</span><br>
                             Защита: <span id="stat-def">0</span> | Урон: <span id="stat-dmg">10</span>
                         </div>
                         <div class="bag-grid" id="bag-grid">
@@ -84,6 +85,19 @@
             </div>
         </div>
 
+        <div id="training-screen" class="overlay hidden">
+            <div class="dialogue-box shop-box">
+                <div class="speaker" style="color: #4caf50;">Грум (Тренировочный Манекен)</div>
+                <div class="text" style="margin-bottom: 15px;">Куда направишь свою ярость, пацан?<br><br>Очков навыков доступно: <span id="sp-count" style="color:#ffb300; font-size: 20px;">0</span></div>
+                <div class="shop-items">
+                    <button id="btn-train-str" class="shop-btn">💪 Сила (+5 к Урону)</button>
+                    <button id="btn-train-def" class="shop-btn">🛡️ Стойкость (+2 к Защите)</button>
+                    <button id="btn-train-hp" class="shop-btn">❤️ Живучесть (+20 к Макс. Здоровью)</button>
+                    <button id="btn-close-training" class="shop-btn close-btn">Отойти от манекена</button>
+                </div>
+            </div>
+        </div>
+
         <div id="game-over-screen" class="overlay hidden">
             <div class="story-text">
                 <h1 style="color: #d32f2f; font-size: 32px;">ТАРН ПАЛ</h1>
@@ -127,6 +141,6 @@
         </div>
 
     </div>
-    <script src="knight.js?v=107"></script>
+    <script src="knight.js"></script>
 </body>
 </html>
