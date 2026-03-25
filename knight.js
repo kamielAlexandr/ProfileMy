@@ -53,7 +53,8 @@ const tarnSprites = {
 const npcSprites = { 
     merchant_idle: loadFrames('img/frog_idle', 3), 
     uncle_idle: loadFrames('img/dad_idle', 3),
-    orc_idle: loadFrames('img/orc_idle', 3) 
+    // ИСПРАВЛЕНИЕ: Теперь игра ищет файлы techer_idle_1.png и т.д.
+    orc_idle: loadFrames('img/techer_idle', 3) 
 };
 const buildingSprites = { 
     shed: loadFrames('img/Home', 1),
@@ -199,6 +200,9 @@ setTimeout(() => fadeOverlay.classList.add('hidden'), 500);
 locations.village.setup();
 updateHUD();
 
+// ==========================================
+// --- ИНВЕНТАРЬ И ИНТЕРФЕЙС ---
+// ==========================================
 function updateInventoryUI() {
     document.getElementById('slot-head').innerHTML = `Шлем: <span>${player.equipment.head ? player.equipment.head.name : 'Нет'}</span>`;
     document.getElementById('slot-chest').innerHTML = `Грудь: <span style="color: ${player.equipment.chest.def > 0 ? '#4fc3f7' : '#fff'}">${player.equipment.chest ? player.equipment.chest.name + ' (+'+player.equipment.chest.def+')' : 'Нет'}</span>`;
@@ -314,6 +318,7 @@ function updateEnemyAnimation(entity) {
     }
 }
 
+// --- ДИАЛОГИ И МАГАЗИНЫ ---
 function startDialogue(lines) { dialogueLines = lines; currentLine = 0; currentState = 'DIALOGUE'; hud.classList.add('hidden'); mobileControls.classList.add('hidden'); dialogueScreen.classList.remove('hidden'); updateDialogueUI(); }
 function advanceDialogue() {
     if (currentState === 'STORY') {
@@ -433,6 +438,7 @@ function checkInteraction() {
                 player.hasWeapon = true; obj.interactable = false;
                 player.equipment.weapon = { name: "Старый топор", dmg: 10 };
                 player.questStatus = 'kill_monsters'; updateObjectiveText(); setAnimation('idle_weapon');
+                return; 
             }
             
             else if (obj.type === 'uncle') {
@@ -464,6 +470,7 @@ function checkInteraction() {
                             { name: "Вейланд", text: "Я вижу в тебе большой потенциал, поэтому нашел для тебя учителя. Он стоит справа." },
                             { name: "Грум (Орк)", text: "Хррр... Пацан вроде крепкий. Подойди-ка ко мне." }
                         ]); 
+                        return; 
                     } else {
                         player.questStatus = 'reach_level_2'; updateObjectiveText();
                         startDialogue([
@@ -482,6 +489,7 @@ function checkInteraction() {
                         { name: "Вейланд", text: "Ты достиг нужного уровня! Теперь орк готов с тобой поговорить." },
                         { name: "Вейланд", text: "Его зовут Грум. Он стоит справа от меня." }
                     ]);
+                    return; 
                 }
                 else if (player.questStatus === 'done' || player.questStatus === 'talk_orc' || player.questStatus === 'orc_test' || player.questStatus === 'return_orc') {
                     openCraft();
@@ -515,6 +523,7 @@ function checkInteraction() {
                         { name: "Грум (Орк)", text: "А ты не трус, фермер. Ладно, начнем тренировки." },
                         { name: "Грум (Орк)", text: "Я поставил для тебя тренировочный манекен. Как только накопишь достаточно опыта в боях — подходи к нему и бей изо всех сил!" }
                     ]);
+                    return; 
                 }
                 else if (player.questStatus === 'done') {
                     startDialogue([{ name: "Грум (Орк)", text: "Чего уставился? Бей манекен, когда будешь готов! Хррр!" }]);
@@ -764,16 +773,20 @@ function draw() {
             else {
                 if (obj.type === 'shed') {
                     const frames = buildingSprites.shed;
-                    if (frames && frames.length > 0 && frames[0].complete && frames[0].naturalWidth > 0) { ctx.drawImage(frames[0], obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height);
+                    // ИСПРАВЛЕННАЯ ПРОВЕРКА ОТРИСОВКИ
+                    if (frames && frames.length > 0 && frames[0] && frames[0].complete && frames[0].naturalWidth > 0) { 
+                        ctx.drawImage(frames[0], obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height);
                     } else { ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
                     if (player.questStatus === 'get_weapon') { drawQuestMark(obj.x, obj.y - obj.height - 20, '!'); }
                 }
                 else if (obj.type === 'merchant') {
                     ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(obj.x, obj.y, 25, 8, 0, 0, Math.PI * 2); ctx.fill();
                     const frames = npcSprites.merchant_idle;
-                    if (frames && frames.length > 0 && frames[0].complete && frames[0].naturalWidth > 0) {
+                    let currentImg = frames && frames.length > 0 ? frames[globalNpcFrame % frames.length] : null;
+                    // ИСПРАВЛЕННАЯ ПРОВЕРКА ОТРИСОВКИ
+                    if (currentImg && currentImg.complete && currentImg.naturalWidth > 0) {
                         ctx.save(); ctx.translate(obj.x, obj.y); const dX = -animConfig.w_frame / 2; const dY = -animConfig.h_frame + 10;
-                        ctx.drawImage(frames[globalNpcFrame % frames.length], dX, dY, animConfig.w_frame, animConfig.h_frame); ctx.restore();
+                        ctx.drawImage(currentImg, dX, dY, animConfig.w_frame, animConfig.h_frame); ctx.restore();
                     } else { ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
                     
                     if (player.questStatus === 'talk_merchant' || player.questStatus === 'return_merchant') { drawQuestMark(obj.x, obj.y - obj.height - 20, '!'); }
@@ -782,9 +795,11 @@ function draw() {
                 else if (obj.type === 'uncle') {
                     ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(obj.x, obj.y, 20, 6, 0, 0, Math.PI * 2); ctx.fill();
                     const frames = npcSprites.uncle_idle;
-                    if (frames && frames.length > 0 && frames[0].complete && frames[0].naturalWidth > 0) {
+                    let currentImg = frames && frames.length > 0 ? frames[globalNpcFrame % frames.length] : null;
+                    // ИСПРАВЛЕННАЯ ПРОВЕРКА ОТРИСОВКИ
+                    if (currentImg && currentImg.complete && currentImg.naturalWidth > 0) {
                         ctx.save(); ctx.translate(obj.x, obj.y); const dX = -animConfig.w_frame / 2; const dY = -animConfig.h_frame + 10;
-                        ctx.drawImage(frames[globalNpcFrame % frames.length], dX, dY, animConfig.w_frame, animConfig.h_frame); ctx.restore();
+                        ctx.drawImage(currentImg, dX, dY, animConfig.w_frame, animConfig.h_frame); ctx.restore();
                     } else { ctx.fillStyle = '#ff00ff'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
                     
                     if (['return', 'return_graveyard', 'talk_uncle_2', 'talk_uncle_3'].includes(player.questStatus)) { drawQuestMark(obj.x, obj.y - obj.height - 20, '!'); }
@@ -793,9 +808,11 @@ function draw() {
                 else if (obj.type === 'orc') {
                     ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(obj.x, obj.y, 20, 6, 0, 0, Math.PI * 2); ctx.fill();
                     const frames = npcSprites.orc_idle;
-                    if (frames && frames.length > 0 && frames[0].complete && frames[0].naturalWidth > 0) {
+                    let currentImg = frames && frames.length > 0 ? frames[globalNpcFrame % frames.length] : null;
+                    // ИСПРАВЛЕННАЯ ПРОВЕРКА ОТРИСОВКИ
+                    if (currentImg && currentImg.complete && currentImg.naturalWidth > 0) {
                         ctx.save(); ctx.translate(obj.x, obj.y); const dX = -animConfig.w_frame / 2; const dY = -animConfig.h_frame + 10;
-                        ctx.drawImage(frames[globalNpcFrame % frames.length], dX, dY, animConfig.w_frame, animConfig.h_frame); ctx.restore();
+                        ctx.drawImage(currentImg, dX, dY, animConfig.w_frame, animConfig.h_frame); ctx.restore();
                     } else { ctx.fillStyle = '#4caf50'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
                     
                     if (['talk_orc', 'return_orc'].includes(player.questStatus)) { drawQuestMark(obj.x, obj.y - obj.height - 20, '!'); }
@@ -803,7 +820,8 @@ function draw() {
                 }
                 else if (obj.type === 'dummy') {
                     const frames = buildingSprites.dummy;
-                    if (frames && frames.length > 0 && frames[0].complete && frames[0].naturalWidth > 0) {
+                    // ИСПРАВЛЕННАЯ ПРОВЕРКА ОТРИСОВКИ
+                    if (frames && frames.length > 0 && frames[0] && frames[0].complete && frames[0].naturalWidth > 0) {
                         ctx.drawImage(frames[0], obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height);
                     } else { ctx.fillStyle = '#8d6e63'; ctx.fillRect(obj.x - obj.width/2, obj.y - obj.height, obj.width, obj.height); }
                     
