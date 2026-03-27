@@ -133,13 +133,14 @@ function buildWorld() {
     enemies = [];
     lootItems = [];
     
+    // Спавн врагов на Поле
     if (!['return', 'talk_merchant', 'gather_seeds', 'return_merchant', 'talk_uncle_2', 'go_graveyard', 'kill_undead', 'return_graveyard', 'reach_level_2', 'talk_uncle_3', 'talk_orc', 'orc_test', 'return_orc', 'done'].includes(player.questStatus)) {
         enemies.push(createEnemy('hroshevik', 1000, 600, 'field'));
         enemies.push(createEnemy('hroshevik', 1200, 800, 'field'));
         enemies.push(createEnemy('hroshevik', 1100, 500, 'field'));
         enemies.push(createEnemy('hroshevik', 1300, 900, 'field'));
     }
-    
+    // Спавн врагов на Погосте
     if (['go_graveyard', 'kill_undead'].includes(player.questStatus)) {
         player.questStatus = 'kill_undead';
         enemies.push(createEnemy('undead', 1800, 500, 'graveyard'));
@@ -151,7 +152,8 @@ function buildWorld() {
 }
 
 function createEnemy(type, x, y, region) { 
-    let base = { x: x, y: y, state: 'chase', hurtTimer: 0, attackTimer: 0, frameIndex: 0, animTimer: 0, isLockAnim: false, facingRight: false, region: region };
+    // ИСПРАВЛЕНИЕ: Враги рождаются в состоянии 'idle' (сон), а не 'chase'
+    let base = { x: x, y: y, state: 'idle', hurtTimer: 0, attackTimer: 0, frameIndex: 0, animTimer: 0, isLockAnim: false, facingRight: false, region: region };
     if (type === 'hroshevik') {
         return { ...base, type: type, baseAnim: 'enemy', width: 20, height: 40, speed: 1.2, hp: 30, aggroRange: 300, damage: 15, currentAnim: 'enemy_walk', revives: 0 }; 
     } else {
@@ -159,6 +161,7 @@ function createEnemy(type, x, y, region) {
     }
 }
 
+// Запуск
 setTimeout(() => ui.fade.classList.add('hidden'), 500);
 buildWorld();
 
@@ -472,7 +475,7 @@ function checkInteraction() {
                 }
                 else if (player.level < 3 && player.xp >= thresholds[player.level]) { 
                     player.level++; player.skillPoints++; updateHUD(); 
-                    startDialogue("Система", `УРОВЕНЬ ПОВЫШЕН!\nВы получили 1 Очко Навыков.`); 
+                    startDialogue("Система", `УРОВЕНЬ ПОВЫШЕН! (Уровень ${player.level}/3)\nВы получили 1 Очко Навыков.`); 
                 }
                 else if (player.skillPoints > 0 || player.level > 0) { 
                     openTraining(); 
@@ -622,14 +625,14 @@ function update() {
                                 if (player.hp <= 0) { player.state = 'dead'; currentState = 'GAMEOVER'; ui.mobile.classList.add('hidden'); ui.gameOver.classList.remove('hidden'); } 
                             } 
                         } else if (ecfg.onComplete === 'walk') { 
-                            if (!['resurrecting','dead'].includes(e.state)) { e.state = 'chase'; setEntityAnim(e, e.baseAnim + '_walk'); } 
+                            if (!['resurrecting','dead','idle'].includes(e.state)) { e.state = 'chase'; setEntityAnim(e, e.baseAnim + '_walk'); } 
                         } else if (ecfg.onComplete === 'dead') { 
                             e.frameIndex = ecfg.frames.length - 1; return; 
                         } else {
                             e.frameIndex = 0; 
                         }
                     } else { 
-                        e.frameIndex = ['dead','resurrecting'].includes(e.state) ? ecfg.frames.length - 1 : 0; 
+                        e.frameIndex = ['dead','resurrecting','idle'].includes(e.state) ? ecfg.frames.length - 1 : 0; 
                     } 
                 } 
             } 
@@ -645,11 +648,24 @@ function update() {
         e.facingRight = player.x > e.x; 
         if (e.attackTimer > 0) e.attackTimer--;
         
-        if (e.state === 'chase' && !e.isLockAnim) {
-            let dx = player.x - e.x, dy = player.y - e.y, dist = Math.hypot(dx, dy);
-            if (e.x < camera.x - 200 || e.x > camera.x + canvas.width + 200 || e.y < camera.y - 200 || e.y > camera.y + canvas.height + 200) return;
-            
-            if (dist > 40 * SCALE) { 
+        let dx = player.x - e.x, dy = player.y - e.y, dist = Math.hypot(dx, dy);
+        
+        // ОПТИМИЗАЦИЯ: Если враг за экраном - он спит
+        if (e.x < camera.x - 200 || e.x > camera.x + canvas.width + 200 || e.y < camera.y - 200 || e.y > camera.y + canvas.height + 200) return;
+
+        // ИСПРАВЛЕНИЕ: Враги ждут, пока ты не подойдешь
+        if (e.state === 'idle') {
+            setEntityAnim(e, e.baseAnim + '_walk'); // Используем кадр ходьбы как стойку
+            e.frameIndex = 0; // Замораживаем анимацию
+            if (dist < e.aggroRange) {
+                e.state = 'chase';
+            }
+        }
+        else if (e.state === 'chase' && !e.isLockAnim) {
+            if (dist > e.aggroRange * 1.5) {
+                e.state = 'idle'; // Игрок убежал
+            }
+            else if (dist > 40 * SCALE) { 
                 e.x += (dx / dist) * e.speed; e.y += (dy / dist) * e.speed; setEntityAnim(e, e.baseAnim + '_walk'); 
             } else if (e.attackTimer <= 0 && !['dead','roll'].includes(player.state)) { 
                 e.state = 'attack'; e.attackTimer = 100; setEntityAnim(e, e.baseAnim + '_preAttack'); e.isLockAnim = true; 
@@ -660,7 +676,7 @@ function update() {
     });
 }
 
-// --- ОТРИСОВКА ---
+// --- ОТРИСОВКА МИРА ---
 function drawMark(x, y, str, c = '#ffb300') { 
     ctx.save(); ctx.fillStyle = c; ctx.font = 'bold 20px Arial'; ctx.textAlign = 'center'; 
     ctx.fillText(str, x, y + Math.sin(Date.now() / 200) * 5); ctx.restore(); 
