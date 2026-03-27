@@ -83,7 +83,6 @@ const undeadSprites = {
     attack: loadFrames('img/undead_Attack', 3), hurt: loadFrames('img/undead_Hurt', 3), death: loadFrames('img/undead_Death', 5)
 };
 
-// --- НОВЫЕ КАРТИНКИ ПРЕПЯТСТВИЙ ---
 const obstacleImages = {};
 const obstacleNames = [
     'Tree1', 'Tree2', 'Log1', 'Log2', 'Log3', 'Log4', 
@@ -91,11 +90,11 @@ const obstacleNames = [
 ];
 obstacleNames.forEach(name => {
     let img = new Image();
-    img.src = `img/${name}.png`; // Предполагается, что картинки в папке img/
+    img.src = `img/${name}.png`;
     obstacleImages[name] = img;
 });
 
-let obstacles = []; // Массив для леса и камней
+let obstacles = [];
 
 let globalNpcTimer = 0;
 let globalNpcFrame = 0;
@@ -147,14 +146,13 @@ function buildWorld() {
     enemies = [];
     lootItems = [];
     
-    // Спавн врагов на Поле
     if (!['return', 'talk_merchant', 'gather_seeds', 'return_merchant', 'talk_uncle_2', 'go_graveyard', 'kill_undead', 'return_graveyard', 'reach_level_2', 'talk_uncle_3', 'talk_orc', 'orc_test', 'return_orc', 'done'].includes(player.questStatus)) {
         enemies.push(createEnemy('hroshevik', 1000, 600, 'field'));
         enemies.push(createEnemy('hroshevik', 1200, 800, 'field'));
         enemies.push(createEnemy('hroshevik', 1100, 500, 'field'));
         enemies.push(createEnemy('hroshevik', 1300, 900, 'field'));
     }
-    // Спавн врагов на Погосте
+
     if (['go_graveyard', 'kill_undead'].includes(player.questStatus)) {
         player.questStatus = 'kill_undead';
         enemies.push(createEnemy('undead', 1800, 500, 'graveyard'));
@@ -163,31 +161,63 @@ function buildWorld() {
         enemies.push(createEnemy('undead', 1900, 750, 'graveyard'));
     }
     
-    generateForest(); // Генерируем лес при загрузке мира
+    generateForest();
     updateHUD();
 }
 
-// --- НОВАЯ ФУНКЦИЯ: ГЕНЕРАЦИЯ ЛЕСА ---
+// --- УМНАЯ ГЕНЕРАЦИЯ ПРЕПЯТСТВИЙ ---
 function generateForest() {
     obstacles = [];
-    const numClusters = 12; // Количество "полянок" с объектами
+    
+    // 1. Деревня (хватит пары деревьев, без мусора под ногами)
+    for(let i = 0; i < 3; i++) {
+        let ox = 150 + Math.random() * 400; // Разброс по деревне
+        let oy = 400 + Math.random() * 600; 
+        obstacles.push({ x: ox, y: oy, width: 30, height: 20, drawW: 100, drawHeight: 120, type: 'Tree1' });
+    }
+
+    // 2. Остальной мир (группируем логично)
+    const numClusters = 14; 
     
     for (let i = 0; i < numClusters; i++) {
-        // Спавним кучку подальше от стартовой деревни (x:0-600)
-        let cx = 700 + Math.random() * (WORLD_W - 900); 
-        let cy = 200 + Math.random() * (WORLD_H - 400);
-        let count = 3 + Math.random() * 6; // От 3 до 9 объектов в кучке
+        let cx = 800 + Math.random() * (WORLD_W - 900); // Дальше от деревни
+        let cy = 100 + Math.random() * (WORLD_H - 200);
+        
+        // 0 - Роща, 1 - Камни, 2 - Бурелом
+        let clusterType = Math.floor(Math.random() * 3);
+        let count = 3 + Math.random() * 5; 
 
         for (let j = 0; j < count; j++) {
-            let ox = cx + (Math.random() - 0.5) * 300; 
-            let oy = cy + (Math.random() - 0.5) * 300;
-            let type = obstacleNames[Math.floor(Math.random() * obstacleNames.length)];
+            let ox = cx + (Math.random() - 0.5) * 200; 
+            let oy = cy + (Math.random() - 0.5) * 200;
             
-            let w = type.includes('Tree') ? 30 : (type.includes('Log') ? 60 : 40);
-            let h = type.includes('Tree') ? 20 : (type.includes('Log') ? 30 : 25);
-            let drawH = type.includes('Tree') ? 120 : 60; 
+            let type, w, h, drawW, drawH;
+
+            if (clusterType === 0) {
+                // РОЩА: в основном Tree1, изредка пень Tree2
+                type = Math.random() > 0.2 ? 'Tree1' : 'Tree2';
+            } else if (clusterType === 1) {
+                // КАМНИ: разные виды камней
+                let stones = ['stone_7', 'stone_8', 'stone_9', 'stone_10', 'stone_11'];
+                type = stones[Math.floor(Math.random() * stones.length)];
+            } else {
+                // БУРЕЛОМ: бревна и пни
+                let woods = ['Log1', 'Log2', 'Log3', 'Log4', 'Tree2'];
+                type = woods[Math.floor(Math.random() * woods.length)];
+            }
             
-            obstacles.push({ x: ox, y: oy, width: w, height: h, drawHeight: drawH, type: type });
+            // Назначаем размеры (Tree1 большое, остальное в ~3 раза меньше)
+            if (type === 'Tree1') {
+                w = 30; h = 20; drawW = 100; drawH = 120;
+            } else if (type === 'Tree2') { // Пень
+                w = 12; h = 8; drawW = 35; drawH = 40; 
+            } else if (type.includes('Log')) { // Поваленные бревна
+                w = 20; h = 10; drawW = 40; drawH = 25;
+            } else if (type.includes('stone')) { // Камни
+                w = 15; h = 10; drawW = 30; drawH = 25;
+            }
+            
+            obstacles.push({ x: ox, y: oy, width: w, height: h, drawW: drawW, drawHeight: drawH, type: type });
         }
     }
 }
@@ -552,7 +582,7 @@ function checkInteraction() {
     }
 }
 
-// --- НОВАЯ ФУНКЦИЯ: ПРОВЕРКА КОЛЛИЗИИ С ПРЕПЯТСТВИЯМИ ---
+// --- ПРОВЕРКА КОЛЛИЗИИ С ПРЕПЯТСТВИЯМИ ---
 function checkObstacleCollision(newX, newY, radius = 10) {
     for (let obs of obstacles) {
         if (newX + radius > obs.x - obs.width / 2 && 
@@ -614,7 +644,6 @@ function update() {
         if (keys.d) { dx += spd; player.facingRight = true; }
         if (dx !== 0 && dy !== 0) { dx *= 0.707; dy *= 0.707; } 
         
-        // НОВАЯ ЛОГИКА: Обход препятствий для Игрока
         if (!checkObstacleCollision(player.x + dx, player.y)) player.x += dx;
         if (!checkObstacleCollision(player.x, player.y + dy)) player.y += dy;
 
@@ -720,7 +749,6 @@ function update() {
             if (dist > e.aggroRange * 1.5) {
                 e.state = 'idle'; 
             }
-            // НОВАЯ ЛОГИКА: Обход препятствий для врагов
             else if (dist > 40 * SCALE) { 
                 let moveX = (dx / dist) * e.speed;
                 let moveY = (dy / dist) * e.speed;
@@ -783,7 +811,6 @@ function draw() {
             ctx.fill(); ctx.stroke(); 
         });
 
-        // НОВОЕ: Добавили obstacles в renderQueue
         let renderQueue = [player, ...environment, ...enemies, ...obstacles].sort((a, b) => a.y - b.y);
         
         for (let o of renderQueue) {
@@ -810,12 +837,11 @@ function draw() {
                     ctx.drawImage(img, -(animConfig.w_frame * SCALE) / 2, -(animConfig.h_frame * SCALE) + 10, animConfig.w_frame * SCALE, animConfig.h_frame * SCALE); 
                     ctx.restore(); 
                 }
-            // НОВОЕ: Отрисовка препятствий с учетом правильного Y-смещения
             } else if (obstacles.includes(o)) {
                 let img = obstacleImages[o.type];
                 if (img && img.complete && img.naturalWidth > 0) {
-                    let drawW = o.type.includes('Tree') ? 100 : 70;
-                    ctx.drawImage(img, o.x - drawW / 2, o.y - o.drawHeight + o.height / 2, drawW, o.drawHeight);
+                    // Теперь мы читаем drawW и drawHeight прямо из объекта
+                    ctx.drawImage(img, o.x - o.drawW / 2, o.y - o.drawHeight + o.height / 2, o.drawW, o.drawHeight);
                 }
             } else if (o.type === 'shed') {
                 let img = buildingSprites.shed[0]; 
