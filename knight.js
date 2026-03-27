@@ -56,9 +56,9 @@ function loadFrames(prefix, count) {
 
 const tarnSprites = {
     idle_no_weapon: loadFrames('img/GG_idle_None', 1), idle_weapon: loadFrames('img/GG_idle', 1),
-    walk_no_weapon: loadFrames('img/GG_idle_None', 6), walk_weapon: loadFrames('img/GG_idle', 6),       
-    attack1_no_weapon: loadFrames('img/GG_Attack_ryka', 6), attack1_weapon: loadFrames('img/GG_Attack_Axe', 6),       
-    attack2_no_weapon: loadFrames('img/GG_Attack_superRyka', 6), attack2_weapon: loadFrames('img/GG_Attack_SuperAxe', 6),       
+    walk_no_weapon: loadFrames('img/GG_idle_None', 6), walk_weapon: loadFrames('img/GG_idle', 6),        
+    attack1_no_weapon: loadFrames('img/GG_Attack_ryka', 6), attack1_weapon: loadFrames('img/GG_Attack_Axe', 6),        
+    attack2_no_weapon: loadFrames('img/GG_Attack_superRyka', 6), attack2_weapon: loadFrames('img/GG_Attack_SuperAxe', 6),        
     roll: loadFrames('img/GG_perevorot', 5)                            
 };
 
@@ -82,6 +82,20 @@ const undeadSprites = {
     walk: loadFrames('img/undead_walk', 4), preAttack: loadFrames('img/undead_Pre-Attack', 3),
     attack: loadFrames('img/undead_Attack', 3), hurt: loadFrames('img/undead_Hurt', 3), death: loadFrames('img/undead_Death', 5)
 };
+
+// --- НОВЫЕ КАРТИНКИ ПРЕПЯТСТВИЙ ---
+const obstacleImages = {};
+const obstacleNames = [
+    'Tree1', 'Tree2', 'Log1', 'Log2', 'Log3', 'Log4', 
+    'stone_7', 'stone_8', 'stone_9', 'stone_10', 'stone_11'
+];
+obstacleNames.forEach(name => {
+    let img = new Image();
+    img.src = `img/${name}.png`; // Предполагается, что картинки в папке img/
+    obstacleImages[name] = img;
+});
+
+let obstacles = []; // Массив для леса и камней
 
 let globalNpcTimer = 0;
 let globalNpcFrame = 0;
@@ -148,11 +162,37 @@ function buildWorld() {
         enemies.push(createEnemy('undead', 2100, 600, 'graveyard'));
         enemies.push(createEnemy('undead', 1900, 750, 'graveyard'));
     }
+    
+    generateForest(); // Генерируем лес при загрузке мира
     updateHUD();
 }
 
+// --- НОВАЯ ФУНКЦИЯ: ГЕНЕРАЦИЯ ЛЕСА ---
+function generateForest() {
+    obstacles = [];
+    const numClusters = 12; // Количество "полянок" с объектами
+    
+    for (let i = 0; i < numClusters; i++) {
+        // Спавним кучку подальше от стартовой деревни (x:0-600)
+        let cx = 700 + Math.random() * (WORLD_W - 900); 
+        let cy = 200 + Math.random() * (WORLD_H - 400);
+        let count = 3 + Math.random() * 6; // От 3 до 9 объектов в кучке
+
+        for (let j = 0; j < count; j++) {
+            let ox = cx + (Math.random() - 0.5) * 300; 
+            let oy = cy + (Math.random() - 0.5) * 300;
+            let type = obstacleNames[Math.floor(Math.random() * obstacleNames.length)];
+            
+            let w = type.includes('Tree') ? 30 : (type.includes('Log') ? 60 : 40);
+            let h = type.includes('Tree') ? 20 : (type.includes('Log') ? 30 : 25);
+            let drawH = type.includes('Tree') ? 120 : 60; 
+            
+            obstacles.push({ x: ox, y: oy, width: w, height: h, drawHeight: drawH, type: type });
+        }
+    }
+}
+
 function createEnemy(type, x, y, region) { 
-    // ИСПРАВЛЕНИЕ: Враги рождаются в состоянии 'idle' (сон), а не 'chase'
     let base = { x: x, y: y, state: 'idle', hurtTimer: 0, attackTimer: 0, frameIndex: 0, animTimer: 0, isLockAnim: false, facingRight: false, region: region };
     if (type === 'hroshevik') {
         return { ...base, type: type, baseAnim: 'enemy', width: 20, height: 40, speed: 1.2, hp: 30, aggroRange: 300, damage: 15, currentAnim: 'enemy_walk', revives: 0 }; 
@@ -512,6 +552,19 @@ function checkInteraction() {
     }
 }
 
+// --- НОВАЯ ФУНКЦИЯ: ПРОВЕРКА КОЛЛИЗИИ С ПРЕПЯТСТВИЯМИ ---
+function checkObstacleCollision(newX, newY, radius = 10) {
+    for (let obs of obstacles) {
+        if (newX + radius > obs.x - obs.width / 2 && 
+            newX - radius < obs.x + obs.width / 2 &&
+            newY + radius > obs.y - obs.height / 2 && 
+            newY - radius < obs.y + obs.height / 2) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // --- ЛОГИКА КАДРА ---
 function checkQuestProgress() {
     if (player.questStatus === 'kill_monsters') {
@@ -560,7 +613,11 @@ function update() {
         if (keys.a) { dx -= spd; player.facingRight = false; } 
         if (keys.d) { dx += spd; player.facingRight = true; }
         if (dx !== 0 && dy !== 0) { dx *= 0.707; dy *= 0.707; } 
-        player.x += dx; player.y += dy;
+        
+        // НОВАЯ ЛОГИКА: Обход препятствий для Игрока
+        if (!checkObstacleCollision(player.x + dx, player.y)) player.x += dx;
+        if (!checkObstacleCollision(player.x, player.y + dy)) player.y += dy;
+
         player.x = Math.max(20, Math.min(player.x, WORLD_W - 20)); 
         player.y = Math.max(20, Math.min(player.y, WORLD_H - 20));
     }
@@ -650,23 +707,33 @@ function update() {
         
         let dx = player.x - e.x, dy = player.y - e.y, dist = Math.hypot(dx, dy);
         
-        // ОПТИМИЗАЦИЯ: Если враг за экраном - он спит
         if (e.x < camera.x - 200 || e.x > camera.x + canvas.width + 200 || e.y < camera.y - 200 || e.y > camera.y + canvas.height + 200) return;
 
-        // ИСПРАВЛЕНИЕ: Враги ждут, пока ты не подойдешь
         if (e.state === 'idle') {
-            setEntityAnim(e, e.baseAnim + '_walk'); // Используем кадр ходьбы как стойку
-            e.frameIndex = 0; // Замораживаем анимацию
+            setEntityAnim(e, e.baseAnim + '_walk'); 
+            e.frameIndex = 0; 
             if (dist < e.aggroRange) {
                 e.state = 'chase';
             }
         }
         else if (e.state === 'chase' && !e.isLockAnim) {
             if (dist > e.aggroRange * 1.5) {
-                e.state = 'idle'; // Игрок убежал
+                e.state = 'idle'; 
             }
+            // НОВАЯ ЛОГИКА: Обход препятствий для врагов
             else if (dist > 40 * SCALE) { 
-                e.x += (dx / dist) * e.speed; e.y += (dy / dist) * e.speed; setEntityAnim(e, e.baseAnim + '_walk'); 
+                let moveX = (dx / dist) * e.speed;
+                let moveY = (dy / dist) * e.speed;
+
+                if (!checkObstacleCollision(e.x + moveX, e.y + moveY, 10)) {
+                    e.x += moveX; e.y += moveY;
+                } else if (!checkObstacleCollision(e.x + moveX, e.y, 10)) {
+                    e.x += moveX; 
+                } else if (!checkObstacleCollision(e.x, e.y + moveY, 10)) {
+                    e.y += moveY; 
+                }
+                
+                setEntityAnim(e, e.baseAnim + '_walk'); 
             } else if (e.attackTimer <= 0 && !['dead','roll'].includes(player.state)) { 
                 e.state = 'attack'; e.attackTimer = 100; setEntityAnim(e, e.baseAnim + '_preAttack'); e.isLockAnim = true; 
             } else {
@@ -716,7 +783,8 @@ function draw() {
             ctx.fill(); ctx.stroke(); 
         });
 
-        let renderQueue = [player, ...environment, ...enemies].sort((a, b) => a.y - b.y);
+        // НОВОЕ: Добавили obstacles в renderQueue
+        let renderQueue = [player, ...environment, ...enemies, ...obstacles].sort((a, b) => a.y - b.y);
         
         for (let o of renderQueue) {
             if (o.x < camera.x - 150 || o.x > camera.x + canvas.width + 150 || o.y < camera.y - 150 || o.y > camera.y + canvas.height + 150) continue;
@@ -741,6 +809,13 @@ function draw() {
                     ctx.save(); ctx.translate(o.x, o.y); if (!o.facingRight) ctx.scale(-1, 1); 
                     ctx.drawImage(img, -(animConfig.w_frame * SCALE) / 2, -(animConfig.h_frame * SCALE) + 10, animConfig.w_frame * SCALE, animConfig.h_frame * SCALE); 
                     ctx.restore(); 
+                }
+            // НОВОЕ: Отрисовка препятствий с учетом правильного Y-смещения
+            } else if (obstacles.includes(o)) {
+                let img = obstacleImages[o.type];
+                if (img && img.complete && img.naturalWidth > 0) {
+                    let drawW = o.type.includes('Tree') ? 100 : 70;
+                    ctx.drawImage(img, o.x - drawW / 2, o.y - o.drawHeight + o.height / 2, drawW, o.drawHeight);
                 }
             } else if (o.type === 'shed') {
                 let img = buildingSprites.shed[0]; 
