@@ -5,46 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aethelforge | Личный кабинет</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        /* Стили специально для профиля */
-        .profile-header {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            background: #1a1a1a;
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid #333;
-            margin-bottom: 30px;
-        }
-        .profile-avatar {
-            width: 80px;
-            height: 80px;
-            background-color: var(--accent-color);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            font-weight: bold;
-            color: white;
-        }
-        .profile-info h2 { margin: 0 0 5px 0; color: #fff; }
-        .profile-info p { margin: 0; color: #aaa; }
-        
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-        .dashboard-card {
-            background: #1a1a1a;
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid #333;
-        }
-        .dashboard-card h3 { color: var(--accent-color); margin-top: 0; border-bottom: 1px solid #333; padding-bottom: 10px; }
-    </style>
+    <link rel="stylesheet" href="profile.css">
 </head>
 <body>
     <nav class="navbar">
@@ -54,7 +15,7 @@
             <li><a href="games.html">Мои игры</a></li>
             <li><a href="tutor.html">ОГЭ / ЕГЭ</a></li>
             <li><a href="play.html">Играть онлайн</a></li>
-            <li id="authNavItem"><a href="login.html" class="active">Войти</a></li>
+            <li id="authNavItem"><a href="login.html" class="active">Профиль</a></li>
         </ul>
     </nav>
 
@@ -64,92 +25,40 @@
             <div class="profile-info">
                 <h2 id="userName">Загрузка героя...</h2>
                 <p id="userEmail">Устанавливаем связь с сервером...</p>
+                <div class="profile-stats">
+                    <span class="stat-badge">Уровень: <b id="userLevel">1</b></span>
+                    <span class="stat-badge">Баланс: <b id="userCoins" style="color:#ffd700">0</b> 🪙</span>
+                </div>
             </div>
+            <button id="logoutBtn" class="game-btn" style="margin-left: auto; background-color: #f44336;">Выйти</button>
         </div>
 
         <div class="dashboard-grid">
             <div class="dashboard-card">
                 <h3>🎮 Библиотека игр</h3>
-                <ul style="list-style: none; padding: 0; color: #ccc;">
-                    <li style="margin-bottom: 10px;">🟢 Защита Цитадели <a href="play.html" style="color: var(--accent-color); text-decoration: none; font-size: 0.9em; margin-left: 10px;">[Играть]</a></li>
-                    <li style="color: #666;">🔒 Dark Fantasy RPG (В разработке)</li>
-                    <li style="color: #666;">🔒 RTS про гоблинов (Скоро)</li>
+                <ul class="library-list">
+                    <li><span class="status online"></span> Защита Цитадели <a href="play.html">[Играть]</a></li>
+                    <li><span class="status online"></span> Тихая Гавань: Ферма <a href="farm.html">[Играть]</a></li>
+                    <li class="locked"><span class="status offline"></span> Dark Fantasy RPG (В разработке)</li>
                 </ul>
             </div>
-
-<div class="container">
-    <h2>🏆 Ваши Достижения</h2>
-    <div id="achievementsContainer" class="profile-achievements">
-        </div>
-</div>
-
-<script>
-    // Массив всех возможных ачивок
-    const allAchievements = [
-        { id: 'first_blood', icon: '🩸', title: 'Первая кровь', desc: 'Убить 1 гоблина' },
-        { id: 'first_archer', icon: '🏹', title: 'Острый глаз', desc: 'Нанять первого лучника' },
-        { id: 'spikes_1', icon: '🗡️', title: 'Шипы и боль', desc: 'Построить ров 1 уровня' },
-        { id: 'bloodbath', icon: '☠️', title: 'Кровавая баня', desc: 'Улучшить ров до 2 уровня' },
-        { id: 'repairman', icon: '🧱', title: 'Ремонтная бригада', desc: 'Починить стену (поймать бонус)' },
-        { id: 'boss_slayer', icon: '👹', title: 'Убийца великанов', desc: 'Убить первого Босса' },
-        { id: 'arrow_storm', icon: '🌧️', title: 'Шквальный огонь', desc: 'Нанять 5 лучников' },
-        { id: 'wealthy', icon: '💰', title: 'Толстосум', desc: 'Накопить 100 монет' },
-        { id: 'hundred_skulls', icon: '💯', title: 'Сотня черепов', desc: 'Счет: 100 в одной игре' },
-        { id: 'impenetrable', icon: '🏰', title: 'Неприступная Цитадель', desc: 'Счет: 300 в одной игре' }
-    ];
-
-    // Достаем сохраненные достижения
-    let unlocked = [];
-    try { unlocked = JSON.parse(localStorage.getItem('citadelAchievements')) || []; } catch(e) {}
-
-    // Рисуем карточки
-    const container = document.getElementById('achievementsContainer');
-    allAchievements.forEach(ach => {
-        let isUnlocked = unlocked.includes(ach.id);
-        let card = document.createElement('div');
-        card.className = `achievement-card ${isUnlocked ? 'unlocked' : ''}`;
-        card.innerHTML = `
-            <div class="achievement-icon">${ach.icon}</div>
-            <div class="achievement-info">
-                <h4>${ach.title}</h4>
-                <p>${ach.desc}</p>
-            </div>
-        `;
-        container.appendChild(card);
-    });
-</script>
             
+            <div class="dashboard-card">
+                <h3>📊 Ваша статистика</h3>
+                <p style="color: #aaa;">Здесь скоро появится статистика ваших побед и проведенного времени.</p>
+            </div>
+        </div>
+
+        <div class="achievements-section">
+            <h2>🏆 Ваши Достижения (Защита Цитадели)</h2>
+            <div id="achievementsContainer" class="profile-achievements">
+                </div>
         </div>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="auth.js"></script>
     <script src="main.js"></script>
-    
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            const SUPABASE_URL = 'https://bgzxdpjfsodndxroieay.supabase.co'; 
-            const SUPABASE_ANON_KEY = 'sb_publishable_7lewcPQCbnoXmkcMLu_Hlw_dnfCXZka';
-            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-            // Получаем данные текущего пользователя
-            const { data: { user } } = await supabase.auth.getUser();
-
-            if (user) {
-                // Если пользователь найден, заполняем карточку
-                document.getElementById('userEmail').textContent = user.email;
-                
-                // Делаем никнейм из начала почты (до @)
-                const nickname = user.email.split('@')[0];
-                document.getElementById('userName').textContent = nickname;
-                
-                // Ставим первую букву ника в аватар
-                document.getElementById('userAvatar').textContent = nickname.charAt(0).toUpperCase();
-            } else {
-                // Если кто-то зашел на страницу без авторизации — выкидываем на логин
-                window.location.href = 'login.html';
-            }
-        });
-    </script>
+    <script src="profile.js?v=1"></script> 
 </body>
 </html>
