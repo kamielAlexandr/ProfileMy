@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Голодная Бездна (Vanilla JS)</title>
+    <script src="https://yandex.ru/games/sdk/v2"></script>
+    <style>
+        /* Сброс стилей и настройка холста */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #0a0a0a; /* Темный фон для атмосферы */
+            overflow: hidden;
+            font-family: sans-serif;
+            user-select: none;
+        }
+        canvas {
+            display: block;
+        }
+        /* Интерфейс поверх канваса */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Клики проходят сквозь UI к канвасу */
+        }
+        #stats {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #fff;
+            text-shadow: 2px 2px 4px #000;
+        }
+        .stat-line {
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+        #ad-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(45deg, #4b0082, #8a2be2);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            pointer-events: auto; /* Включаем клики для кнопки */
+            border: 2px solid #fff;
+            box-shadow: 0 0 15px rgba(138, 43, 226, 0.5);
+            transition: transform 0.1s;
+        }
+        #ad-button:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="ui-layer">
+        <div id="stats">
+            <div class="stat-line" id="load-text">Вместимость: 0 / 10</div>
+            <div class="stat-line" id="crystals-text">Тёмные кристаллы: 0</div>
+            <div class="stat-line" style="font-size: 14px; color: #aaa; margin-top: 10px;">
+                Управление: води мышью или пальцем
+            </div>
+        </div>
+        <div id="ad-button">Взрыв Пустоты (Реклама)</div>
+    </div>
+
+    <script>
+        // === ИНИЦИАЛИЗАЦИЯ ЯНДЕКС SDK ===
+        let ys = null;
+        if (window.YaGames) {
+            window.YaGames.init().then(ysdk => {
+                ys = ysdk;
+                console.log("Yandex SDK инициализирован");
+            }).catch(console.error);
+        }
+
+        // === НАСТРОЙКА КАНВАСА ===
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let width, height;
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // === ИГРОВЫЕ ПЕРЕМЕННЫЕ ===
+        const WORLD_SIZE = 2000;
+        
+        // Камера (центрируется на игроке)
+        let camera = { x: 0, y: 0 };
+
+        // Игрок (Слайм)
+        let player = {
+            x: WORLD_SIZE / 2,
+            y: WORLD_SIZE / 2 + 200,
+            radius: 20,
+            baseRadius: 20,
+            speed: 250, // пикселей в секунду
+            targetX: WORLD_SIZE / 2,
+            targetY: WORLD_SIZE / 2 + 200,
+            color: '#32cd32', // Зеленая слизь
+            load: 0,
+            maxLoad: 10,
+            crystals: 0
+        };
+
+        // Аномалия (Портал)
+        let portal = {
+            x: WORLD_SIZE / 2,
+            y: WORLD_SIZE / 2,
+            radius: 60,
+            pulse: 0
+        };
+
+        // Ресурсы на карте
+        let resources = [];
+        const MAX_RESOURCES = 300;
+
+        // UI Элементы
+        const loadText = document.getElementById('load-text');
+        const crystalsText = document.getElementById('crystals-text');
+        const adButton = document.getElementById('ad-button');
+
+        // === ГЕНЕРАЦИЯ МИРА ===
+        function spawnResources() {
+            resources = [];
+            for (let i = 0; i < MAX_RESOURCES; i++) {
+                let rx = Math.random() * WORLD_SIZE;
+                let ry = Math.random() * WORLD_SIZE;
+                
+                // Не спавним прямо в портале
+                const distToPortal = Math.hypot(rx - portal.x, ry - portal.y);
+                if (distToPortal > 200) {
+                    resources.push({
+                        x: rx,
+                        y: ry,
+                        size: 10 + Math.random() * 10, // Разные куски мусора
+                        color: Math.random() > 0.5 ? '#8b4513' : '#556b2f', // Цвета дерева/гоблинских построек
+                        active: true
+                    });
+                }
+            }
+        }
+        spawnResources();
+
+        // === УПРАВЛЕНИЕ ===
+        // Перевод координат экрана в координаты мира (с учетом камеры)
+        function setTarget(clientX, clientY) {
+            player.targetX = clientX - width / 2 + player.x;
+            player.targetY = clientY - height / 2 + player.y;
+            
+            // Ограничение по границам мира
+            player.targetX = Math.max(player.radius, Math.min(WORLD_SIZE - player.radius, player.targetX));
+            player.targetY = Math.max(player.radius, Math.min(WORLD_SIZE - player.radius, player.targetY));
+        }
+
+        canvas.addEventListener('pointermove', (e) => setTarget(e.clientX, e.clientY));
+        canvas.addEventListener('pointerdown', (e) => setTarget(e.clientX, e.clientY));
+
+        // === ЛОГИКА РЕКЛАМЫ ===
+        adButton.addEventListener('click', () => {
+            if (ys) {
+                // Останавливаем время игры, если нужно (здесь просто вызываем показ)
+                ys.adv.showRewardedVideo({
+                    callbacks: {
+                        onOpen: () => { console.log('Реклама открыта'); },
+                        onRewarded: () => {
+                            player.crystals += 500;
+                            updateUI();
+                        },
+                        onClose: () => { console.log('Реклама закрыта'); },
+                        onError: (e) => { console.log('Ошибка рекламы', e); }
+                    }
+                });
+            } else {
+                // Режим тестирования без интернета
+                player.crystals += 500;
+                updateUI();
+                alert("Демо-награда: +500 кристаллов");
+            }
+        });
+
+        function updateUI() {
+            loadText.innerText = `Вместимость: ${player.load} / ${player.maxLoad}`;
+            crystalsText.innerText = `Тёмные кристаллы: ${player.crystals}`;
+        }
+
+        // === ИГРОВОЙ ЦИКЛ ===
+        let lastTime = 0;
+        let gameTime = 0; // Для анимаций (пульсация)
+
+        function gameLoop(timestamp) {
+            let dt = (timestamp - lastTime) / 1000; // Дельта тайм в секундах
+            if (dt > 0.1) dt = 0.1; // Защита от лагов при сворачивании вкладки
+            lastTime = timestamp;
+            gameTime += dt;
+
+            update(dt);
+            draw();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function update(dt) {
+            // 1. Движение игрока к цели
+            const dx = player.targetX - player.x;
+            const dy = player.targetY - player.y;
+            const distance = Math.hypot(dx, dy);
+
+            if (distance > 5) {
+                const moveDist = player.speed * dt;
+                if (moveDist > distance) {
+                    player.x = player.targetX;
+                    player.y = player.targetY;
+                } else {
+                    player.x += (dx / distance) * moveDist;
+                    player.y += (dy / distance) * moveDist;
+                }
+            }
+
+            // 2. Поглощение ресурсов
+            if (player.load < player.maxLoad) {
+                for (let i = 0; i < resources.length; i++) {
+                    let res = resources[i];
+                    if (!res.active) continue;
+
+                    // Простая проверка коллизии (Круг - Точка)
+                    const distToRes = Math.hypot(player.x - res.x, player.y - res.y);
+                    if (distToRes < player.radius + res.size / 2) {
+                        res.active = false; // Съели
+                        player.load++;
+                        player.radius = player.baseRadius + (player.load * 1.5); // Слайм растет
+                        updateUI();
+                        
+                        // Если заполнились, автоматически направляем к порталу (опционально)
+                        // if(player.load >= player.maxLoad) { player.color = "#ffff00"; }
+                    }
+                }
+            }
+
+            // 3. Сдача ресурсов в Аномалию
+            const distToPortal = Math.hypot(player.x - portal.x, player.y - portal.y);
+            if (distToPortal < portal.radius + player.radius && player.load > 0) {
+                // "Высасываем" по одному ресурсу за кадр для приятного эффекта
+                player.load -= 1;
+                player.crystals += 5;
+                player.radius = player.baseRadius + (player.load * 1.5); // Слайм уменьшается
+                portal.pulse = 1.5; // Триггер анимации портала
+                updateUI();
+            }
+
+            // Затухание анимации портала
+            if (portal.pulse > 0) {
+                portal.pulse -= dt * 2;
+                if (portal.pulse < 0) portal.pulse = 0;
+            }
+
+            // 4. Обновление камеры (плавное следование за игроком)
+            camera.x = player.x - width / 2;
+            camera.y = player.y - height / 2;
+        }
+
+        function draw() {
+            // Очищаем экран
+            ctx.fillStyle = '#111';
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.save();
+            // Сдвигаем весь мир в зависимости от положения камеры
+            ctx.translate(-camera.x, -camera.y);
+
+            // Отрисовка границ мира (сетка или пол)
+            ctx.strokeStyle = '#222';
+            ctx.lineWidth = 5;
+            ctx.strokeRect(0, 0, WORLD_SIZE, WORLD_SIZE);
+
+            // Отрисовка ресурсов
+            for (let i = 0; i < resources.length; i++) {
+                let res = resources[i];
+                if (res.active) {
+                    ctx.fillStyle = res.color;
+                    // Рисуем квадрат с легким поворотом
+                    ctx.save();
+                    ctx.translate(res.x, res.y);
+                    ctx.rotate(res.x * 0.01); // Статичный поворот на основе координат
+                    ctx.fillRect(-res.size / 2, -res.size / 2, res.size, res.size);
+                    ctx.restore();
+                }
+            }
+
+            // Отрисовка Аномалии
+            const pulseScale = 1 + (Math.sin(gameTime * 3) * 0.05) + (portal.pulse * 0.2);
+            const currentRadius = portal.radius * pulseScale;
+
+            // Свечение аномалии
+            const gradient = ctx.createRadialGradient(portal.x, portal.y, currentRadius * 0.5, portal.x, portal.y, currentRadius * 2);
+            gradient.addColorStop(0, '#000000');
+            gradient.addColorStop(0.5, '#4b0082'); // Индиго
+            gradient.addColorStop(1, 'transparent');
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(portal.x, portal.y, currentRadius * 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Ядро аномалии (черная дыра)
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(portal.x, portal.y, currentRadius * 0.6, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Отрисовка Слайма
+            ctx.fillStyle = player.color;
+            ctx.beginPath();
+            // Делаем легкое искажение формы слайма при движении
+            const stretch = player.speed > 0 && Math.hypot(player.targetX - player.x, player.targetY - player.y) > 5 ? 1.1 : 1;
+            ctx.ellipse(player.x, player.y, player.radius, player.radius * stretch, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Легкий блик на слайме для объема
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.beginPath();
+            ctx.arc(player.x - player.radius * 0.3, player.y - player.radius * 0.3, player.radius * 0.3, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore(); // Возвращаем контекст, UI рисуется поверх без сдвига камеры
+        }
+
+        // Запуск
+        updateUI();
+        requestAnimationFrame(gameLoop);
+
+    </script>
+</body>
+</html>
