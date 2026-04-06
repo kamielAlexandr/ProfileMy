@@ -1,86 +1,115 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Aethelforge | Моя Ферма</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="farm.css">
-</head>
-<body>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="farm.css" />
+  </head>
+  <body>
     <nav class="navbar">
-        <div class="logo">Aethelforge</div>
-        <ul class="nav-links">
-            <li><a href="index.html">Обо мне</a></li>
-            <li><a href="games.html" class="active">Мои игры</a></li>
-            <li><a href="tutor.html">ОГЭ / ЕГЭ</a></li>
-            <li><a href="play.html">Защита Цитадели</a></li>
-            <li><a href="farm.html" class="active">Ферма</a></li>
-            <li id="authNavItem"><a href="login.html">Войти</a></li>
-        </ul>
+      <div class="logo">
+        <a href="index.html">Aethelforge</a>
+      </div>
+      <ul class="nav-links">
+        <li><a href="index.html">Обо мне</a></li>
+        <li><a href="games.html" class="active">Мои игры</a></li>
+        <li><a href="tutor.html">ОГЭ / ЕГЭ</a></li>
+        <li><a href="play.html">Защита Цитадели</a></li>
+        <li><a href="farm.html" class="active">Ферма</a></li>
+        <li id="authNavItem"><a href="login.html">Войти</a></li>
+      </ul>
     </nav>
 
     <main class="container">
-        <h1>Тихая Гавань: Поместье</h1>
-        <p>Выращивайте урожай, покупайте семена в Магазине и улучшайте поместье! Жмите "Сохранить в Топ", чтобы попасть в Зал Славы.</p><br>
+      <h1>Тихая Гавань: Поместье</h1>
+      <p>
+        Выращивайте урожай, покупайте семена в Магазине и улучшайте поместье!
+        Жмите "Сохранить в Топ", чтобы попасть в Зал Славы.
+      </p>
+      <br />
 
-        <div class="farm-wrapper">
-            <div class="farm-ui-top">
-                <div style="display:flex; gap:10px; align-items:center; flex-wrap: wrap;">
-                    <div class="stat-badge">💰 Золото: <span id="farmCoinsUI" style="color:#ffd700">100</span></div>
-                    <div class="stat-badge">⭐ Опыт: <span id="farmXpUI" style="color:#4caf50">0</span></div>
-                </div>
-                <button id="syncLeaderboardBtn" class="game-btn" style="padding: 8px 15px; font-size: 0.95rem; margin-top: 5px;">
-                    🏆 Сохранить в Топ
-                </button>
+      <div class="farm-wrapper">
+        <div class="farm-ui-top">
+          <div
+            style="
+              display: flex;
+              gap: 10px;
+              align-items: center;
+              flex-wrap: wrap;
+            "
+          >
+            <div class="stat-badge">
+              💰 Золото:
+              <span id="farmCoinsUI" style="color: #ffd700">100</span>
             </div>
-
-            <div class="farm-nav">
-                <button class="room-btn active" data-target="gardenRoom">Огород</button>
-                <button class="room-btn" data-target="greenhouseRoom" id="navGreenhouse">🔒 Теплица</button>
-                <button class="room-btn" data-target="shopRoom">🛒 Магазин</button>
-                <button class="room-btn" data-target="houseRoom">🏠 Дом</button>
+            <div class="stat-badge">
+              ⭐ Опыт: <span id="farmXpUI" style="color: #4caf50">0</span>
             </div>
-
-            <div id="gardenRoom" class="room-content active">
-                <div class="farm-canvas-container">
-                    <canvas id="farmCanvas" width="600" height="400"></canvas>
-                </div>
-                <h4 style="margin-top: 15px; color: #aaa;">🎒 Ваш инвентарь (Выберите для посадки):</h4>
-                <div class="farm-inventory" id="inventoryUI">
-                    </div>
-            </div>
-
-            <div id="shopRoom" class="room-content" style="display: none;">
-                <h2 style="color: #ffd700; text-align: center;">Торговая лавка</h2>
-                <div class="shop-grid" id="seedShopUI">
-                    </div>
-            </div>
-
-            <div id="houseRoom" class="room-content" style="display: none;">
-                <h2 style="color: #4caf50; text-align: center;">Улучшения поместья</h2>
-                <div class="shop-grid" id="upgradesUI">
-                    </div>
-            </div>
+          </div>
+          <button
+            id="syncLeaderboardBtn"
+            class="game-btn"
+            style="padding: 8px 15px; font-size: 0.95rem; margin-top: 5px"
+          >
+            🏆 Сохранить в Топ
+          </button>
         </div>
 
-        <div class="leaderboard-container">
-            <h3>🏆 Самые богатые фермеры (Топ-5)</h3>
-            <ul id="farmLeaderboardList" class="leaderboard-list">
-                <li>Загрузка списка...</li>
-            </ul>
+        <div class="farm-nav">
+          <button class="room-btn active" data-target="gardenRoom">
+            Огород
+          </button>
+          <button
+            class="room-btn"
+            data-target="greenhouseRoom"
+            id="navGreenhouse"
+          >
+            🔒 Теплица
+          </button>
+          <button class="room-btn" data-target="shopRoom">🛒 Магазин</button>
+          <button class="room-btn" data-target="houseRoom">🏠 Дом</button>
         </div>
+
+        <div id="gardenRoom" class="room-content active">
+          <div class="farm-canvas-container">
+            <canvas id="farmCanvas" width="600" height="400"></canvas>
+          </div>
+          <h4 style="margin-top: 15px; color: #aaa">
+            🎒 Ваш инвентарь (Выберите для посадки):
+          </h4>
+          <div class="farm-inventory" id="inventoryUI"></div>
+        </div>
+
+        <div id="shopRoom" class="room-content" style="display: none">
+          <h2 style="color: #ffd700; text-align: center">Торговая лавка</h2>
+          <div class="shop-grid" id="seedShopUI"></div>
+        </div>
+
+        <div id="houseRoom" class="room-content" style="display: none">
+          <h2 style="color: #4caf50; text-align: center">Улучшения поместья</h2>
+          <div class="shop-grid" id="upgradesUI"></div>
+        </div>
+      </div>
+
+      <div class="leaderboard-container">
+        <h3>🏆 Самые богатые фермеры (Топ-5)</h3>
+        <ul id="farmLeaderboardList" class="leaderboard-list">
+          <li>Загрузка списка...</li>
+        </ul>
+      </div>
     </main>
 
     <footer class="footer">
-        <div class="footer-content">
-            <p>&copy; 2026 Aethelforge Все права защищены.</p>
-        </div>
+      <div class="footer-content">
+        <p>&copy; 2026 Aethelforge Все права защищены.</p>
+      </div>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="auth.js"></script>
     <script src="main.js"></script>
     <script src="farm.js?v=999"></script>
-</body>
+  </body>
 </html>

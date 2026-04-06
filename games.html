@@ -1,81 +1,141 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Aethelforge | Игры</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
     <nav class="navbar">
-        <div class="logo">Aethelforge</div>
-        <ul class="nav-links">
-            <li><a href="index.html">Обо мне</a></li>
-            <li><a href="games.html" class="active">Мои игры</a></li>
-            <li><a href="tutor.html">ОГЭ / ЕГЭ</a></li>
-            <li><a href="play.html">Играть онлайн</a></li> </ul>
-            <li id="authNavItem"><a href="login.html">Войти</a></li>
-        </ul>
+      <div class="logo">
+        <a href="index.html">Aethelforge</a>
+      </div>
+      <ul class="nav-links">
+        <li><a href="index.html">Обо мне</a></li>
+        <li><a href="games.html" class="active">Мои игры</a></li>
+        <li><a href="tutor.html">ОГЭ / ЕГЭ</a></li>
+        <li><a href="play.html">Играть онлайн</a></li>
+        <li id="authNavItem"><a href="login.html">Войти</a></li>
+      </ul>
     </nav>
 
     <main class="container">
-        <h1>Проекты в разработке</h1>
+      <h1>Проекты в разработке</h1>
 
-        <section class="game-project">
-            <h2>RTS про гоблинов (Godot Engine)</h2>
-            <p><strong>Жанр:</strong> Стратегия в реальном времени (RTS) в сеттинге темного фэнтези.</p>
-            
-            <h3>О чем игра:</h3>
-            <p>Основная цель игры — помочь племени гоблинов выжить в жестоком и несправедливом мире. На ваши земли постоянно нападают жуткие монстры, а классические «светлые» герои и другие фэнтезийные расы, такие как эльфы, раз за разом пытаются истребить ваш народ.</p>
-            <p>Игроку предстоит взять на себя роль достойного вождя. Ваша задача — объединить разрозненных гоблинов, наладить добычу ресурсов, отстроить неприступный лагерь и создать армию, которая заставит весь мир считаться с вашим братом!</p>
-            
-            <h3>Процесс разработки:</h3>
-            <p>Игра активно разрабатывается на движке Godot. В данный момент я плотно работаю над визуальной частью: рисую спрайты для гоблинских построек и различных типов юнитов, а также прописываю логику поведения искусственного интеллекта и механики строительства базы.</p>
-            
-            <div class="screenshots-grid">
-                <div class="screenshot-placeholder"><img src = "img/rts1.PNG" ></div>
-                <div class="screenshot-placeholder"><img src = "img/rts2.PNG" ></div>
-                <div class="screenshot-placeholder"><img src = "img/rts3.PNG" ></div>
-            </div>
-        </section>
+      <section class="game-project">
+        <h2>RTS про гоблинов (Godot Engine)</h2>
+        <p>
+          <strong>Жанр:</strong> Стратегия в реальном времени (RTS) в сеттинге
+          темного фэнтези.
+        </p>
 
-        <hr class="divider">
+        <h3>О чем игра:</h3>
+        <p>
+          Основная цель игры — помочь племени гоблинов выжить в жестоком и
+          несправедливом мире. На ваши земли постоянно нападают жуткие монстры,
+          а классические «светлые» герои и другие фэнтезийные расы, такие как
+          эльфы, раз за разом пытаются истребить ваш народ.
+        </p>
+        <p>
+          Игроку предстоит взять на себя роль достойного вождя. Ваша задача —
+          объединить разрозненных гоблинов, наладить добычу ресурсов, отстроить
+          неприступный лагерь и создать армию, которая заставит весь мир
+          считаться с вашим братом!
+        </p>
 
-        <section class="game-project">
-            <h2>Dark Fantasy RPG (Telegram Bot)</h2>
-            <p><strong>Жанр:</strong> Текстовая ролевая игра (RPG) в сеттинге темного фэнтези.</p>
-            <p><strong>Стек технологий:</strong> Python (python-telegram-bot), PostgreSQL / SQLite.</p>
-            
-            <h3>О чем игра:</h3>
-            <p>Полноценная, глубокая ролевая игра, работающая прямо в мессенджере. Мир погрузился во тьму, и игроку предстоит выбрать свой путь, чтобы выжить. Это не просто «кликер», а комплексная RPG с тактическими боями, экономикой и социальным взаимодействием.</p>
-            
-            <h3>Ключевые механики:</h3>
-            <ul>
-                <li><strong>Тактические бои (AP-система):</strong> Сражения пошаговые и требуют грамотного распределения очков действия (Action Points). Игрок может атаковать, уходить в глухую оборону, использовать зелья или применять мощные расовые способности.</li>
-                <li><strong>9 уникальных рас:</strong> От классических Людей и Эльфов с их глубокой школой магии (Солнце, Луна, Звезды) до Вампиров, Лепреконов и Нежити.</li>
-                <li><strong>Мирные профессии:</strong> В игре реализована сложная система профессий. Игроки могут отправлять Травника в экспедиции, выращивать урожай на Ферме, варить зелья в Алхимической лаборатории, готовить еду и даже ловить рыбу на гнилом причале (где можно выудить как сокровище, так и смертоносного Кракена).</li>
-                <li><strong>Клановая система и Рейды:</strong> Игроки могут объединяться в кланы, дарить друг другу экипировку и вместе призывать и уничтожать клановых боссов — Титанов с миллионами очков здоровья.</li>
-                <li><strong>Глобальный мир:</strong> Локации от стартовых Руин до Трона Хаоса, огромный бестиарий (от гоблинов до Падших Богов) и динамические задания Гильдии.</li>
-            </ul>
-            
-            <div class="screenshots-grid">
-                <div class="screenshot-placeholder"><img src = "img/Скринтгбот1.png" ></div>
-                <div class="screenshot-placeholder"><img src = "img/Скринбот2.png" ></div>
-                <div class="screenshot-placeholder"><img src = "img/скринбот3.png" ><</div>
-            </div>
-        </section>
-    </main>
-<footer class="footer">
-        <div class="footer-content">
-            <p>&copy; 2026 Aethelforge Все права защищены.</p>
-            <div class="social-links">
-                <a href="https://t.me/@kamielalex" target="_blank">Telegram</a>
-                <a href="https://github.com/kamielAlexandr" target="_blank">GitHub</a>
-            </div>
+        <h3>Процесс разработки:</h3>
+        <p>
+          Игра активно разрабатывается на движке Godot. В данный момент я плотно
+          работаю над визуальной частью: рисую спрайты для гоблинских построек и
+          различных типов юнитов, а также прописываю логику поведения
+          искусственного интеллекта и механики строительства базы.
+        </p>
+
+        <div class="screenshots-grid">
+          <div class="screenshot-placeholder"><img src="img/rts1.PNG" /></div>
+          <div class="screenshot-placeholder"><img src="img/rts2.PNG" /></div>
+          <div class="screenshot-placeholder"><img src="img/rts3.PNG" /></div>
         </div>
+      </section>
+
+      <hr class="divider" />
+
+      <section class="game-project">
+        <h2>Dark Fantasy RPG (Telegram Bot)</h2>
+        <p>
+          <strong>Жанр:</strong> Текстовая ролевая игра (RPG) в сеттинге темного
+          фэнтези.
+        </p>
+        <p>
+          <strong>Стек технологий:</strong> Python (python-telegram-bot),
+          PostgreSQL / SQLite.
+        </p>
+
+        <h3>О чем игра:</h3>
+        <p>
+          Полноценная, глубокая ролевая игра, работающая прямо в мессенджере.
+          Мир погрузился во тьму, и игроку предстоит выбрать свой путь, чтобы
+          выжить. Это не просто «кликер», а комплексная RPG с тактическими
+          боями, экономикой и социальным взаимодействием.
+        </p>
+
+        <h3>Ключевые механики:</h3>
+        <ul>
+          <li>
+            <strong>Тактические бои (AP-система):</strong> Сражения пошаговые и
+            требуют грамотного распределения очков действия (Action Points).
+            Игрок может атаковать, уходить в глухую оборону, использовать зелья
+            или применять мощные расовые способности.
+          </li>
+          <li>
+            <strong>9 уникальных рас:</strong> От классических Людей и Эльфов с
+            их глубокой школой магии (Солнце, Луна, Звезды) до Вампиров,
+            Лепреконов и Нежити.
+          </li>
+          <li>
+            <strong>Мирные профессии:</strong> В игре реализована сложная
+            система профессий. Игроки могут отправлять Травника в экспедиции,
+            выращивать урожай на Ферме, варить зелья в Алхимической лаборатории,
+            готовить еду и даже ловить рыбу на гнилом причале (где можно выудить
+            как сокровище, так и смертоносного Кракена).
+          </li>
+          <li>
+            <strong>Клановая система и Рейды:</strong> Игроки могут объединяться
+            в кланы, дарить друг другу экипировку и вместе призывать и
+            уничтожать клановых боссов — Титанов с миллионами очков здоровья.
+          </li>
+          <li>
+            <strong>Глобальный мир:</strong> Локации от стартовых Руин до Трона
+            Хаоса, огромный бестиарий (от гоблинов до Падших Богов) и
+            динамические задания Гильдии.
+          </li>
+        </ul>
+
+        <div class="screenshots-grid">
+          <div class="screenshot-placeholder">
+            <img src="img/Скринтгбот1.png" />
+          </div>
+          <div class="screenshot-placeholder">
+            <img src="img/Скринбот2.png" />
+          </div>
+          <div class="screenshot-placeholder">
+            <img src="img/скринбот3.png" /><
+          </div>
+        </div>
+      </section>
+    </main>
+    <footer class="footer">
+      <div class="footer-content">
+        <p>&copy; 2026 Aethelforge Все права защищены.</p>
+        <div class="social-links">
+          <a href="https://t.me/@kamielalex" target="_blank">Telegram</a>
+          <a href="https://github.com/kamielAlexandr" target="_blank">GitHub</a>
+        </div>
+      </div>
     </footer>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="auth.js"></script>
     <script src="main.js"></script>
-</body>
+  </body>
 </html>

@@ -1,64 +1,86 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Aethelforge | Личный кабинет</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="profile.css">
-</head>
-<body>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="profile.css" />
+  </head>
+  <body>
     <nav class="navbar">
-        <div class="logo">Aethelforge</div>
-        <ul class="nav-links">
-            <li><a href="index.html">Обо мне</a></li>
-            <li><a href="games.html">Мои игры</a></li>
-            <li><a href="tutor.html">ОГЭ / ЕГЭ</a></li>
-            <li><a href="play.html">Играть онлайн</a></li>
-            <li id="authNavItem"><a href="login.html" class="active">Профиль</a></li>
-        </ul>
+      <div class="logo">
+        <a href="index.html">Aethelforge</a>
+      </div>
+      <ul class="nav-links">
+        <li><a href="index.html">Обо мне</a></li>
+        <li><a href="games.html">Мои игры</a></li>
+        <li><a href="tutor.html">ОГЭ / ЕГЭ</a></li>
+        <li><a href="play.html">Играть онлайн</a></li>
+        <li id="authNavItem">
+          <a href="login.html" class="active">Профиль</a>
+        </li>
+      </ul>
     </nav>
 
     <main class="container">
-        <div class="profile-header">
-            <div class="profile-avatar" id="userAvatar">?</div>
-            <div class="profile-info">
-                <h2 id="userName">Загрузка героя...</h2>
-                <p id="userEmail">Устанавливаем связь с сервером...</p>
-                <div class="profile-stats">
-                    <span class="stat-badge">Уровень: <b id="userLevel">1</b></span>
-                    <span class="stat-badge">Баланс: <b id="userCoins" style="color:#ffd700">0</b> 🪙</span>
-                </div>
-            </div>
-            <button id="logoutBtn" class="game-btn" style="margin-left: auto; background-color: #f44336;">Выйти</button>
+      <div class="profile-header">
+        <div class="profile-avatar" id="userAvatar">?</div>
+        <div class="profile-info">
+          <h2 id="userName">Загрузка героя...</h2>
+          <p id="userEmail">Устанавливаем связь с сервером...</p>
+          <div class="profile-stats">
+            <span class="stat-badge">Уровень: <b id="userLevel">1</b></span>
+            <span class="stat-badge"
+              >Баланс: <b id="userCoins" style="color: #ffd700">0</b> 🪙</span
+            >
+          </div>
+        </div>
+        <button
+          id="logoutBtn"
+          class="game-btn"
+          style="margin-left: auto; background-color: #f44336"
+        >
+          Выйти
+        </button>
+      </div>
+
+      <div class="dashboard-grid">
+        <div class="dashboard-card">
+          <h3>🎮 Библиотека игр</h3>
+          <ul class="library-list">
+            <li>
+              <span class="status online"></span> Защита Цитадели
+              <a href="play.html">[Играть]</a>
+            </li>
+            <li>
+              <span class="status online"></span> Тихая Гавань: Ферма
+              <a href="farm.html">[Играть]</a>
+            </li>
+            <li class="locked">
+              <span class="status offline"></span> Dark Fantasy RPG (В
+              разработке)
+            </li>
+          </ul>
         </div>
 
-        <div class="dashboard-grid">
-            <div class="dashboard-card">
-                <h3>🎮 Библиотека игр</h3>
-                <ul class="library-list">
-                    <li><span class="status online"></span> Защита Цитадели <a href="play.html">[Играть]</a></li>
-                    <li><span class="status online"></span> Тихая Гавань: Ферма <a href="farm.html">[Играть]</a></li>
-                    <li class="locked"><span class="status offline"></span> Dark Fantasy RPG (В разработке)</li>
-                </ul>
-            </div>
-            
-            <div class="dashboard-card">
-                <h3>📊 Ваша статистика</h3>
-                <p style="color: #aaa;">Здесь скоро появится статистика ваших побед и проведенного времени.</p>
-            </div>
+        <div class="dashboard-card">
+          <h3>📊 Ваша статистика</h3>
+          <p style="color: #aaa">
+            Здесь скоро появится статистика ваших побед и проведенного времени.
+          </p>
         </div>
+      </div>
 
-        <div class="achievements-section">
-            <h2>🏆 Ваши Достижения (Защита Цитадели)</h2>
-            <div id="achievementsContainer" class="profile-achievements">
-                </div>
-        </div>
+      <div class="achievements-section">
+        <h2>🏆 Ваши Достижения (Защита Цитадели)</h2>
+        <div id="achievementsContainer" class="profile-achievements"></div>
+      </div>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="auth.js"></script>
     <script src="main.js"></script>
-    <script src="profile.js?v=1"></script> 
-</body>
+    <script src="profile.js?v=1"></script>
+  </body>
 </html>
