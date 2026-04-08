@@ -1,14 +1,19 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 let width, height;
-function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
+
+function resize() { 
+    width = canvas.width = window.innerWidth; 
+    height = canvas.height = window.innerHeight; 
+}
 window.addEventListener('resize', resize); resize();
 
+// Изначальное состояние - Обучение
 let gameState = 'tutorial'; 
 const WORLD_SIZE = 2500; 
 let camera = { x: 0, y: 0 };
 
-// 11 Биомов (10-й индекс — это Босс)
+// === 11 БИОМОВ (11-й — это Босс) ===
 const biomes = [
     { name: "Темный Лес", bg: '#0a0f0a', line: '#1a2a1a', req: 10, enemies: ['trash', 'frog'] },
     { name: "Гнилое Болото", bg: '#100a12', line: '#2a1a2a', req: 20, enemies: ['trash', 'frog', 'lizard'] },
@@ -24,6 +29,7 @@ const biomes = [
 ];
 let currentBiomeIdx = 0;
 
+// === БЕСТИАРИЙ ===
 const bestiaryData = {
     'trash': { name: "Обломки", desc: "Дает 1 массу.", icon: "🪵" },
     'frog': { name: "Фрогфолк", desc: "Дает 2 массы и 2 опыта.", icon: "🐸" },
@@ -38,6 +44,7 @@ const bestiaryData = {
 };
 let discoveredEnemies = new Set(['trash']); 
 
+// === ХАРАКТЕРИСТИКИ ИГРОКА ===
 let player = {
     x: WORLD_SIZE / 2, y: WORLD_SIZE / 2 + 200,
     radius: 20, baseRadius: 20,
@@ -50,8 +57,9 @@ let player = {
 let portal = { x: WORLD_SIZE / 2, y: WORLD_SIZE / 2, radius: 70, pulse: 0, fed: 0 };
 let entities = [];
 let explosions = []; 
-let bossEntity = null; // Ссылка на босса для UI
+let bossEntity = null; 
 
+// === КАРТОЧКИ ПРОКАЧКИ ===
 const cardPool = [
     { id: 'hp', title: "Плотная Слизь", desc: "+1 Макс HP и лечение", icon: "❤️", action: () => { player.maxHp++; player.hp = player.maxHp; } },
     { id: 'capacity', title: "Бездонный Желудок", desc: "+5 к вместимости", icon: "🎒", action: () => { player.maxLoad += 5; } },
@@ -61,17 +69,16 @@ const cardPool = [
     { id: 'heal', title: "Регенерация", desc: "Лечение на максимум", icon: "🩹", action: () => { player.hp = player.maxHp; } }
 ];
 
+// === СПАВН СУЩЕСТВ И БОССА ===
 function spawnEntities() {
     entities = [];
     if (currentBiomeIdx === 10) {
-        // БИОМ БОССА: Спавним Босса и немного мусора для первого рывка
+        // Спавн Босса
         bossEntity = { type: 'boss', x: WORLD_SIZE/2, y: WORLD_SIZE/2, size: 100, hp: 30, maxHp: 30, active: true, stateTimer: 3.0, phase: 1, angle: 0 };
         entities.push(bossEntity);
         for(let i=0; i<30; i++) spawnDroppedMass(WORLD_SIZE/2 + (Math.random()-0.5)*1000, WORLD_SIZE/2 + (Math.random()-0.5)*1000);
-        
-        // Показываем UI Босса
         document.getElementById('boss-ui').style.display = 'block';
-        document.getElementById('biome-box').style.display = 'none'; // Скрываем портал UI
+        document.getElementById('biome-box').style.display = 'none'; 
         return;
     }
 
@@ -91,43 +98,78 @@ function spawnEntities() {
 }
 spawnEntities();
 
+// === UI И КНОПКИ ===
 const bestiaryPanel = document.getElementById('bestiary-panel');
-document.getElementById('start-btn').onclick = () => { document.getElementById('tutorial-screen').style.display = 'none'; gameState = 'playing'; };
+
+document.getElementById('start-btn').onclick = () => {
+    document.getElementById('tutorial-screen').style.display = 'none';
+    gameState = 'playing';
+};
+
 document.getElementById('bestiary-btn').onclick = () => { 
     if (gameState === 'tutorial') return; 
-    if (bestiaryPanel.style.display === 'block') { gameState = 'playing'; bestiaryPanel.style.display = 'none'; } 
-    else { gameState = 'paused'; bestiaryPanel.style.display = 'block'; renderBestiary(); }
+    if (bestiaryPanel.style.display === 'block') {
+        gameState = 'playing'; bestiaryPanel.style.display = 'none'; 
+    } else {
+        gameState = 'paused'; bestiaryPanel.style.display = 'block'; renderBestiary(); 
+    }
 };
-document.getElementById('close-bestiary').onclick = () => { gameState = 'playing'; bestiaryPanel.style.display = 'none'; };
+
+document.getElementById('close-bestiary').onclick = () => { 
+    gameState = 'playing'; bestiaryPanel.style.display = 'none'; 
+};
 
 function renderBestiary() {
     const container = document.getElementById('bestiary-container');
     container.innerHTML = '';
     for (let key in bestiaryData) {
-        let m = bestiaryData[key]; let known = discoveredEnemies.has(key);
-        container.innerHTML += `<div class="monster-card ${known ? 'discovered' : ''}">
-            <div class="monster-icon">${known ? m.icon : '❓'}</div>
-            <div class="monster-info"><h4>${known ? m.name : 'Неизвестная особь'}</h4><p>${known ? m.desc : 'Скушайте это существо, чтобы изучить.'}</p></div>
-        </div>`;
+        let m = bestiaryData[key];
+        let known = discoveredEnemies.has(key);
+        container.innerHTML += `
+            <div class="monster-card ${known ? 'discovered' : ''}">
+                <div class="monster-icon">${known ? m.icon : '❓'}</div>
+                <div class="monster-info">
+                    <h4>${known ? m.name : 'Неизвестная особь'}</h4>
+                    <p>${known ? m.desc : 'Скушайте это существо, чтобы изучить.'}</p>
+                </div>
+            </div>`;
     }
 }
+
+// === УПРАВЛЕНИЕ (АДАПТИРОВАНО ДЛЯ ПК И ТЕЛЕФОНОВ) ===
+let lastTapTime = 0; 
 
 function setTarget(clientX, clientY) {
     if (gameState !== 'playing' || player.stunTimer > 0 || player.isDashing) return;
     player.targetX = Math.max(player.radius, Math.min(WORLD_SIZE - player.radius, clientX - width / 2 + player.x));
     player.targetY = Math.max(player.radius, Math.min(WORLD_SIZE - player.radius, clientY - height / 2 + player.y));
 }
-canvas.addEventListener('pointermove', (e) => { if(e.buttons === 1) setTarget(e.clientX, e.clientY); });
+
+canvas.addEventListener('pointermove', (e) => { 
+    if(e.buttons === 1 || e.pointerType === 'touch') setTarget(e.clientX, e.clientY); 
+});
+
 canvas.addEventListener('pointerdown', (e) => {
     if (gameState !== 'playing') return;
-    if(e.button === 0) setTarget(e.clientX, e.clientY);
-    if(e.button === 2) activateDash(e.clientX, e.clientY);
+    
+    let currentTime = new Date().getTime();
+    let tapLength = currentTime - lastTapTime;
+    
+    if(e.button === 2 || (tapLength < 300 && tapLength > 0)) {
+        activateDash(e.clientX, e.clientY);
+        e.preventDefault(); 
+    } else {
+        setTarget(e.clientX, e.clientY);
+    }
+    lastTapTime = currentTime;
 });
+
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 
 function activateDash(mouseX, mouseY) {
     if (player.dashCooldown <= 0 && player.stunTimer <= 0 && player.load > 0) {
-        player.isDashing = true; player.dashDuration = currentBiomeIdx === 5 ? 0.3 : 0.20; 
+        player.isDashing = true; 
+        player.dashDuration = currentBiomeIdx === 5 ? 0.3 : 0.20; 
         player.dashCooldown = player.maxDashCooldown;
         let targetWorldX = mouseX - width / 2 + player.x, targetWorldY = mouseY - height / 2 + player.y;
         player.dashAngle = Math.atan2(targetWorldY - player.y, targetWorldX - player.x);
@@ -139,6 +181,7 @@ function spawnDroppedMass(x, y) {
     entities.push({ x: x, y: y, type: 'trash', size: 12, active: true, vx: 0, vy: 0, stateTimer: 0, angle: Math.random() * Math.PI * 2 }); 
 }
 
+// === МЕХАНИКА УРОНА И ОПЫТА ===
 function takeDamage(enemyType) {
     if (player.invulnTimer > 0 || player.isDashing) return;
     if(enemyType) discoveredEnemies.add(enemyType); 
@@ -196,7 +239,7 @@ function updateUI() {
     if (player.dashCooldown > 0) {
         dashEl.innerText = `Рывок: ${player.dashCooldown.toFixed(1)}с`; dashEl.style.color = '#ff5555'; 
     } else {
-        dashEl.innerText = `Рывок: ГОТОВ (ПКМ)`; dashEl.style.color = '#adff2f'; 
+        dashEl.innerText = `Рывок: ГОТОВ`; dashEl.style.color = '#adff2f'; 
     }
 
     let b = biomes[Math.min(currentBiomeIdx, biomes.length - 1)];
@@ -205,13 +248,13 @@ function updateUI() {
     document.getElementById('xp-text').innerText = `УРОВЕНЬ ${player.level}`;
     document.getElementById('xp-bar').style.width = `${(player.xp / player.xpNeeded) * 100}%`;
     
-    // Обновление полоски ХП Босса
     if (bossEntity) {
         document.getElementById('boss-hp-fill').style.width = `${(bossEntity.hp / bossEntity.maxHp) * 100}%`;
     }
 }
 function updateRadius() { player.radius = player.baseRadius + (player.load * 1.5); }
 
+// === ИГРОВОЙ ЦИКЛ ===
 let lastTime = 0, gameTime = 0;
 function gameLoop(timestamp) {
     let dt = (timestamp - lastTime) / 1000; if (dt > 0.1) dt = 0.1; lastTime = timestamp; 
@@ -224,7 +267,6 @@ function update(dt) {
     if (player.invulnTimer > 0) player.invulnTimer -= dt;
     if (player.stunTimer > 0) player.stunTimer -= dt;
     if (player.dashDuration > 0) player.dashDuration -= dt; else if (player.isDashing) { player.isDashing = false; player.targetX = player.x; player.targetY = player.y; }
-    
     if (player.dashCooldown > 0) { player.dashCooldown -= dt; updateUI(); }
 
     for (let i = explosions.length - 1; i >= 0; i--) {
@@ -237,7 +279,7 @@ function update(dt) {
         } else if (gameState !== 'transition') {
             const dx = player.targetX - player.x, dy = player.targetY - player.y;
             const distance = Math.hypot(dx, dy);
-            let speedMult = currentBiomeIdx === 5 ? 1.5 : 1.0; 
+            let speedMult = currentBiomeIdx === 5 ? 1.5 : 1.0; // Ледяной биом
             if (distance > 5) {
                 const moveDist = player.speed * speedMult * dt;
                 if (moveDist > distance) { player.x = player.targetX; player.y = player.targetY; } 
@@ -255,32 +297,26 @@ function update(dt) {
         
         // === ЛОГИКА БОССА ===
         if (e.type === 'boss') {
-            e.angle += dt * 0.5; // Вращение глаза
+            e.angle += dt * 0.5; 
             e.stateTimer -= dt;
 
-            // Смена фаз
             if (e.hp <= 20 && e.phase === 1) { e.phase = 2; e.stateTimer = 1.0; }
             if (e.hp <= 10 && e.phase === 2) { e.phase = 3; e.stateTimer = 1.0; }
 
-            // Движение (Фаза 3)
             if (e.phase === 3) {
                 let angleToPlayer = Math.atan2(player.y - e.y, player.x - e.x);
                 e.x += Math.cos(angleToPlayer) * 120 * dt; e.y += Math.sin(angleToPlayer) * 120 * dt;
             }
 
-            // Атаки
             if (e.stateTimer <= 0) {
                 if (e.phase === 1) {
-                    // Кольцо снарядов
                     for(let k=0; k<12; k++) {
                         let a = (Math.PI*2/12) * k + e.angle;
                         entities.push({ type: 'projectile', x: e.x, y: e.y, size: 15, vx: Math.cos(a)*400, vy: Math.sin(a)*400, active: true, angle: a });
                     }
                     e.stateTimer = 2.5;
-                    // Выкидываем мусор игроку
                     spawnDroppedMass(e.x + (Math.random()-0.5)*600, e.y + (Math.random()-0.5)*600);
                 } else if (e.phase === 2 || e.phase === 3) {
-                    // Спираль
                     let a = e.angle * 4;
                     entities.push({ type: 'projectile', x: e.x, y: e.y, size: 15, vx: Math.cos(a)*500, vy: Math.sin(a)*500, active: true, angle: a });
                     entities.push({ type: 'projectile', x: e.x, y: e.y, size: 15, vx: Math.cos(a+Math.PI)*500, vy: Math.sin(a+Math.PI)*500, active: true, angle: a+Math.PI });
@@ -289,18 +325,13 @@ function update(dt) {
                 }
             }
 
-            // Коллизия с Боссом
             if (distToPlayer < player.radius + e.size) {
                 if (player.isDashing) {
                     e.hp--; updateUI(); discoveredEnemies.add('boss');
-                    
-                    // Отскок слайма
                     player.isDashing = false;
                     let bounceAngle = Math.atan2(player.y - e.y, player.x - e.x);
                     player.targetX = player.x + Math.cos(bounceAngle) * 300; player.targetY = player.y + Math.sin(bounceAngle) * 300;
                     player.x = player.targetX; player.y = player.targetY;
-                    
-                    // Взрыв от удара
                     explosions.push({ x: e.x, y: e.y, maxRadius: e.size*1.5, life: 0.3, maxLife: 0.3 });
 
                     if (e.hp <= 0) {
@@ -311,17 +342,15 @@ function update(dt) {
                         document.getElementById('game-over-screen').style.display = 'flex';
                     }
                 } else {
-                    // Урон об босса
                     takeDamage('boss');
                     let bounceAngle = Math.atan2(player.y - e.y, player.x - e.x);
                     player.x += Math.cos(bounceAngle) * 150; player.y += Math.sin(bounceAngle) * 150;
                     player.targetX = player.x; player.targetY = player.y;
                 }
             }
-            continue; // Пропускаем остальную логику мобов для босса
+            continue; 
         }
         
-        // Логика Снарядов
         if (e.type === 'projectile') {
             e.x += e.vx * dt; e.y += e.vy * dt;
             if (e.x < 0 || e.x > WORLD_SIZE || e.y < 0 || e.y > WORLD_SIZE) e.active = false;
@@ -329,7 +358,6 @@ function update(dt) {
             continue;
         }
 
-        // Обычные мобы
         if (player.magnetRadius > 0 && (e.type === 'trash' || e.type === 'bone')) {
             if (distToPlayer < player.magnetRadius + player.radius) {
                 const magAngle = Math.atan2(player.y - e.y, player.x - e.x); e.x += Math.cos(magAngle) * 300 * dt; e.y += Math.sin(magAngle) * 300 * dt;
@@ -352,7 +380,10 @@ function update(dt) {
             case 'hunter':
                 if (distToPlayer < 600) { e.angle = Math.atan2(player.y - e.y, player.x - e.x); e.x += Math.cos(e.angle) * 180 * dt; e.y += Math.sin(e.angle) * 180 * dt; } break;
             case 'bomber':
-                if (distToPlayer < 120) { e.stateTimer += dt; if(e.stateTimer > 1.0) { explosions.push({ x: e.x, y: e.y, maxRadius: 150, life: 0.5, maxLife: 0.5 }); if(distToPlayer < 150) takeDamage('bomber'); e.active = false; } } 
+                if (distToPlayer < 120) { 
+                    e.stateTimer += dt; 
+                    if(e.stateTimer > 1.0) { explosions.push({ x: e.x, y: e.y, maxRadius: 150, life: 0.5, maxLife: 0.5 }); if(distToPlayer < 150) takeDamage('bomber'); e.active = false; } 
+                } 
                 else { e.stateTimer = 0; }
                 e.angle += dt; if (e.stateTimer === 0) { e.x += Math.cos(e.angle) * 20 * dt; e.y += Math.sin(e.angle) * 20 * dt; } break;
         }
@@ -374,7 +405,6 @@ function update(dt) {
         }
     }
 
-    // Логика портала только если это не биом Босса
     if (currentBiomeIdx < 10) {
         const distToPortal = Math.hypot(player.x - portal.x, player.y - portal.y);
         if (distToPortal < portal.radius + player.radius && player.load > 0 && !player.isDashing && player.stunTimer <= 0) {
@@ -463,30 +493,19 @@ function draw() {
                 else { ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.beginPath(); ctx.moveTo(e.size, 0); ctx.lineTo(0, e.size*0.6); ctx.lineTo(0, -e.size*0.6); ctx.fill(); }
                 ctx.shadowBlur = 0; ctx.fillStyle = '#ff4081'; ctx.fillRect(e.size*1.2, 0, 4, 4); ctx.fillRect(-e.size*1.2, 0, 4, 4); ctx.fillRect(0, e.size*1.2, 4, 4); ctx.fillRect(0, -e.size*1.2, 4, 4); break;
             
-            // === ОТРИСОВКА БОССА И СНАРЯДОВ ===
             case 'projectile':
-                ctx.shadowColor = '#ff0044'; ctx.shadowBlur = 15;
-                ctx.fillStyle = '#ff0044'; ctx.beginPath(); ctx.arc(0, 0, e.size, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, 0, e.size*0.5, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
-                break;
+                ctx.shadowColor = '#ff0044'; ctx.shadowBlur = 15; ctx.fillStyle = '#ff0044'; ctx.beginPath(); ctx.arc(0, 0, e.size, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, 0, e.size*0.5, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0; break;
             case 'boss':
                 let bossPulse = 1 + Math.sin(gameTime * 2) * 0.05; ctx.scale(bossPulse, bossPulse);
-                ctx.shadowColor = '#ff0000'; ctx.shadowBlur = 40;
-                ctx.fillStyle = '#110000'; ctx.beginPath(); ctx.arc(0, 0, e.size, 0, Math.PI*2); ctx.fill();
-                // Глаз
-                ctx.fillStyle = '#ff0000'; ctx.beginPath(); ctx.ellipse(0, 0, e.size*0.6, e.size*0.3, 0, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(0, 0, e.size*0.2, e.size*0.3, 0, 0, Math.PI*2); ctx.fill();
-                ctx.shadowBlur = 0;
-                // Орбитальные кольца
-                ctx.strokeStyle = '#ff4444'; ctx.lineWidth = 8; ctx.lineCap = 'round';
-                ctx.beginPath(); ctx.arc(0, 0, e.size*1.3, e.angle, e.angle + Math.PI*0.8); ctx.stroke();
-                ctx.beginPath(); ctx.arc(0, 0, e.size*1.3, e.angle + Math.PI, e.angle + Math.PI*1.8); ctx.stroke();
-                break;
+                ctx.shadowColor = '#ff0000'; ctx.shadowBlur = 40; ctx.fillStyle = '#110000'; ctx.beginPath(); ctx.arc(0, 0, e.size, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#ff0000'; ctx.beginPath(); ctx.ellipse(0, 0, e.size*0.6, e.size*0.3, 0, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(0, 0, e.size*0.2, e.size*0.3, 0, 0, Math.PI*2); ctx.fill();
+                ctx.shadowBlur = 0; ctx.strokeStyle = '#ff4444'; ctx.lineWidth = 8; ctx.lineCap = 'round';
+                ctx.beginPath(); ctx.arc(0, 0, e.size*1.3, e.angle, e.angle + Math.PI*0.8); ctx.stroke(); ctx.beginPath(); ctx.arc(0, 0, e.size*1.3, e.angle + Math.PI, e.angle + Math.PI*1.8); ctx.stroke(); break;
         }
         ctx.restore();
     }
 
-    // Рисуем портал, если мы НЕ в биоме Босса
     if (currentBiomeIdx < 10) {
         ctx.save(); ctx.translate(portal.x, portal.y); ctx.rotate(gameTime * 0.5);
         const pulseScale = 1 + (Math.sin(gameTime * 3) * 0.05) + (portal.pulse * 0.2);
@@ -496,8 +515,7 @@ function draw() {
         ctx.fillStyle = gradient; ctx.beginPath(); ctx.arc(0, 0, currentRadius * 2.5, 0, Math.PI * 2); ctx.fill();
         ctx.strokeStyle = 'rgba(186, 85, 211, 0.5)'; ctx.lineWidth = 4;
         for(let j=0; j<3; j++) { ctx.beginPath(); ctx.ellipse(0, 0, currentRadius * (1 + j*0.2), currentRadius * (0.8 + j*0.1), gameTime + j, 0, Math.PI*2); ctx.stroke(); }
-        ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(0, 0, currentRadius * 0.6, 0, Math.PI * 2); ctx.fill();
-        ctx.restore();
+        ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(0, 0, currentRadius * 0.6, 0, Math.PI * 2); ctx.fill(); ctx.restore();
     }
 
     if (gameState === 'tutorial') return; 
