@@ -13,6 +13,8 @@ const WORLD_SIZE = 2500;
 let camera = { x: 0, y: 0 };
 
 // === ЗВУКОВОЙ ДВИЖОК ===
+let isMuted = false;
+
 const sounds = {
     bgmMain: new Audio('bgm-main.mp3'),
     bgmBoss: new Audio('bgm-boss.mp3'),
@@ -25,7 +27,6 @@ const sounds = {
     bossHit: new Audio('sfx-boss-hit.mp3')
 };
 
-// Настройка громкости и зацикливания
 sounds.bgmMain.loop = true; sounds.bgmMain.volume = 0.4;
 sounds.bgmBoss.loop = true; sounds.bgmBoss.volume = 0.5;
 sounds.eat.volume = 0.6;
@@ -36,9 +37,8 @@ sounds.levelup.volume = 0.8;
 sounds.shoot.volume = 0.4;
 sounds.bossHit.volume = 0.9;
 
-// Функция для воспроизведения SFX (позволяет звукам накладываться друг на друга)
 function playSFX(audioObj) {
-    if (!audioObj) return;
+    if (!audioObj || isMuted) return; // Если звук выключен, ничего не играем
     let clone = audioObj.cloneNode();
     clone.volume = audioObj.volume;
     clone.play().catch(e => console.log("Audio play prevented:", e));
@@ -110,10 +110,9 @@ function spawnEntities() {
         document.getElementById('boss-ui').style.display = 'block';
         document.getElementById('biome-box').style.display = 'none'; 
         
-        // Смена музыки на боссе
         sounds.bgmMain.pause();
         sounds.bgmBoss.currentTime = 0;
-        sounds.bgmBoss.play().catch(e => {});
+        if (!isMuted) sounds.bgmBoss.play().catch(e => {});
         return;
     }
 
@@ -133,26 +132,50 @@ function spawnEntities() {
 }
 spawnEntities();
 
-// === ОБРАБОТЧИКИ КНОПОК И ПАУЗА ===
+// === ОБРАБОТЧИКИ КНОПОК UI ===
 const bestiaryPanel = document.getElementById('bestiary-panel');
 const pauseScreen = document.getElementById('pause-screen');
+const muteBtn = document.getElementById('mute-btn');
 
 document.getElementById('start-btn').onclick = () => {
     document.getElementById('tutorial-screen').style.display = 'none';
     gameState = 'playing';
-    sounds.bgmMain.play().catch(e => console.log("BGM autoplay blocked until interaction"));
+    if (!isMuted) sounds.bgmMain.play().catch(e => console.log("BGM autoplay blocked"));
 };
+
+function toggleMute() {
+    isMuted = !isMuted;
+    if (isMuted) {
+        muteBtn.innerText = '🔇';
+        sounds.bgmMain.muted = true;
+        sounds.bgmBoss.muted = true;
+    } else {
+        muteBtn.innerText = '🔊';
+        sounds.bgmMain.muted = false;
+        sounds.bgmBoss.muted = false;
+        
+        // Воспроизводим нужный трек, если игра активна
+        if (gameState === 'playing') {
+            if (currentBiomeIdx === 10) {
+                sounds.bgmBoss.play().catch(e => {});
+            } else {
+                sounds.bgmMain.play().catch(e => {});
+            }
+        }
+    }
+}
+muteBtn.onclick = toggleMute;
 
 function togglePause() {
     if (gameState === 'playing') {
         gameState = 'paused_menu'; 
         pauseScreen.style.display = 'flex';
-        sounds.bgmMain.volume = 0.1; // Приглушаем музыку
+        sounds.bgmMain.volume = 0.1; 
         sounds.bgmBoss.volume = 0.1;
     } else if (gameState === 'paused_menu') {
         gameState = 'playing'; 
         pauseScreen.style.display = 'none';
-        sounds.bgmMain.volume = 0.4; // Возвращаем громкость
+        sounds.bgmMain.volume = 0.4; 
         sounds.bgmBoss.volume = 0.5;
     }
 }
@@ -214,6 +237,10 @@ canvas.addEventListener('pointermove', (e) => {
 
 canvas.addEventListener('pointerdown', (e) => {
     if (gameState !== 'playing') return;
+    
+    // Если кликнули по кнопкам UI, не двигаем слизь (защита от багов)
+    if (e.target.closest('#menu-buttons')) return;
+
     let currentTime = new Date().getTime();
     let tapLength = currentTime - lastTapTime;
     
@@ -237,7 +264,7 @@ function activateDash(mouseX, mouseY) {
         player.dashAngle = Math.atan2(targetWorldY - player.y, targetWorldX - player.x);
         player.load--; updateRadius(); updateUI();
         
-        playSFX(sounds.dash); // ЗВУК: Рывок
+        playSFX(sounds.dash); 
     }
 }
 
@@ -254,7 +281,7 @@ function takeDamage(enemyType) {
     for(let i=0; i<lost; i++) spawnDroppedMass(player.x + (Math.random()-0.5)*150, player.y + (Math.random()-0.5)*150);
     updateRadius(); updateUI();
     
-    playSFX(sounds.hit); // ЗВУК: Урон
+    playSFX(sounds.hit); 
 
     if (player.hp <= 0) {
         gameState = 'gameover';
@@ -270,7 +297,7 @@ function gainXP(amount) {
         player.xp -= player.xpNeeded; player.level++; player.xpNeeded = Math.floor(player.xpNeeded * 1.5);
         gameState = 'levelup';
         
-        playSFX(sounds.levelup); // ЗВУК: Мутация
+        playSFX(sounds.levelup); 
         
         const container = document.getElementById('cards-container'); container.innerHTML = '';
         cardPool.sort(() => 0.5 - Math.random()).slice(0, 3).forEach(card => {
@@ -380,8 +407,7 @@ function update(dt) {
                 e.x += Math.cos(angleToPlayer) * 120 * dt; e.y += Math.sin(angleToPlayer) * 120 * dt;
             }
             if (e.stateTimer <= 0) {
-                playSFX(sounds.shoot); // ЗВУК: Выстрел босса
-                
+                playSFX(sounds.shoot); 
                 if (e.phase === 1) {
                     for(let k=0; k<12; k++) {
                         let a = (Math.PI*2/12) * k + e.angle;
@@ -406,7 +432,7 @@ function update(dt) {
                     player.x = player.targetX; player.y = player.targetY;
                     explosions.push({ x: e.x, y: e.y, maxRadius: e.size*1.5, life: 0.3, maxLife: 0.3 });
                     
-                    playSFX(sounds.bossHit); // ЗВУК: Удар по боссу
+                    playSFX(sounds.bossHit); 
 
                     if (e.hp <= 0) {
                         e.active = false; gameState = 'gameover';
@@ -457,12 +483,7 @@ function update(dt) {
             case 'bomber':
                 if (distToPlayer < 120) { 
                     e.stateTimer += dt; 
-                    if(e.stateTimer > 1.0) { 
-                        explosions.push({ x: e.x, y: e.y, maxRadius: 150, life: 0.5, maxLife: 0.5 }); 
-                        playSFX(sounds.explode); // ЗВУК: Взрыв
-                        if(distToPlayer < 150) takeDamage('bomber'); 
-                        e.active = false; 
-                    } 
+                    if(e.stateTimer > 1.0) { explosions.push({ x: e.x, y: e.y, maxRadius: 150, life: 0.5, maxLife: 0.5 }); playSFX(sounds.explode); if(distToPlayer < 150) takeDamage('bomber'); e.active = false; } 
                 } else { e.stateTimer = 0; }
                 e.angle += dt; if (e.stateTimer === 0) { e.x += Math.cos(e.angle) * 20 * dt; e.y += Math.sin(e.angle) * 20 * dt; } break;
         }
@@ -472,11 +493,7 @@ function update(dt) {
             if ((e.type === 'lizard' || e.type === 'hunter') && !player.isDashing) {
                 const angle = Math.atan2(player.y - e.y, player.x - e.x); player.x += Math.cos(angle) * 60; player.y += Math.sin(angle) * 60; player.targetX = player.x; player.targetY = player.y; takeDamage(e.type); continue;
             }
-            if (e.type === 'bomber') { 
-                explosions.push({ x: e.x, y: e.y, maxRadius: 150, life: 0.5, maxLife: 0.5 }); 
-                playSFX(sounds.explode); // ЗВУК: Взрыв
-                takeDamage('bomber'); e.active = false; continue; 
-            }
+            if (e.type === 'bomber') { explosions.push({ x: e.x, y: e.y, maxRadius: 150, life: 0.5, maxLife: 0.5 }); playSFX(sounds.explode); takeDamage('bomber'); e.active = false; continue; }
             if (e.type === 'undead') { discoveredEnemies.add('undead'); e.type = 'bone'; e.size = 14; e.stateTimer = 4.0; const angle = Math.atan2(player.y - e.y, player.x - e.x); player.x += Math.cos(angle) * 15; player.y += Math.sin(angle) * 15; continue; }
             if (e.type === 'leprechaun') { discoveredEnemies.add('leprechaun'); gainXP(50); playSFX(sounds.eat); e.active = false; continue; }
             
@@ -490,7 +507,7 @@ function update(dt) {
             switch(e.type) { case 'trash': gainedMass = 1; gainedXp = 0; break; case 'bone':  gainedMass = 1; gainedXp = 1; break; case 'frog':  gainedMass = 2; gainedXp = 2; break; case 'lizard': gainedMass = 3; gainedXp = 5; break; case 'hunter': gainedMass = 4; gainedXp = 10; break; }
             
             if (player.load < player.maxLoad) { player.load = Math.min(player.maxLoad, player.load + gainedMass); updateRadius(); }
-            if (gainedXp > 0 || gainedMass > 0) playSFX(sounds.eat); // ЗВУК: Поедание
+            if (gainedXp > 0 || gainedMass > 0) playSFX(sounds.eat); 
             if (gainedXp > 0) gainXP(gainedXp); else updateUI();
         }
     }
