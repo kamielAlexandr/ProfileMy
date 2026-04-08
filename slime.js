@@ -8,9 +8,46 @@ function resize() {
 }
 window.addEventListener('resize', resize); resize();
 
-let gameState = 'tutorial'; // Возможные состояния: 'tutorial', 'playing', 'paused', 'paused_menu', 'levelup', 'gameover', 'transition'
+let gameState = 'tutorial'; 
 const WORLD_SIZE = 2500; 
 let camera = { x: 0, y: 0 };
+
+// === ЗВУКОВОЙ ДВИЖОК ===
+const sounds = {
+    bgmMain: new Audio('bgm-main.mp3'),
+    bgmBoss: new Audio('bgm-boss.mp3'),
+    eat: new Audio('sfx-eat.mp3'),
+    dash: new Audio('sfx-dash.mp3'),
+    hit: new Audio('sfx-hit.mp3'),
+    explode: new Audio('sfx-explode.mp3'),
+    levelup: new Audio('sfx-levelup.mp3'),
+    shoot: new Audio('sfx-shoot.mp3'),
+    bossHit: new Audio('sfx-boss-hit.mp3')
+};
+
+// Настройка громкости и зацикливания
+sounds.bgmMain.loop = true; sounds.bgmMain.volume = 0.4;
+sounds.bgmBoss.loop = true; sounds.bgmBoss.volume = 0.5;
+sounds.eat.volume = 0.6;
+sounds.dash.volume = 0.5;
+sounds.hit.volume = 0.8;
+sounds.explode.volume = 0.7;
+sounds.levelup.volume = 0.8;
+sounds.shoot.volume = 0.4;
+sounds.bossHit.volume = 0.9;
+
+// Функция для воспроизведения SFX (позволяет звукам накладываться друг на друга)
+function playSFX(audioObj) {
+    if (!audioObj) return;
+    let clone = audioObj.cloneNode();
+    clone.volume = audioObj.volume;
+    clone.play().catch(e => console.log("Audio play prevented:", e));
+}
+
+function stopAllBGM() {
+    sounds.bgmMain.pause();
+    sounds.bgmBoss.pause();
+}
 
 const biomes = [
     { name: "Темный Лес", bg: '#0a0f0a', line: '#1a2a1a', req: 10, enemies: ['trash', 'frog'] },
@@ -72,6 +109,11 @@ function spawnEntities() {
         for(let i=0; i<30; i++) spawnDroppedMass(WORLD_SIZE/2 + (Math.random()-0.5)*1000, WORLD_SIZE/2 + (Math.random()-0.5)*1000);
         document.getElementById('boss-ui').style.display = 'block';
         document.getElementById('biome-box').style.display = 'none'; 
+        
+        // Смена музыки на боссе
+        sounds.bgmMain.pause();
+        sounds.bgmBoss.currentTime = 0;
+        sounds.bgmBoss.play().catch(e => {});
         return;
     }
 
@@ -79,7 +121,6 @@ function spawnEntities() {
     for (let i = 0; i < 150 + (currentBiomeIdx * 30); i++) {
         let rx = Math.random() * WORLD_SIZE, ry = Math.random() * WORLD_SIZE;
         if (Math.hypot(rx - portal.x, ry - portal.y) < 300) continue;
-        
         let type = b.enemies[Math.floor(Math.random() * b.enemies.length)];
         let size = 16;
         if(type === 'lizard' || type === 'hunter') size = 20;
@@ -92,30 +133,33 @@ function spawnEntities() {
 }
 spawnEntities();
 
-// === ОБРАБОТЧИКИ КНОПОК UI И ПАУЗЫ ===
+// === ОБРАБОТЧИКИ КНОПОК И ПАУЗА ===
 const bestiaryPanel = document.getElementById('bestiary-panel');
 const pauseScreen = document.getElementById('pause-screen');
 
 document.getElementById('start-btn').onclick = () => {
     document.getElementById('tutorial-screen').style.display = 'none';
     gameState = 'playing';
+    sounds.bgmMain.play().catch(e => console.log("BGM autoplay blocked until interaction"));
 };
 
-// Функция переключения паузы
 function togglePause() {
     if (gameState === 'playing') {
         gameState = 'paused_menu'; 
         pauseScreen.style.display = 'flex';
+        sounds.bgmMain.volume = 0.1; // Приглушаем музыку
+        sounds.bgmBoss.volume = 0.1;
     } else if (gameState === 'paused_menu') {
         gameState = 'playing'; 
         pauseScreen.style.display = 'none';
+        sounds.bgmMain.volume = 0.4; // Возвращаем громкость
+        sounds.bgmBoss.volume = 0.5;
     }
 }
 
 document.getElementById('pause-btn').onclick = togglePause;
 document.getElementById('resume-btn').onclick = togglePause;
 
-// Горячие клавиши (Escape для паузы)
 window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         if (gameState === 'playing' || gameState === 'paused_menu') {
@@ -157,9 +201,7 @@ function renderBestiary() {
     }
 }
 
-// === УПРАВЛЕНИЕ ===
 let lastTapTime = 0; 
-
 function setTarget(clientX, clientY) {
     if (gameState !== 'playing' || player.stunTimer > 0 || player.isDashing) return;
     player.targetX = Math.max(player.radius, Math.min(WORLD_SIZE - player.radius, clientX - width / 2 + player.x));
@@ -194,6 +236,8 @@ function activateDash(mouseX, mouseY) {
         let targetWorldX = mouseX - width / 2 + player.x, targetWorldY = mouseY - height / 2 + player.y;
         player.dashAngle = Math.atan2(targetWorldY - player.y, targetWorldX - player.x);
         player.load--; updateRadius(); updateUI();
+        
+        playSFX(sounds.dash); // ЗВУК: Рывок
     }
 }
 
@@ -209,9 +253,12 @@ function takeDamage(enemyType) {
     let lost = Math.floor(player.load / 2); player.load -= lost;
     for(let i=0; i<lost; i++) spawnDroppedMass(player.x + (Math.random()-0.5)*150, player.y + (Math.random()-0.5)*150);
     updateRadius(); updateUI();
+    
+    playSFX(sounds.hit); // ЗВУК: Урон
 
     if (player.hp <= 0) {
         gameState = 'gameover';
+        stopAllBGM();
         document.getElementById('final-score').innerText = `Вы погибли. Достигнут Биом: ${biomes[Math.min(currentBiomeIdx, biomes.length-1)].name}`;
         document.getElementById('game-over-screen').style.display = 'flex';
     }
@@ -222,6 +269,9 @@ function gainXP(amount) {
     if (player.xp >= player.xpNeeded) {
         player.xp -= player.xpNeeded; player.level++; player.xpNeeded = Math.floor(player.xpNeeded * 1.5);
         gameState = 'levelup';
+        
+        playSFX(sounds.levelup); // ЗВУК: Мутация
+        
         const container = document.getElementById('cards-container'); container.innerHTML = '';
         cardPool.sort(() => 0.5 - Math.random()).slice(0, 3).forEach(card => {
             let div = document.createElement('div'); div.className = 'card';
@@ -277,19 +327,15 @@ function updateUI() {
 }
 function updateRadius() { player.radius = player.baseRadius + (player.load * 1.5); }
 
-// === ИГРОВОЙ ЦИКЛ ===
 let lastTime = 0, gameTime = 0;
 function gameLoop(timestamp) {
     let dt = (timestamp - lastTime) / 1000; if (dt > 0.1) dt = 0.1; lastTime = timestamp; 
     
-    // Останавливаем физику, если игра на паузе (туториал, смерть, левел-ап, пауза)
     if (gameState === 'playing' || gameState === 'transition') { 
         gameTime += dt; 
         update(dt); 
     }
-    
-    draw(); 
-    requestAnimationFrame(gameLoop);
+    draw(); requestAnimationFrame(gameLoop);
 }
 
 function update(dt) {
@@ -334,6 +380,8 @@ function update(dt) {
                 e.x += Math.cos(angleToPlayer) * 120 * dt; e.y += Math.sin(angleToPlayer) * 120 * dt;
             }
             if (e.stateTimer <= 0) {
+                playSFX(sounds.shoot); // ЗВУК: Выстрел босса
+                
                 if (e.phase === 1) {
                     for(let k=0; k<12; k++) {
                         let a = (Math.PI*2/12) * k + e.angle;
@@ -357,8 +405,12 @@ function update(dt) {
                     player.targetX = player.x + Math.cos(bounceAngle) * 300; player.targetY = player.y + Math.sin(bounceAngle) * 300;
                     player.x = player.targetX; player.y = player.targetY;
                     explosions.push({ x: e.x, y: e.y, maxRadius: e.size*1.5, life: 0.3, maxLife: 0.3 });
+                    
+                    playSFX(sounds.bossHit); // ЗВУК: Удар по боссу
+
                     if (e.hp <= 0) {
                         e.active = false; gameState = 'gameover';
+                        stopAllBGM();
                         document.getElementById('game-over-title').innerText = "БЕЗДНА ПОКОРЕНА!";
                         document.getElementById('game-over-title').style.color = "#adff2f";
                         document.getElementById('final-score').innerText = `Вы уничтожили Владыку Аномалии на ${player.level} уровне!`;
@@ -401,11 +453,16 @@ function update(dt) {
             case 'leprechaun':
                 if (distToPlayer < 350) { e.angle = Math.atan2(e.y - player.y, e.x - player.x) + (Math.sin(gameTime * 15) * 0.5); e.x += Math.cos(e.angle) * 220 * dt; e.y += Math.sin(e.angle) * 220 * dt; } break;
             case 'hunter':
-                if (distToPlayer < 350) { e.angle = Math.atan2(player.y - e.y, player.x - e.x); e.x += Math.cos(e.angle) * 180 * dt; e.y += Math.sin(e.angle) * 180 * dt; } break;
+                if (distToPlayer < 350) { e.angle = Math.atan2(player.y - e.y, player.x - e.x); e.x += Math.cos(e.angle) * 160 * dt; e.y += Math.sin(e.angle) * 160 * dt; } break;
             case 'bomber':
                 if (distToPlayer < 120) { 
                     e.stateTimer += dt; 
-                    if(e.stateTimer > 1.0) { explosions.push({ x: e.x, y: e.y, maxRadius: 150, life: 0.5, maxLife: 0.5 }); if(distToPlayer < 150) takeDamage('bomber'); e.active = false; } 
+                    if(e.stateTimer > 1.0) { 
+                        explosions.push({ x: e.x, y: e.y, maxRadius: 150, life: 0.5, maxLife: 0.5 }); 
+                        playSFX(sounds.explode); // ЗВУК: Взрыв
+                        if(distToPlayer < 150) takeDamage('bomber'); 
+                        e.active = false; 
+                    } 
                 } else { e.stateTimer = 0; }
                 e.angle += dt; if (e.stateTimer === 0) { e.x += Math.cos(e.angle) * 20 * dt; e.y += Math.sin(e.angle) * 20 * dt; } break;
         }
@@ -415,9 +472,13 @@ function update(dt) {
             if ((e.type === 'lizard' || e.type === 'hunter') && !player.isDashing) {
                 const angle = Math.atan2(player.y - e.y, player.x - e.x); player.x += Math.cos(angle) * 60; player.y += Math.sin(angle) * 60; player.targetX = player.x; player.targetY = player.y; takeDamage(e.type); continue;
             }
-            if (e.type === 'bomber') { explosions.push({ x: e.x, y: e.y, maxRadius: 150, life: 0.5, maxLife: 0.5 }); takeDamage('bomber'); e.active = false; continue; }
+            if (e.type === 'bomber') { 
+                explosions.push({ x: e.x, y: e.y, maxRadius: 150, life: 0.5, maxLife: 0.5 }); 
+                playSFX(sounds.explode); // ЗВУК: Взрыв
+                takeDamage('bomber'); e.active = false; continue; 
+            }
             if (e.type === 'undead') { discoveredEnemies.add('undead'); e.type = 'bone'; e.size = 14; e.stateTimer = 4.0; const angle = Math.atan2(player.y - e.y, player.x - e.x); player.x += Math.cos(angle) * 15; player.y += Math.sin(angle) * 15; continue; }
-            if (e.type === 'leprechaun') { discoveredEnemies.add('leprechaun'); gainXP(50); e.active = false; continue; }
+            if (e.type === 'leprechaun') { discoveredEnemies.add('leprechaun'); gainXP(50); playSFX(sounds.eat); e.active = false; continue; }
             
             let isFoodOnly = ['trash', 'bone', 'frog'].includes(e.type);
             if (isFoodOnly && player.load >= player.maxLoad) {
@@ -429,6 +490,7 @@ function update(dt) {
             switch(e.type) { case 'trash': gainedMass = 1; gainedXp = 0; break; case 'bone':  gainedMass = 1; gainedXp = 1; break; case 'frog':  gainedMass = 2; gainedXp = 2; break; case 'lizard': gainedMass = 3; gainedXp = 5; break; case 'hunter': gainedMass = 4; gainedXp = 10; break; }
             
             if (player.load < player.maxLoad) { player.load = Math.min(player.maxLoad, player.load + gainedMass); updateRadius(); }
+            if (gainedXp > 0 || gainedMass > 0) playSFX(sounds.eat); // ЗВУК: Поедание
             if (gainedXp > 0) gainXP(gainedXp); else updateUI();
         }
     }
@@ -546,17 +608,12 @@ function draw() {
         for(let j=0; j<3; j++) { ctx.beginPath(); ctx.ellipse(0, 0, currentRadius * (1 + j*0.2), currentRadius * (0.8 + j*0.1), gameTime + j, 0, Math.PI*2); ctx.stroke(); }
         ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(0, 0, currentRadius * 0.6, 0, Math.PI * 2); ctx.fill(); ctx.restore();
 
-        // === НАВИГАТОР (СТРЕЛКА К ПОРТАЛУ) ===
         const distToPortal = Math.hypot(portal.x - player.x, portal.y - player.y);
         if (distToPortal > Math.min(width, height) / 2) {
-            ctx.save();
-            ctx.translate(player.x, player.y);
+            ctx.save(); ctx.translate(player.x, player.y);
             let arrowAngle = Math.atan2(portal.y - player.y, portal.x - player.x);
-            ctx.rotate(arrowAngle);
-            ctx.translate(Math.min(width, height) / 2 - 50, 0); 
-            
-            ctx.shadowColor = '#8a2be2'; ctx.shadowBlur = 15;
-            ctx.fillStyle = '#b388ff';
+            ctx.rotate(arrowAngle); ctx.translate(Math.min(width, height) / 2 - 50, 0); 
+            ctx.shadowColor = '#8a2be2'; ctx.shadowBlur = 15; ctx.fillStyle = '#b388ff';
             ctx.beginPath(); ctx.moveTo(20, 0); ctx.lineTo(-15, 15); ctx.lineTo(-5, 0); ctx.lineTo(-15, -15); ctx.closePath(); ctx.fill();
             ctx.restore();
         }
