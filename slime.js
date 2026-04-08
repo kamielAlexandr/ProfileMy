@@ -8,12 +8,10 @@ function resize() {
 }
 window.addEventListener('resize', resize); resize();
 
-// Изначальное состояние - Обучение
-let gameState = 'tutorial'; 
+let gameState = 'tutorial'; // Возможные состояния: 'tutorial', 'playing', 'paused', 'paused_menu', 'levelup', 'gameover', 'transition'
 const WORLD_SIZE = 2500; 
 let camera = { x: 0, y: 0 };
 
-// === 11 БИОМОВ (11-й — это Босс) ===
 const biomes = [
     { name: "Темный Лес", bg: '#0a0f0a', line: '#1a2a1a', req: 10, enemies: ['trash', 'frog'] },
     { name: "Гнилое Болото", bg: '#100a12', line: '#2a1a2a', req: 20, enemies: ['trash', 'frog', 'lizard'] },
@@ -25,11 +23,10 @@ const biomes = [
     { name: "Заброшенная Цитадель", bg: '#1a1a1a', line: '#333', req: 85, enemies: ['lizard', 'undead', 'hunter'] }, 
     { name: "Искаженное Пространство", bg: '#220022', line: '#440044', req: 100, enemies: ['hunter', 'bomber', 'leprechaun'] },
     { name: "Ядро Аномалии", bg: '#000', line: '#ff0000', req: 120, enemies: ['hunter', 'bomber', 'lizard', 'undead'] },
-    { name: "СЕРДЦЕ БЕЗДНЫ", bg: '#080000', line: '#220000', req: 9999, enemies: [] } // БИОМ БОССА
+    { name: "СЕРДЦЕ БЕЗДНЫ", bg: '#080000', line: '#220000', req: 9999, enemies: [] }
 ];
 let currentBiomeIdx = 0;
 
-// === БЕСТИАРИЙ ===
 const bestiaryData = {
     'trash': { name: "Обломки", desc: "Дает 1 массу.", icon: "🪵" },
     'frog': { name: "Фрогфолк", desc: "Дает 2 массы и 2 опыта.", icon: "🐸" },
@@ -44,7 +41,6 @@ const bestiaryData = {
 };
 let discoveredEnemies = new Set(['trash']); 
 
-// === ХАРАКТЕРИСТИКИ ИГРОКА ===
 let player = {
     x: WORLD_SIZE / 2, y: WORLD_SIZE / 2 + 200,
     radius: 20, baseRadius: 20,
@@ -59,7 +55,6 @@ let entities = [];
 let explosions = []; 
 let bossEntity = null; 
 
-// === КАРТОЧКИ ПРОКАЧКИ ===
 const cardPool = [
     { id: 'hp', title: "Плотная Слизь", desc: "+1 Макс HP и лечение", icon: "❤️", action: () => { player.maxHp++; player.hp = player.maxHp; } },
     { id: 'capacity', title: "Бездонный Желудок", desc: "+5 к вместимости", icon: "🎒", action: () => { player.maxLoad += 5; } },
@@ -69,7 +64,6 @@ const cardPool = [
     { id: 'heal', title: "Регенерация", desc: "Лечение на максимум", icon: "🩹", action: () => { player.hp = player.maxHp; } }
 ];
 
-// === СПАВН СУЩЕСТВ И БОССА ===
 function spawnEntities() {
     entities = [];
     if (currentBiomeIdx === 10) {
@@ -98,13 +92,40 @@ function spawnEntities() {
 }
 spawnEntities();
 
-// === UI И КНОПКИ ===
+// === ОБРАБОТЧИКИ КНОПОК UI И ПАУЗЫ ===
 const bestiaryPanel = document.getElementById('bestiary-panel');
+const pauseScreen = document.getElementById('pause-screen');
 
 document.getElementById('start-btn').onclick = () => {
     document.getElementById('tutorial-screen').style.display = 'none';
     gameState = 'playing';
 };
+
+// Функция переключения паузы
+function togglePause() {
+    if (gameState === 'playing') {
+        gameState = 'paused_menu'; 
+        pauseScreen.style.display = 'flex';
+    } else if (gameState === 'paused_menu') {
+        gameState = 'playing'; 
+        pauseScreen.style.display = 'none';
+    }
+}
+
+document.getElementById('pause-btn').onclick = togglePause;
+document.getElementById('resume-btn').onclick = togglePause;
+
+// Горячие клавиши (Escape для паузы)
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        if (gameState === 'playing' || gameState === 'paused_menu') {
+            togglePause();
+        } else if (gameState === 'paused' && bestiaryPanel.style.display === 'block') {
+            gameState = 'playing';
+            bestiaryPanel.style.display = 'none';
+        }
+    }
+});
 
 document.getElementById('bestiary-btn').onclick = () => { 
     if (gameState === 'tutorial') return; 
@@ -153,6 +174,7 @@ canvas.addEventListener('pointerdown', (e) => {
     if (gameState !== 'playing') return;
     let currentTime = new Date().getTime();
     let tapLength = currentTime - lastTapTime;
+    
     if(e.button === 2 || (tapLength < 300 && tapLength > 0)) {
         activateDash(e.clientX, e.clientY);
         e.preventDefault(); 
@@ -179,7 +201,6 @@ function spawnDroppedMass(x, y) {
     entities.push({ x: x, y: y, type: 'trash', size: 12, active: true, vx: 0, vy: 0, stateTimer: 0, angle: Math.random() * Math.PI * 2 }); 
 }
 
-// === МЕХАНИКА УРОНА И ОПЫТА ===
 function takeDamage(enemyType) {
     if (player.invulnTimer > 0 || player.isDashing) return;
     if(enemyType) discoveredEnemies.add(enemyType); 
@@ -260,9 +281,15 @@ function updateRadius() { player.radius = player.baseRadius + (player.load * 1.5
 let lastTime = 0, gameTime = 0;
 function gameLoop(timestamp) {
     let dt = (timestamp - lastTime) / 1000; if (dt > 0.1) dt = 0.1; lastTime = timestamp; 
-    gameTime += dt; 
-    if (gameState === 'playing' || gameState === 'transition') { update(dt); }
-    draw(); requestAnimationFrame(gameLoop);
+    
+    // Останавливаем физику, если игра на паузе (туториал, смерть, левел-ап, пауза)
+    if (gameState === 'playing' || gameState === 'transition') { 
+        gameTime += dt; 
+        update(dt); 
+    }
+    
+    draw(); 
+    requestAnimationFrame(gameLoop);
 }
 
 function update(dt) {
@@ -354,7 +381,6 @@ function update(dt) {
             continue;
         }
 
-        // Магнит работает, только если желудок не забит
         if (player.load < player.maxLoad && player.magnetRadius > 0 && (e.type === 'trash' || e.type === 'bone')) {
             if (distToPlayer < player.magnetRadius + player.radius) {
                 const magAngle = Math.atan2(player.y - e.y, player.x - e.x); e.x += Math.cos(magAngle) * 300 * dt; e.y += Math.sin(magAngle) * 300 * dt;
@@ -386,8 +412,6 @@ function update(dt) {
         e.x = Math.max(0, Math.min(WORLD_SIZE, e.x)); e.y = Math.max(0, Math.min(WORLD_SIZE, e.y));
         
         if (distToPlayer < player.radius + e.size / 2 && e.active) {
-            
-            // Если наткнулись на опасного врага без рывка
             if ((e.type === 'lizard' || e.type === 'hunter') && !player.isDashing) {
                 const angle = Math.atan2(player.y - e.y, player.x - e.x); player.x += Math.cos(angle) * 60; player.y += Math.sin(angle) * 60; player.targetX = player.x; player.targetY = player.y; takeDamage(e.type); continue;
             }
@@ -395,30 +419,19 @@ function update(dt) {
             if (e.type === 'undead') { discoveredEnemies.add('undead'); e.type = 'bone'; e.size = 14; e.stateTimer = 4.0; const angle = Math.atan2(player.y - e.y, player.x - e.x); player.x += Math.cos(angle) * 15; player.y += Math.sin(angle) * 15; continue; }
             if (e.type === 'leprechaun') { discoveredEnemies.add('leprechaun'); gainXP(50); e.active = false; continue; }
             
-            // === ПРОВЕРКА НА СЫТОСТЬ (ОТТАЛКИВАНИЕ ЕДЫ) ===
             let isFoodOnly = ['trash', 'bone', 'frog'].includes(e.type);
             if (isFoodOnly && player.load >= player.maxLoad) {
-                // Если желудок полон, отталкиваем еду (не съедаем)
-                let pushAngle = Math.atan2(e.y - player.y, e.x - player.x);
-                e.x += Math.cos(pushAngle) * 150 * dt;
-                e.y += Math.sin(pushAngle) * 150 * dt;
-                continue; 
+                let pushAngle = Math.atan2(e.y - player.y, e.x - player.x); e.x += Math.cos(pushAngle) * 150 * dt; e.y += Math.sin(pushAngle) * 150 * dt; continue; 
             }
-            // ==============================================
 
             discoveredEnemies.add(e.type); e.active = false; 
             let gainedMass = 1; let gainedXp = 0;
             switch(e.type) { case 'trash': gainedMass = 1; gainedXp = 0; break; case 'bone':  gainedMass = 1; gainedXp = 1; break; case 'frog':  gainedMass = 2; gainedXp = 2; break; case 'lizard': gainedMass = 3; gainedXp = 5; break; case 'hunter': gainedMass = 4; gainedXp = 10; break; }
             
-            if (player.load < player.maxLoad) { 
-                player.load = Math.min(player.maxLoad, player.load + gainedMass); 
-                updateRadius(); 
-            }
+            if (player.load < player.maxLoad) { player.load = Math.min(player.maxLoad, player.load + gainedMass); updateRadius(); }
             if (gainedXp > 0) gainXP(gainedXp); else updateUI();
         }
     }
-
-    // Удаление мертвых сущностей
     entities = entities.filter(e => e.active);
 
     if (currentBiomeIdx < 10) {
@@ -532,6 +545,21 @@ function draw() {
         ctx.strokeStyle = 'rgba(186, 85, 211, 0.5)'; ctx.lineWidth = 4;
         for(let j=0; j<3; j++) { ctx.beginPath(); ctx.ellipse(0, 0, currentRadius * (1 + j*0.2), currentRadius * (0.8 + j*0.1), gameTime + j, 0, Math.PI*2); ctx.stroke(); }
         ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(0, 0, currentRadius * 0.6, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+
+        // === НАВИГАТОР (СТРЕЛКА К ПОРТАЛУ) ===
+        const distToPortal = Math.hypot(portal.x - player.x, portal.y - player.y);
+        if (distToPortal > Math.min(width, height) / 2) {
+            ctx.save();
+            ctx.translate(player.x, player.y);
+            let arrowAngle = Math.atan2(portal.y - player.y, portal.x - player.x);
+            ctx.rotate(arrowAngle);
+            ctx.translate(Math.min(width, height) / 2 - 50, 0); 
+            
+            ctx.shadowColor = '#8a2be2'; ctx.shadowBlur = 15;
+            ctx.fillStyle = '#b388ff';
+            ctx.beginPath(); ctx.moveTo(20, 0); ctx.lineTo(-15, 15); ctx.lineTo(-5, 0); ctx.lineTo(-15, -15); ctx.closePath(); ctx.fill();
+            ctx.restore();
+        }
     }
 
     if (gameState === 'tutorial') return; 
