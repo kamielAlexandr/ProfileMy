@@ -1,19 +1,13 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 let width, height;
-
-function resize() { 
-    width = canvas.width = window.innerWidth; 
-    height = canvas.height = window.innerHeight; 
-}
+function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
 window.addEventListener('resize', resize); resize();
 
-// Изначальное состояние - Обучение
 let gameState = 'tutorial'; 
 const WORLD_SIZE = 2500; 
 let camera = { x: 0, y: 0 };
 
-// === 11 БИОМОВ (11-й — это Босс) ===
 const biomes = [
     { name: "Темный Лес", bg: '#0a0f0a', line: '#1a2a1a', req: 10, enemies: ['trash', 'frog'] },
     { name: "Гнилое Болото", bg: '#100a12', line: '#2a1a2a', req: 20, enemies: ['trash', 'frog', 'lizard'] },
@@ -25,11 +19,10 @@ const biomes = [
     { name: "Заброшенная Цитадель", bg: '#1a1a1a', line: '#333', req: 85, enemies: ['lizard', 'undead', 'hunter'] }, 
     { name: "Искаженное Пространство", bg: '#220022', line: '#440044', req: 100, enemies: ['hunter', 'bomber', 'leprechaun'] },
     { name: "Ядро Аномалии", bg: '#000', line: '#ff0000', req: 120, enemies: ['hunter', 'bomber', 'lizard', 'undead'] },
-    { name: "СЕРДЦЕ БЕЗДНЫ", bg: '#080000', line: '#220000', req: 9999, enemies: [] } // БИОМ БОССА
+    { name: "СЕРДЦЕ БЕЗДНЫ", bg: '#080000', line: '#220000', req: 9999, enemies: [] }
 ];
 let currentBiomeIdx = 0;
 
-// === БЕСТИАРИЙ ===
 const bestiaryData = {
     'trash': { name: "Обломки", desc: "Дает 1 массу.", icon: "🪵" },
     'frog': { name: "Фрогфолк", desc: "Дает 2 массы и 2 опыта.", icon: "🐸" },
@@ -44,7 +37,6 @@ const bestiaryData = {
 };
 let discoveredEnemies = new Set(['trash']); 
 
-// === ХАРАКТЕРИСТИКИ ИГРОКА ===
 let player = {
     x: WORLD_SIZE / 2, y: WORLD_SIZE / 2 + 200,
     radius: 20, baseRadius: 20,
@@ -59,7 +51,6 @@ let entities = [];
 let explosions = []; 
 let bossEntity = null; 
 
-// === КАРТОЧКИ ПРОКАЧКИ ===
 const cardPool = [
     { id: 'hp', title: "Плотная Слизь", desc: "+1 Макс HP и лечение", icon: "❤️", action: () => { player.maxHp++; player.hp = player.maxHp; } },
     { id: 'capacity', title: "Бездонный Желудок", desc: "+5 к вместимости", icon: "🎒", action: () => { player.maxLoad += 5; } },
@@ -69,11 +60,9 @@ const cardPool = [
     { id: 'heal', title: "Регенерация", desc: "Лечение на максимум", icon: "🩹", action: () => { player.hp = player.maxHp; } }
 ];
 
-// === СПАВН СУЩЕСТВ И БОССА ===
 function spawnEntities() {
     entities = [];
     if (currentBiomeIdx === 10) {
-        // Спавн Босса
         bossEntity = { type: 'boss', x: WORLD_SIZE/2, y: WORLD_SIZE/2, size: 100, hp: 30, maxHp: 30, active: true, stateTimer: 3.0, phase: 1, angle: 0 };
         entities.push(bossEntity);
         for(let i=0; i<30; i++) spawnDroppedMass(WORLD_SIZE/2 + (Math.random()-0.5)*1000, WORLD_SIZE/2 + (Math.random()-0.5)*1000);
@@ -98,7 +87,6 @@ function spawnEntities() {
 }
 spawnEntities();
 
-// === UI И КНОПКИ ===
 const bestiaryPanel = document.getElementById('bestiary-panel');
 
 document.getElementById('start-btn').onclick = () => {
@@ -136,9 +124,7 @@ function renderBestiary() {
     }
 }
 
-// === УПРАВЛЕНИЕ (АДАПТИРОВАНО ДЛЯ ПК И ТЕЛЕФОНОВ) ===
 let lastTapTime = 0; 
-
 function setTarget(clientX, clientY) {
     if (gameState !== 'playing' || player.stunTimer > 0 || player.isDashing) return;
     player.targetX = Math.max(player.radius, Math.min(WORLD_SIZE - player.radius, clientX - width / 2 + player.x));
@@ -151,7 +137,6 @@ canvas.addEventListener('pointermove', (e) => {
 
 canvas.addEventListener('pointerdown', (e) => {
     if (gameState !== 'playing') return;
-    
     let currentTime = new Date().getTime();
     let tapLength = currentTime - lastTapTime;
     
@@ -168,8 +153,7 @@ canvas.addEventListener('contextmenu', e => e.preventDefault());
 
 function activateDash(mouseX, mouseY) {
     if (player.dashCooldown <= 0 && player.stunTimer <= 0 && player.load > 0) {
-        player.isDashing = true; 
-        player.dashDuration = currentBiomeIdx === 5 ? 0.3 : 0.20; 
+        player.isDashing = true; player.dashDuration = currentBiomeIdx === 5 ? 0.3 : 0.20; 
         player.dashCooldown = player.maxDashCooldown;
         let targetWorldX = mouseX - width / 2 + player.x, targetWorldY = mouseY - height / 2 + player.y;
         player.dashAngle = Math.atan2(targetWorldY - player.y, targetWorldX - player.x);
@@ -181,7 +165,6 @@ function spawnDroppedMass(x, y) {
     entities.push({ x: x, y: y, type: 'trash', size: 12, active: true, vx: 0, vy: 0, stateTimer: 0, angle: Math.random() * Math.PI * 2 }); 
 }
 
-// === МЕХАНИКА УРОНА И ОПЫТА ===
 function takeDamage(enemyType) {
     if (player.invulnTimer > 0 || player.isDashing) return;
     if(enemyType) discoveredEnemies.add(enemyType); 
@@ -206,7 +189,14 @@ function gainXP(amount) {
         const container = document.getElementById('cards-container'); container.innerHTML = '';
         cardPool.sort(() => 0.5 - Math.random()).slice(0, 3).forEach(card => {
             let div = document.createElement('div'); div.className = 'card';
-            div.innerHTML = `<div class="card-icon">${card.icon}</div><div class="card-title">${card.title}</div><div class="card-desc">${card.desc}</div>`;
+            // Измененная разметка для адаптивности
+            div.innerHTML = `
+                <div class="card-icon">${card.icon}</div>
+                <div class="card-info">
+                    <div class="card-title">${card.title}</div>
+                    <div class="card-desc">${card.desc}</div>
+                </div>
+            `;
             div.onclick = () => { card.action(); document.getElementById('level-up-screen').style.display = 'none'; gameState = 'playing'; updateUI(); };
             container.appendChild(div);
         });
@@ -254,7 +244,6 @@ function updateUI() {
 }
 function updateRadius() { player.radius = player.baseRadius + (player.load * 1.5); }
 
-// === ИГРОВОЙ ЦИКЛ ===
 let lastTime = 0, gameTime = 0;
 function gameLoop(timestamp) {
     let dt = (timestamp - lastTime) / 1000; if (dt > 0.1) dt = 0.1; lastTime = timestamp; 
@@ -279,7 +268,7 @@ function update(dt) {
         } else if (gameState !== 'transition') {
             const dx = player.targetX - player.x, dy = player.targetY - player.y;
             const distance = Math.hypot(dx, dy);
-            let speedMult = currentBiomeIdx === 5 ? 1.5 : 1.0; // Ледяной биом
+            let speedMult = currentBiomeIdx === 5 ? 1.5 : 1.0; 
             if (distance > 5) {
                 const moveDist = player.speed * speedMult * dt;
                 if (moveDist > distance) { player.x = player.targetX; player.y = player.targetY; } 
@@ -295,7 +284,6 @@ function update(dt) {
         let e = entities[i]; if (!e.active) continue;
         const distToPlayer = Math.hypot(player.x - e.x, player.y - e.y);
         
-        // === ЛОГИКА БОССА ===
         if (e.type === 'boss') {
             e.angle += dt * 0.5; 
             e.stateTimer -= dt;
@@ -376,177 +364,4 @@ function update(dt) {
                 e.x += e.vx * dt; e.y += e.vy * dt; break;
             case 'bone': e.stateTimer -= dt; if (e.stateTimer <= 0) { e.type = 'undead'; e.size = 18; } break;
             case 'leprechaun':
-                if (distToPlayer < 350) { e.angle = Math.atan2(e.y - player.y, e.x - player.x) + (Math.sin(gameTime * 15) * 0.5); e.x += Math.cos(e.angle) * 220 * dt; e.y += Math.sin(e.angle) * 220 * dt; } break;
-            case 'hunter':
-                if (distToPlayer < 600) { e.angle = Math.atan2(player.y - e.y, player.x - e.x); e.x += Math.cos(e.angle) * 180 * dt; e.y += Math.sin(e.angle) * 180 * dt; } break;
-            case 'bomber':
-                if (distToPlayer < 120) { 
-                    e.stateTimer += dt; 
-                    if(e.stateTimer > 1.0) { explosions.push({ x: e.x, y: e.y, maxRadius: 150, life: 0.5, maxLife: 0.5 }); if(distToPlayer < 150) takeDamage('bomber'); e.active = false; } 
-                } 
-                else { e.stateTimer = 0; }
-                e.angle += dt; if (e.stateTimer === 0) { e.x += Math.cos(e.angle) * 20 * dt; e.y += Math.sin(e.angle) * 20 * dt; } break;
-        }
-        e.x = Math.max(0, Math.min(WORLD_SIZE, e.x)); e.y = Math.max(0, Math.min(WORLD_SIZE, e.y));
-        
-        if (distToPlayer < player.radius + e.size / 2 && e.active) {
-            if ((e.type === 'lizard' || e.type === 'hunter') && !player.isDashing) {
-                const angle = Math.atan2(player.y - e.y, player.x - e.x); player.x += Math.cos(angle) * 60; player.y += Math.sin(angle) * 60; player.targetX = player.x; player.targetY = player.y; takeDamage(e.type); continue;
-            }
-            if (e.type === 'bomber') { explosions.push({ x: e.x, y: e.y, maxRadius: 150, life: 0.5, maxLife: 0.5 }); takeDamage('bomber'); e.active = false; continue; }
-            if (e.type === 'undead') { discoveredEnemies.add('undead'); e.type = 'bone'; e.size = 14; e.stateTimer = 4.0; const angle = Math.atan2(player.y - e.y, player.x - e.x); player.x += Math.cos(angle) * 15; player.y += Math.sin(angle) * 15; continue; }
-            if (e.type === 'leprechaun') { discoveredEnemies.add('leprechaun'); gainXP(50); e.active = false; continue; }
-            
-            discoveredEnemies.add(e.type); e.active = false; 
-            let gainedMass = 1; let gainedXp = 0;
-            switch(e.type) { case 'trash': gainedMass = 1; gainedXp = 0; break; case 'bone':  gainedMass = 1; gainedXp = 1; break; case 'frog':  gainedMass = 2; gainedXp = 2; break; case 'lizard': gainedMass = 3; gainedXp = 5; break; case 'hunter': gainedMass = 4; gainedXp = 10; break; }
-            if (player.load < player.maxLoad) { player.load = Math.min(player.maxLoad, player.load + gainedMass); updateRadius(); }
-            if (gainedXp > 0) gainXP(gainedXp); else updateUI();
-        }
-    }
-
-    if (currentBiomeIdx < 10) {
-        const distToPortal = Math.hypot(player.x - portal.x, player.y - portal.y);
-        if (distToPortal < portal.radius + player.radius && player.load > 0 && !player.isDashing && player.stunTimer <= 0) {
-            player.load -= 1; updateRadius(); feedPortal();
-        }
-        if (portal.pulse > 0) portal.pulse = Math.max(0, portal.pulse - dt * 2);
-    }
-    
-    camera.x = player.x - width / 2; camera.y = player.y - height / 2;
-}
-
-function draw() {
-    let bgConfig = biomes[Math.min(currentBiomeIdx, biomes.length - 1)];
-    ctx.fillStyle = bgConfig.bg; ctx.fillRect(0, 0, width, height);
-    ctx.save(); ctx.translate(-camera.x, -camera.y);
-
-    ctx.strokeStyle = bgConfig.line; ctx.lineWidth = 2;
-    for(let i=0; i<=WORLD_SIZE; i+=100) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, WORLD_SIZE); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(WORLD_SIZE, i); ctx.stroke(); }
-
-    if (player.magnetRadius > 0) { ctx.fillStyle = 'rgba(138, 43, 226, 0.05)'; ctx.beginPath(); ctx.arc(player.x, player.y, player.magnetRadius + player.radius, 0, Math.PI * 2); ctx.fill(); }
-
-    for (let exp of explosions) {
-        ctx.save(); ctx.translate(exp.x, exp.y);
-        let progress = 1 - (exp.life / exp.maxLife); let currentRadius = exp.maxRadius * progress; let alpha = Math.max(0, exp.life / exp.maxLife);
-        ctx.globalAlpha = alpha;
-        ctx.beginPath(); ctx.arc(0, 0, currentRadius, 0, Math.PI*2); ctx.lineWidth = 15 * alpha; ctx.strokeStyle = '#ff4081'; ctx.stroke();
-        ctx.beginPath(); ctx.arc(0, 0, currentRadius * 0.6, 0, Math.PI*2); ctx.fillStyle = '#aa00ff'; ctx.fill(); ctx.restore();
-    }
-
-    for (let i = 0; i < entities.length; i++) {
-        let e = entities[i]; if (!e.active) continue;
-        ctx.save(); ctx.translate(e.x, e.y); ctx.rotate(e.angle || 0);
-        
-        if (e.type !== 'boss' && e.type !== 'projectile') {
-            ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.beginPath(); ctx.ellipse(0, e.size*0.3, e.size*0.8, e.size*0.5, 0, 0, Math.PI*2); ctx.fill();
-        }
-
-        let eSpeed = Math.hypot(e.vx || 0, e.vy || 0);
-        switch(e.type) {
-            case 'trash': 
-                ctx.fillStyle = '#5c3a21'; ctx.fillRect(-e.size, -e.size/4, e.size*2, e.size/2); ctx.fillStyle = '#8b5a2b'; ctx.fillRect(-e.size, -e.size/4, e.size*2, e.size/6);
-                ctx.strokeStyle = '#3e2723'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-e.size*0.8, 0); ctx.lineTo(e.size*0.8, 0); ctx.stroke();
-                ctx.fillStyle = '#555'; ctx.beginPath(); ctx.arc(0, e.size/2, e.size/1.5, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = '#777'; ctx.beginPath(); ctx.arc(-e.size/6, e.size/2.5, e.size/2.5, 0, Math.PI*2); ctx.fill(); break;
-            case 'bone': 
-                let pulse = 1 + Math.sin(gameTime * 5) * 0.1; ctx.scale(pulse, pulse);
-                ctx.fillStyle = '#1b5e20'; ctx.beginPath(); ctx.ellipse(0, 0, e.size, e.size*0.7, 0, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = '#76ff03'; ctx.beginPath(); ctx.ellipse(0, 0, e.size*0.6, e.size*0.4, 0, 0, Math.PI*2); ctx.fill();
-                ctx.strokeStyle = '#003300'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-e.size*0.3, 0); ctx.lineTo(e.size*0.3, 0); ctx.stroke();
-                ctx.strokeStyle = '#3e2723'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-e.size, 0); ctx.lineTo(-e.size*1.5, -e.size*0.5); ctx.stroke(); ctx.beginPath(); ctx.moveTo(e.size, 0); ctx.lineTo(e.size*1.5, e.size*0.5); ctx.stroke(); break;
-            case 'frog': 
-                ctx.scale(1 + (eSpeed/1500), 1 - (eSpeed/2000));
-                ctx.fillStyle = '#1e5e3a'; if (eSpeed > 50) { ctx.beginPath(); ctx.ellipse(-e.size, -e.size*0.5, e.size*0.6, e.size*0.2, 0, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.ellipse(-e.size, e.size*0.5, e.size*0.6, e.size*0.2, 0, 0, Math.PI*2); ctx.fill(); }
-                ctx.fillStyle = '#2e8b57'; ctx.beginPath(); ctx.ellipse(0, 0, e.size, e.size*0.8, 0, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = '#1a4d33'; ctx.beginPath(); ctx.arc(-e.size*0.3, 0, e.size*0.2, 0, Math.PI*2); ctx.fill(); 
-                ctx.fillStyle = '#3cb371'; ctx.beginPath(); ctx.ellipse(0, -e.size*0.2, e.size*0.6, e.size*0.4, 0, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(e.size*0.5, -e.size*0.6, e.size*0.4, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(e.size*0.5, e.size*0.6, e.size*0.4, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(e.size*0.7, -e.size*0.6, e.size*0.15, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(e.size*0.7, e.size*0.6, e.size*0.15, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = '#5c3a21'; ctx.fillRect(-e.size*0.5, e.size*0.7, e.size*2.5, e.size*0.2); ctx.fillStyle = '#aaa'; ctx.beginPath(); ctx.moveTo(e.size*2, e.size*0.6); ctx.lineTo(e.size*2.8, e.size*0.8); ctx.lineTo(e.size*2, e.size*1.0); ctx.fill(); break;
-            case 'lizard': 
-                ctx.fillStyle = '#37474f'; ctx.beginPath(); ctx.moveTo(-e.size, -e.size); ctx.lineTo(e.size*0.3, -e.size*0.8); ctx.lineTo(e.size*0.6, 0); ctx.lineTo(e.size*0.3, e.size*0.8); ctx.lineTo(-e.size, e.size); ctx.fill();
-                ctx.fillStyle = '#546e7a'; ctx.beginPath(); ctx.moveTo(-e.size*0.8, -e.size*0.8); ctx.lineTo(e.size*0.1, -e.size*0.6); ctx.lineTo(e.size*0.3, 0); ctx.lineTo(-e.size*0.8, 0); ctx.fill();
-                ctx.strokeStyle = '#00e5ff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-e.size*0.3, -e.size*0.4); ctx.lineTo(0, e.size*0.3); ctx.lineTo(-e.size*0.5, e.size*0.2); ctx.stroke();
-                ctx.shadowColor = '#00e5ff'; ctx.shadowBlur = 15; ctx.strokeStyle = '#00e5ff'; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(e.size*0.3, 0, e.size + 4, -Math.PI/2.5, Math.PI/2.5); ctx.stroke(); ctx.shadowBlur = 0; break;
-            case 'undead': 
-                ctx.fillStyle = '#3e2723'; ctx.beginPath(); ctx.moveTo(-e.size, -e.size*0.5); ctx.lineTo(e.size*1.2, -e.size*0.8); ctx.lineTo(e.size*0.5, -e.size*0.3); ctx.fill(); ctx.beginPath(); ctx.moveTo(-e.size, e.size*0.5); ctx.lineTo(e.size*1.2, e.size*0.8); ctx.lineTo(e.size*0.5, e.size*0.3); ctx.fill();
-                ctx.beginPath(); ctx.arc(0, 0, e.size, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = '#76ff03'; ctx.shadowColor = '#76ff03'; ctx.shadowBlur = 10; ctx.beginPath(); ctx.ellipse(e.size*0.2, 0, e.size*0.4, e.size*0.6, 0, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
-                ctx.strokeStyle = '#76ff03'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-e.size*0.5, -e.size*0.5); ctx.lineTo(e.size*0.1, -e.size*0.1); ctx.stroke(); break;
-            case 'leprechaun': 
-                ctx.translate(0, (eSpeed > 10) ? -Math.abs(Math.sin(gameTime * 15)) * e.size * 0.3 : 0);
-                ctx.fillStyle = '#d2691e'; ctx.beginPath(); ctx.arc(e.size*0.5, 0, e.size*0.7, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = '#ffcc99'; ctx.beginPath(); ctx.arc(0, 0, e.size*0.8, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = '#006400'; ctx.fillRect(-e.size*0.5, -e.size*0.8, e.size, e.size*1.6); ctx.fillRect(-e.size*0.8, -e.size*0.5, e.size*0.8, e.size);
-                ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2; ctx.strokeRect(-e.size*0.5, -e.size*0.2, e.size*0.3, e.size*0.4);
-                ctx.fillStyle = '#3cb371'; ctx.beginPath(); ctx.arc(-e.size*0.6, -e.size*0.6, e.size*0.2, 0, Math.PI*2); ctx.fill();
-                ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 15; ctx.fillStyle = '#333'; ctx.beginPath(); ctx.arc(e.size*1.2, 0, e.size*0.6, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = '#ffd700'; ctx.beginPath(); ctx.arc(e.size*1.2, 0, e.size*0.4, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0; break;
-            case 'hunter': 
-                ctx.fillStyle = '#1a237e'; ctx.beginPath(); ctx.ellipse(-e.size*0.2, 0, e.size*0.8, e.size*0.6, 0, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = '#311b92'; ctx.beginPath(); ctx.ellipse(-e.size*0.2, 0, e.size*0.5, e.size*0.4, 0, 0, Math.PI*2); ctx.fill();
-                let clawGrip = Math.sin(gameTime * 10) * e.size * 0.2; ctx.fillStyle = '#1a237e'; ctx.strokeStyle = '#000'; ctx.lineWidth = 1;
-                ctx.beginPath(); ctx.moveTo(-e.size*0.2, -e.size*0.5); ctx.lineTo(e.size*0.8 + clawGrip, -e.size*0.8); ctx.lineTo(e.size*0.5, -e.size*0.2); ctx.fill(); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(0, -e.size*0.2); ctx.lineTo(e.size*1.2 + clawGrip, 0); ctx.lineTo(0, e.size*0.2); ctx.fill(); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(-e.size*0.2, e.size*0.5); ctx.lineTo(e.size*0.8 + clawGrip, e.size*0.8); ctx.lineTo(e.size*0.5, e.size*0.2); ctx.fill(); ctx.stroke();
-                ctx.fillStyle = '#d50000'; ctx.beginPath(); ctx.moveTo(e.size*0.8 + clawGrip, -e.size*0.8); ctx.lineTo(e.size*1.4 + clawGrip, -e.size*0.5); ctx.lineTo(e.size*0.5, -e.size*0.2); ctx.fill();
-                ctx.beginPath(); ctx.moveTo(e.size*1.2 + clawGrip, 0); ctx.lineTo(e.size*1.8 + clawGrip, 0); ctx.lineTo(0, e.size*0.2); ctx.fill(); ctx.beginPath(); ctx.moveTo(e.size*0.8 + clawGrip, e.size*0.8); ctx.lineTo(e.size*1.4 + clawGrip, e.size*0.5); ctx.lineTo(e.size*0.5, e.size*0.2); ctx.fill(); break;
-            case 'bomber': 
-                ctx.rotate(gameTime * (2 + e.stateTimer * 10)); let bScale = 1 + (e.stateTimer > 0 ? Math.sin(gameTime * 30) * 0.2 : 0); ctx.scale(bScale, bScale);
-                ctx.fillStyle = '#aa00ff'; ctx.shadowColor = '#aa00ff'; ctx.shadowBlur = 15; ctx.beginPath(); ctx.moveTo(e.size, 0); ctx.lineTo(0, e.size*0.6); ctx.lineTo(-e.size, 0); ctx.lineTo(0, -e.size*0.6); ctx.fill();
-                if (e.stateTimer > 0) { ctx.fillStyle = (Math.floor(gameTime * 20)%2===0) ? '#fff' : '#ff4081'; ctx.beginPath(); ctx.moveTo(e.size*0.6, 0); ctx.lineTo(0, e.size*0.3); ctx.lineTo(-e.size*0.6, 0); ctx.lineTo(0, -e.size*0.3); ctx.fill(); } 
-                else { ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.beginPath(); ctx.moveTo(e.size, 0); ctx.lineTo(0, e.size*0.6); ctx.lineTo(0, -e.size*0.6); ctx.fill(); }
-                ctx.shadowBlur = 0; ctx.fillStyle = '#ff4081'; ctx.fillRect(e.size*1.2, 0, 4, 4); ctx.fillRect(-e.size*1.2, 0, 4, 4); ctx.fillRect(0, e.size*1.2, 4, 4); ctx.fillRect(0, -e.size*1.2, 4, 4); break;
-            
-            case 'projectile':
-                ctx.shadowColor = '#ff0044'; ctx.shadowBlur = 15; ctx.fillStyle = '#ff0044'; ctx.beginPath(); ctx.arc(0, 0, e.size, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, 0, e.size*0.5, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0; break;
-            case 'boss':
-                let bossPulse = 1 + Math.sin(gameTime * 2) * 0.05; ctx.scale(bossPulse, bossPulse);
-                ctx.shadowColor = '#ff0000'; ctx.shadowBlur = 40; ctx.fillStyle = '#110000'; ctx.beginPath(); ctx.arc(0, 0, e.size, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = '#ff0000'; ctx.beginPath(); ctx.ellipse(0, 0, e.size*0.6, e.size*0.3, 0, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(0, 0, e.size*0.2, e.size*0.3, 0, 0, Math.PI*2); ctx.fill();
-                ctx.shadowBlur = 0; ctx.strokeStyle = '#ff4444'; ctx.lineWidth = 8; ctx.lineCap = 'round';
-                ctx.beginPath(); ctx.arc(0, 0, e.size*1.3, e.angle, e.angle + Math.PI*0.8); ctx.stroke(); ctx.beginPath(); ctx.arc(0, 0, e.size*1.3, e.angle + Math.PI, e.angle + Math.PI*1.8); ctx.stroke(); break;
-        }
-        ctx.restore();
-    }
-
-    if (currentBiomeIdx < 10) {
-        ctx.save(); ctx.translate(portal.x, portal.y); ctx.rotate(gameTime * 0.5);
-        const pulseScale = 1 + (Math.sin(gameTime * 3) * 0.05) + (portal.pulse * 0.2);
-        const currentRadius = portal.radius * pulseScale;
-        const gradient = ctx.createRadialGradient(0, 0, currentRadius * 0.5, 0, 0, currentRadius * 2.5);
-        gradient.addColorStop(0, '#000000'); gradient.addColorStop(0.4, 'rgba(138, 43, 226, 0.8)'); gradient.addColorStop(1, 'transparent');
-        ctx.fillStyle = gradient; ctx.beginPath(); ctx.arc(0, 0, currentRadius * 2.5, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = 'rgba(186, 85, 211, 0.5)'; ctx.lineWidth = 4;
-        for(let j=0; j<3; j++) { ctx.beginPath(); ctx.ellipse(0, 0, currentRadius * (1 + j*0.2), currentRadius * (0.8 + j*0.1), gameTime + j, 0, Math.PI*2); ctx.stroke(); }
-        ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(0, 0, currentRadius * 0.6, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-    }
-
-    if (gameState === 'tutorial') return; 
-
-    ctx.save(); ctx.translate(player.x, player.y);
-    if (player.invulnTimer > 0 && Math.floor(gameTime * 10) % 2 === 0) { ctx.globalAlpha = 0.5; }
-    let lookAngle = player.isDashing ? player.dashAngle : Math.atan2(player.targetY - player.y, player.targetX - player.x); ctx.rotate(lookAngle); 
-    const isMoving = Math.hypot(player.targetX - player.x, player.targetY - player.y) > 5;
-    const stretchX = (player.stunTimer <= 0 && (isMoving || player.isDashing)) ? (player.isDashing ? 1.4 : 1.15) : 1.0;
-    const stretchY = (player.stunTimer <= 0 && (isMoving || player.isDashing)) ? (player.isDashing ? 0.7 : 0.9) : 1.0;
-
-    ctx.scale(stretchX, stretchY);
-
-    if (player.stunTimer > 0) { ctx.shadowColor = 'red'; ctx.shadowBlur = 20; ctx.fillStyle = '#8b0000'; 
-    } else if (player.isDashing) { ctx.shadowColor = '#adff2f'; ctx.shadowBlur = 30; ctx.fillStyle = '#006400'; 
-    } else { ctx.shadowColor = 'rgba(0, 0, 0, 0.5)'; ctx.shadowBlur = 10; ctx.fillStyle = player.colorBase; }
-
-    ctx.beginPath(); ctx.arc(0, 0, player.radius, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0; 
-    ctx.fillStyle = player.stunTimer > 0 ? '#ff4444' : player.colorInner;
-    ctx.beginPath(); ctx.arc(-player.radius * 0.1, -player.radius * 0.1, player.radius * 0.8, 0, Math.PI * 2); ctx.fill();
-
-    if (player.stunTimer <= 0) { 
-        ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(player.radius * 0.4, -player.radius * 0.4, player.radius * 0.3, 0, Math.PI * 2); ctx.arc(player.radius * 0.4, player.radius * 0.4, player.radius * 0.3, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(player.radius * 0.5, -player.radius * 0.4, player.radius * 0.2, 0, Math.PI * 2); ctx.arc(player.radius * 0.5, player.radius * 0.4, player.radius * 0.2, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(player.radius * 0.55, -player.radius * 0.45, player.radius * 0.08, 0, Math.PI * 2); ctx.arc(player.radius * 0.55, player.radius * 0.35, player.radius * 0.08, 0, Math.PI * 2); ctx.fill();
-    } else {
-        ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(player.radius*0.2, -player.radius*0.6); ctx.lineTo(player.radius*0.5, -player.radius*0.4); ctx.lineTo(player.radius*0.2, -player.radius*0.2); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(player.radius*0.2, player.radius*0.6); ctx.lineTo(player.radius*0.5, player.radius*0.4); ctx.lineTo(player.radius*0.2, player.radius*0.2); ctx.stroke();
-    }
-    ctx.restore(); ctx.restore(); 
-}
-
-updateUI(); requestAnimationFrame(gameLoop);
+                if (distToPlayer < 350) { e.angle = Math.atan2(e.y - player.y, e.x - player.x) + (Math.sin(gameTime * 15) * 0.5); e.x += Math
