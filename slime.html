@@ -3,291 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Голодная Бездна: Экосистема</title>
-    <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #0a0a0a; overflow: hidden; font-family: sans-serif; user-select: none; }
-        canvas { display: block; }
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-        #stats { position: absolute; top: 20px; left: 20px; color: #fff; text-shadow: 2px 2px 4px #000; }
-        .stat-line { font-size: 20px; margin-bottom: 5px; }
-        .hint { font-size: 14px; color: #ccc; margin-top: 10px; line-height: 1.4; }
-        .color-box { display: inline-block; width: 12px; height: 12px; margin-right: 5px; border-radius: 2px; }
-    </style>
+    <title>Голодная Бездна: Финал</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <canvas id="gameCanvas"></canvas>
+    
     <div id="ui-layer">
-        <div id="stats">
-            <div class="stat-line" id="load-text">Вместимость: 0 / 15</div>
-            <div class="stat-line" id="crystals-text">Тёмные кристаллы: 0</div>
-            <div class="stat-line" id="dash-text">Рывок: Готов!</div>
-            <div class="hint">
-                <span class="color-box" style="background:#2e8b57"></span>Фрогфолки (Прыгают)<br>
-                <span class="color-box" style="background:#d2691e; border: 2px solid #ff4500"></span>Лизардфолки (Бьют! Ешьте только РЫВКОМ)<br>
-                <span class="color-box" style="background:#aaa"></span>Нежить (Разбиваются на кости)<br>
-                <span class="color-box" style="background:#ffd700"></span>Лепреконы (Быстрые, дают золото)
+        <div id="top-bar">
+            <div id="left-stats">
+                <div class="stat-box">Здоровье: <span id="hp-bar">❤️❤️❤️</span></div>
+                <div class="stat-box" id="load-text">Масса: 0 / 10</div>
+                <div class="stat-box" id="dash-status" style="font-weight: bold;">Рывок: ГОТОВ!</div>
             </div>
+            <div id="right-stats">
+                <div class="stat-box" style="text-align: right;" id="biome-box">
+                    <div id="biome-text">Биом: Темный Лес</div>
+                    <div style="font-size: 12px; color: #aaa; margin-top: 5px;">Сытость Аномалии:</div>
+                    <div id="anomaly-bar-container"><div id="anomaly-bar"></div></div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="boss-ui">
+            <div id="boss-title">ВЛАДЫКА АНОМАЛИИ</div>
+            <div id="boss-hp-container"><div id="boss-hp-fill"></div></div>
+        </div>
+
+        <div id="bottom-bar">
+            <div id="xp-text">Уровень 1</div>
+            <div id="xp-bar-container"><div id="xp-bar"></div></div>
         </div>
     </div>
 
-    <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        let width, height;
-        function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
-        window.addEventListener('resize', resize); resize();
+    <div id="menu-buttons">
+        <button id="bestiary-btn" class="menu-btn">📖 БЕСТИАРИЙ</button>
+    </div>
 
-        const WORLD_SIZE = 2000;
-        let camera = { x: 0, y: 0 };
+    <div id="bestiary-panel" class="panel">
+        <button class="close-panel" id="close-bestiary">X</button>
+        <h2>Изученные Существа</h2>
+        <div id="bestiary-container"></div>
+    </div>
 
-        let player = {
-            x: WORLD_SIZE / 2, y: WORLD_SIZE / 2 + 200,
-            radius: 20, baseRadius: 20,
-            speed: 250, dashSpeed: 800,
-            targetX: WORLD_SIZE / 2, targetY: WORLD_SIZE / 2 + 200,
-            color: '#32cd32',
-            load: 0, maxLoad: 15, crystals: 0,
-            isDashing: false, dashCooldown: 0, dashDuration: 0,
-            stunTimer: 0 // Таймер оглушения
-        };
+    <div id="level-up-screen" class="overlay">
+        <div id="level-up-title">МУТАЦИЯ!</div>
+        <div class="cards-container" id="cards-container"></div>
+    </div>
 
-        let portal = { x: WORLD_SIZE / 2, y: WORLD_SIZE / 2, radius: 70, pulse: 0 };
-        let entities = [];
+    <div id="game-over-screen" class="overlay">
+        <div id="game-over-title">СЛИЗЬ РАСТЕКЛАСЬ...</div>
+        <div style="color: white; font-size: 20px; margin-bottom: 30px;" id="final-score">Достигнут Биом 1</div>
+        <button id="restart-btn" onclick="location.reload()">ПЕРЕРОДИТЬСЯ</button>
+    </div>
 
-        function spawnEntities() {
-            entities = [];
-            // Спавним разный мусор и существ
-            for (let i = 0; i < 150; i++) {
-                let rx = Math.random() * WORLD_SIZE;
-                let ry = Math.random() * WORLD_SIZE;
-                if (Math.hypot(rx - portal.x, ry - portal.y) < 250) continue;
+    <div id="tutorial-screen" class="overlay" style="display: flex;">
+        <div id="tutorial-title">ГОЛОДНАЯ БЕЗДНА</div>
+        <div class="tutorial-text">
+            <p>Вы — нестабильная слизь. Ваша цель — <b>кормить Аномалию (Портал)</b>, чтобы захватывать миры.</p>
+            <p>Поедайте всё! Сдавайте массу в портал, получайте уровни и мутируйте.</p>
+            <p style="color: #ffaa00;">⚠️ В конце вас ждет Истинное Зло.</p>
+            <div class="controls-box">
+                <b>Управление:</b><br>
+                🖱️ <b>Левый клик</b> (удерживать) — Ползти за курсором<br>
+                🖱️ <b>Правый клик</b> — <b>ТЕНЕВОЙ РЫВОК</b> (Сжигает 1 массу, пробивает броню и наносит урон Боссу)
+            </div>
+        </div>
+        <button id="start-btn" class="menu-btn" style="font-size: 24px; padding: 15px 40px; margin-top: 20px;">ПОГЛОТИТЬ МИР</button>
+    </div>
 
-                let rand = Math.random();
-                let type, color, size;
-
-                if (rand < 0.4) { type = 'trash'; color = '#555'; size = 10; }
-                else if (rand < 0.65) { type = 'frog'; color = '#2e8b57'; size = 14; }
-                else if (rand < 0.85) { type = 'lizard'; color = '#d2691e'; size = 18; }
-                else if (rand < 0.97) { type = 'undead'; color = '#aaa'; size = 16; }
-                else { type = 'leprechaun'; color = '#ffd700'; size = 12; }
-
-                entities.push({ x: rx, y: ry, type: type, color: color, size: size, active: true, vx: 0, vy: 0, stateTimer: 0 });
-            }
-        }
-        spawnEntities();
-
-        // Управление
-        function setTarget(clientX, clientY) {
-            if (player.stunTimer > 0) return; // В оглушении нельзя управлять
-            player.targetX = Math.max(player.radius, Math.min(WORLD_SIZE - player.radius, clientX - width / 2 + player.x));
-            player.targetY = Math.max(player.radius, Math.min(WORLD_SIZE - player.radius, clientY - height / 2 + player.y));
-        }
-        canvas.addEventListener('pointermove', (e) => { if(e.buttons === 1) setTarget(e.clientX, e.clientY); });
-        canvas.addEventListener('pointerdown', (e) => {
-            if(e.button === 0) setTarget(e.clientX, e.clientY);
-            if(e.button === 2) activateDash();
-        });
-        canvas.addEventListener('contextmenu', e => e.preventDefault());
-
-        function activateDash() {
-            if (player.dashCooldown <= 0 && player.stunTimer <= 0) {
-                player.isDashing = true;
-                player.dashDuration = 0.25;
-                player.dashCooldown = 2.0;
-                if (player.load > 0) { player.load--; updateRadius(); } // Рывок стоит 1 массу
-            }
-        }
-
-        function updateUI() {
-            document.getElementById('load-text').innerText = `Вместимость: ${player.load} / ${player.maxLoad}`;
-            document.getElementById('crystals-text').innerText = `Тёмные кристаллы: ${player.crystals}`;
-            let dashEl = document.getElementById('dash-text');
-            if (player.dashCooldown > 0) { dashEl.innerText = `Рывок: Зарядка (${player.dashCooldown.toFixed(1)}с)`; dashEl.style.color = '#ff5555'; }
-            else { dashEl.innerText = `Рывок: ГОТОВ! (ПКМ)`; dashEl.style.color = '#55ff55'; }
-        }
-        function updateRadius() { player.radius = player.baseRadius + (player.load * 1.5); }
-
-        let lastTime = 0, gameTime = 0;
-        function gameLoop(timestamp) {
-            let dt = (timestamp - lastTime) / 1000;
-            if (dt > 0.1) dt = 0.1; lastTime = timestamp; gameTime += dt;
-            update(dt); draw(); requestAnimationFrame(gameLoop);
-        }
-
-        function spawnDroppedMass(x, y) {
-            entities.push({ x: x + 30, y: y + 30, type: 'trash', color: '#888', size: 10, active: true, vx: 0, vy: 0, stateTimer: 0 });
-        }
-
-        function update(dt) {
-            // Оглушение
-            if (player.stunTimer > 0) player.stunTimer -= dt;
-
-            if (player.dashDuration > 0) player.dashDuration -= dt;
-            else player.isDashing = false;
-            if (player.dashCooldown > 0) { player.dashCooldown -= dt; if(player.dashCooldown <= 0) updateUI(); }
-
-            // Движение игрока
-            if (player.stunTimer <= 0) {
-                const currentSpeed = player.isDashing ? player.dashSpeed : player.speed;
-                const dx = player.targetX - player.x, dy = player.targetY - player.y;
-                const distance = Math.hypot(dx, dy);
-                if (distance > 5) {
-                    const moveDist = currentSpeed * dt;
-                    if (moveDist > distance) { player.x = player.targetX; player.y = player.targetY; } 
-                    else { player.x += (dx / distance) * moveDist; player.y += (dy / distance) * moveDist; }
-                }
-            }
-
-            // ПОВЕДЕНИЕ СУЩЕСТВ (ИИ)
-            for (let i = 0; i < entities.length; i++) {
-                let e = entities[i];
-                if (!e.active) continue;
-
-                const distToPlayer = Math.hypot(player.x - e.x, player.y - e.y);
-
-                switch (e.type) {
-                    case 'frog':
-                        e.stateTimer -= dt;
-                        if (distToPlayer < 250 && e.stateTimer <= 0) {
-                            // Резкий прыжок от игрока
-                            const angle = Math.atan2(e.y - player.y, e.x - player.x);
-                            e.vx = Math.cos(angle) * 800;
-                            e.vy = Math.sin(angle) * 800;
-                            e.stateTimer = 1.5; // Перезарядка прыжка
-                        }
-                        e.vx *= 0.85; e.vy *= 0.85; // Трение в воздухе
-                        e.x += e.vx * dt; e.y += e.vy * dt;
-                        break;
-                        
-                    case 'lizard':
-                        // Медленно отступает, если игрок близко
-                        if (distToPlayer < 150) {
-                            const angle = Math.atan2(e.y - player.y, e.x - player.x);
-                            e.x += Math.cos(angle) * 40 * dt;
-                            e.y += Math.sin(angle) * 40 * dt;
-                        }
-                        break;
-
-                    case 'undead':
-                        // Просто бродят
-                        e.stateTimer -= dt;
-                        if (e.stateTimer <= 0) {
-                            e.vx = (Math.random() - 0.5) * 60; e.vy = (Math.random() - 0.5) * 60;
-                            e.stateTimer = 2.0;
-                        }
-                        e.x += e.vx * dt; e.y += e.vy * dt;
-                        break;
-
-                    case 'bone':
-                        // Кости лежат на земле, но таймер тикает
-                        e.stateTimer -= dt;
-                        if (e.stateTimer <= 0) {
-                            e.type = 'undead'; e.color = '#aaa'; e.size = 16; // Воскрешение!
-                        }
-                        break;
-
-                    case 'leprechaun':
-                        if (distToPlayer < 350) {
-                            // Панический бег зигзагами
-                            const angle = Math.atan2(e.y - player.y, e.x - player.x) + (Math.sin(gameTime * 15) * 0.5);
-                            e.x += Math.cos(angle) * 220 * dt;
-                            e.y += Math.sin(angle) * 220 * dt;
-                        }
-                        break;
-                }
-
-                e.x = Math.max(0, Math.min(WORLD_SIZE, e.x)); e.y = Math.max(0, Math.min(WORLD_SIZE, e.y));
-
-                // ЛОГИКА ПОЕДАНИЯ И КОЛЛИЗИЙ
-                if (distToPlayer < player.radius + e.size / 2) {
-                    
-                    if (e.type === 'lizard' && !player.isDashing) {
-                        // ОШИБКА: Ударился о щит без рывка!
-                        const angle = Math.atan2(player.y - e.y, player.x - e.x);
-                        player.x += Math.cos(angle) * 60; player.y += Math.sin(angle) * 60; // Отброс
-                        player.targetX = player.x; player.targetY = player.y;
-                        player.stunTimer = 0.5; // Оглушение
-                        if (player.load > 0) { player.load--; spawnDroppedMass(player.x, player.y); }
-                        updateRadius(); updateUI();
-                        continue;
-                    }
-
-                    if (e.type === 'undead') {
-                        // Превращаем в кости
-                        e.type = 'bone'; e.color = '#fff'; e.size = 8; e.stateTimer = 4.0;
-                        const angle = Math.atan2(player.y - e.y, player.x - e.x);
-                        player.x += Math.cos(angle) * 15; player.y += Math.sin(angle) * 15; // Легкий отскок от удара
-                        continue;
-                    }
-
-                    if (e.type === 'leprechaun') {
-                        player.crystals += 50; e.active = false; updateUI();
-                        continue;
-                    }
-
-                    // Обычное поедание (Фрогфолки, Кости, Мусор, и Лизардфолки на рывке)
-                    if (player.load < player.maxLoad) {
-                        e.active = false;
-                        player.load++; updateRadius(); updateUI();
-                    }
-                }
-            }
-
-            // Сдача в портал
-            const distToPortal = Math.hypot(player.x - portal.x, player.y - portal.y);
-            if (distToPortal < portal.radius + player.radius && player.load > 0 && !player.isDashing && player.stunTimer <= 0) {
-                player.load -= 1; player.crystals += 5;
-                updateRadius(); portal.pulse = 1.5; updateUI();
-            }
-            if (portal.pulse > 0) portal.pulse = Math.max(0, portal.pulse - dt * 2);
-            camera.x = player.x - width / 2; camera.y = player.y - height / 2;
-            if(player.dashCooldown > 0 || player.dashDuration > 0) updateUI();
-        }
-
-        function draw() {
-            ctx.fillStyle = '#111'; ctx.fillRect(0, 0, width, height);
-            ctx.save(); ctx.translate(-camera.x, -camera.y);
-
-            ctx.strokeStyle = '#222'; ctx.lineWidth = 2;
-            for(let i=0; i<=WORLD_SIZE; i+=100) {
-                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, WORLD_SIZE); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(WORLD_SIZE, i); ctx.stroke();
-            }
-
-            for (let i = 0; i < entities.length; i++) {
-                let e = entities[i];
-                if (e.active) {
-                    ctx.fillStyle = e.color;
-                    ctx.beginPath();
-                    if (e.type === 'lizard') {
-                        ctx.arc(e.x, e.y, e.size/2, 0, Math.PI*2); ctx.fill();
-                        ctx.strokeStyle = '#ff4500'; ctx.lineWidth = 3; ctx.stroke(); // Щит
-                    } else if (e.type === 'bone') {
-                        ctx.rect(e.x - e.size/2, e.y - e.size/2, e.size, e.size); ctx.fill();
-                    } else {
-                        ctx.arc(e.x, e.y, e.size/2, 0, Math.PI*2); ctx.fill();
-                    }
-                }
-            }
-
-            // Портал
-            const pulseScale = 1 + (Math.sin(gameTime * 3) * 0.05) + (portal.pulse * 0.2);
-            const currentRadius = portal.radius * pulseScale;
-            const gradient = ctx.createRadialGradient(portal.x, portal.y, currentRadius * 0.5, portal.x, portal.y, currentRadius * 2);
-            gradient.addColorStop(0, '#000000'); gradient.addColorStop(0.5, '#8a2be2'); gradient.addColorStop(1, 'transparent');
-            ctx.fillStyle = gradient; ctx.beginPath(); ctx.arc(portal.x, portal.y, currentRadius * 2, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(portal.x, portal.y, currentRadius * 0.6, 0, Math.PI * 2); ctx.fill();
-
-            // Слайм
-            ctx.fillStyle = player.stunTimer > 0 ? '#ff0000' : (player.isDashing ? '#adff2f' : player.color);
-            ctx.beginPath();
-            const stretch = (player.speed > 0 || player.isDashing) ? (player.isDashing ? 1.4 : 1.1) : 1;
-            ctx.ellipse(player.x, player.y, player.radius, player.radius * stretch, Math.atan2(player.targetY - player.y, player.targetX - player.x), 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.restore();
-        }
-        updateUI(); requestAnimationFrame(gameLoop);
-    </script>
+    <script src="slime.js"></script>
 </body>
 </html>
