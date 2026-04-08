@@ -82,7 +82,7 @@ function spawnEntities() {
         if(type === 'bomber') size = 22;
         if(type === 'trash' || type === 'leprechaun') size = 12;
         
-        entities.push({ x: rx, y: ry, type: type, size: size, active: true, vx: 0, vy: 0, stateTimer: 0, angle: Math.random() * Math.PI * 2 });
+        entities.push({ x: rx, y: ry, type: type, size: size, active: true, vx: 0, vy: 0, stateTimer: (type === 'bone') ? 3 : 0, angle: Math.random() * Math.PI * 2 });
     }
 }
 spawnEntities();
@@ -189,7 +189,6 @@ function gainXP(amount) {
         const container = document.getElementById('cards-container'); container.innerHTML = '';
         cardPool.sort(() => 0.5 - Math.random()).slice(0, 3).forEach(card => {
             let div = document.createElement('div'); div.className = 'card';
-            // Измененная разметка для адаптивности
             div.innerHTML = `
                 <div class="card-icon">${card.icon}</div>
                 <div class="card-info">
@@ -264,7 +263,8 @@ function update(dt) {
 
     if (player.stunTimer <= 0) {
         if (player.isDashing) {
-            player.x += Math.cos(player.dashAngle) * player.dashSpeed * dt; player.y += Math.sin(player.dashAngle) * player.dashSpeed * dt;
+            player.x += Math.cos(player.dashAngle) * player.dashSpeed * dt;
+            player.y += Math.sin(player.dashAngle) * player.dashSpeed * dt;
         } else if (gameState !== 'transition') {
             const dx = player.targetX - player.x, dy = player.targetY - player.y;
             const distance = Math.hypot(dx, dy);
@@ -275,15 +275,18 @@ function update(dt) {
                 else { player.x += (dx / distance) * moveDist; player.y += (dy / distance) * moveDist; }
             }
         } else if (currentBiomeIdx < 10) {
-            player.x += (portal.x - player.x) * 2 * dt; player.y += (portal.y - player.y) * 2 * dt;
+            player.x += (portal.x - player.x) * 2 * dt;
+            player.y += (portal.y - player.y) * 2 * dt;
         }
-        player.x = Math.max(player.radius, Math.min(WORLD_SIZE - player.radius, player.x)); player.y = Math.max(player.radius, Math.min(WORLD_SIZE - player.radius, player.y));
+        player.x = Math.max(player.radius, Math.min(WORLD_SIZE - player.radius, player.x));
+        player.y = Math.max(player.radius, Math.min(WORLD_SIZE - player.radius, player.y));
     }
 
     for (let i = 0; i < entities.length; i++) {
         let e = entities[i]; if (!e.active) continue;
         const distToPlayer = Math.hypot(player.x - e.x, player.y - e.y);
         
+        // ----- БОСС -----
         if (e.type === 'boss') {
             e.angle += dt * 0.5; 
             e.stateTimer -= dt;
@@ -293,7 +296,8 @@ function update(dt) {
 
             if (e.phase === 3) {
                 let angleToPlayer = Math.atan2(player.y - e.y, player.x - e.x);
-                e.x += Math.cos(angleToPlayer) * 120 * dt; e.y += Math.sin(angleToPlayer) * 120 * dt;
+                e.x += Math.cos(angleToPlayer) * 120 * dt;
+                e.y += Math.sin(angleToPlayer) * 120 * dt;
             }
 
             if (e.stateTimer <= 0) {
@@ -318,7 +322,8 @@ function update(dt) {
                     e.hp--; updateUI(); discoveredEnemies.add('boss');
                     player.isDashing = false;
                     let bounceAngle = Math.atan2(player.y - e.y, player.x - e.x);
-                    player.targetX = player.x + Math.cos(bounceAngle) * 300; player.targetY = player.y + Math.sin(bounceAngle) * 300;
+                    player.targetX = player.x + Math.cos(bounceAngle) * 300;
+                    player.targetY = player.y + Math.sin(bounceAngle) * 300;
                     player.x = player.targetX; player.y = player.targetY;
                     explosions.push({ x: e.x, y: e.y, maxRadius: e.size*1.5, life: 0.3, maxLife: 0.3 });
 
@@ -332,13 +337,15 @@ function update(dt) {
                 } else {
                     takeDamage('boss');
                     let bounceAngle = Math.atan2(player.y - e.y, player.x - e.x);
-                    player.x += Math.cos(bounceAngle) * 150; player.y += Math.sin(bounceAngle) * 150;
+                    player.x += Math.cos(bounceAngle) * 150;
+                    player.y += Math.sin(bounceAngle) * 150;
                     player.targetX = player.x; player.targetY = player.y;
                 }
             }
             continue; 
         }
         
+        // ----- СНАРЯДЫ -----
         if (e.type === 'projectile') {
             e.x += e.vx * dt; e.y += e.vy * dt;
             if (e.x < 0 || e.x > WORLD_SIZE || e.y < 0 || e.y > WORLD_SIZE) e.active = false;
@@ -346,22 +353,277 @@ function update(dt) {
             continue;
         }
 
+        // ----- МАГНИТ ДЛЯ МУСОРА И СЕМЯН -----
         if (player.magnetRadius > 0 && (e.type === 'trash' || e.type === 'bone')) {
             if (distToPlayer < player.magnetRadius + player.radius) {
-                const magAngle = Math.atan2(player.y - e.y, player.x - e.x); e.x += Math.cos(magAngle) * 300 * dt; e.y += Math.sin(magAngle) * 300 * dt;
+                const magAngle = Math.atan2(player.y - e.y, player.x - e.x);
+                e.x += Math.cos(magAngle) * 300 * dt;
+                e.y += Math.sin(magAngle) * 300 * dt;
             }
         }
         
+        // ----- ЛОГИКА ВРАГОВ -----
         switch (e.type) {
             case 'frog':
                 e.stateTimer -= dt;
-                if (distToPlayer < 250 && e.stateTimer <= 0) { e.angle = Math.atan2(e.y - player.y, e.x - player.x); e.vx = Math.cos(e.angle) * 800; e.vy = Math.sin(e.angle) * 800; e.stateTimer = 1.5; }
-                e.vx *= 0.85; e.vy *= 0.85; e.x += e.vx * dt; e.y += e.vy * dt; if (Math.hypot(e.vx, e.vy) > 10) e.angle = Math.atan2(e.vy, e.vx); break;
+                if (distToPlayer < 250 && e.stateTimer <= 0) {
+                    e.angle = Math.atan2(e.y - player.y, e.x - player.x);
+                    e.vx = Math.cos(e.angle) * 800;
+                    e.vy = Math.sin(e.angle) * 800;
+                    e.stateTimer = 1.5;
+                }
+                e.vx *= 0.85; e.vy *= 0.85;
+                e.x += e.vx * dt; e.y += e.vy * dt;
+                if (Math.hypot(e.vx, e.vy) > 10) e.angle = Math.atan2(e.vy, e.vx);
+                break;
+                
             case 'lizard':
-                if (distToPlayer < 150) { e.angle = Math.atan2(player.y - e.y, player.x - e.x); e.x -= Math.cos(e.angle) * 40 * dt; e.y -= Math.sin(e.angle) * 40 * dt; } break;
+                if (distToPlayer < 150) {
+                    e.angle = Math.atan2(player.y - e.y, player.x - e.x);
+                    e.x -= Math.cos(e.angle) * 40 * dt;
+                    e.y -= Math.sin(e.angle) * 40 * dt;
+                }
+                break;
+                
             case 'undead':
-                e.stateTimer -= dt; if (e.stateTimer <= 0) { e.angle = Math.random() * Math.PI * 2; e.vx = Math.cos(e.angle) * 60; e.vy = Math.sin(e.angle) * 60; e.stateTimer = 2.0; }
-                e.x += e.vx * dt; e.y += e.vy * dt; break;
-            case 'bone': e.stateTimer -= dt; if (e.stateTimer <= 0) { e.type = 'undead'; e.size = 18; } break;
+                e.stateTimer -= dt;
+                if (e.stateTimer <= 0) {
+                    e.angle = Math.random() * Math.PI * 2;
+                    e.vx = Math.cos(e.angle) * 60;
+                    e.vy = Math.sin(e.angle) * 60;
+                    e.stateTimer = 2.0;
+                }
+                e.x += e.vx * dt;
+                e.y += e.vy * dt;
+                break;
+                
+            case 'bone':
+                e.stateTimer -= dt;
+                if (e.stateTimer <= 0) {
+                    e.type = 'undead';
+                    e.size = 18;
+                }
+                break;
+                
             case 'leprechaun':
-                if (distToPlayer < 350) { e.angle = Math.atan2(e.y - player.y, e.x - player.x) + (Math.sin(gameTime * 15) * 0.5); e.x += Math
+                if (distToPlayer < 350) {
+                    e.angle = Math.atan2(e.y - player.y, e.x - player.x) + (Math.sin(gameTime * 15) * 0.5);
+                    e.x += Math.cos(e.angle) * 200 * dt;
+                    e.y += Math.sin(e.angle) * 200 * dt;
+                }
+                break;
+                
+            case 'hunter':
+                if (distToPlayer < 400) {
+                    e.angle = Math.atan2(player.y - e.y, player.x - e.x);
+                    e.x += Math.cos(e.angle) * 150 * dt;
+                    e.y += Math.sin(e.angle) * 150 * dt;
+                }
+                break;
+                
+            case 'bomber':
+                e.stateTimer = (e.stateTimer || 0) + dt;
+                if (e.stateTimer > 2.0 && distToPlayer < 100) {
+                    // взрыв
+                    explosions.push({ x: e.x, y: e.y, maxRadius: 60, life: 0.4, maxLife: 0.4 });
+                    if (distToPlayer < 80) takeDamage('bomber');
+                    e.active = false;
+                }
+                break;
+        }
+        
+        // ----- СБОР РЕСУРСОВ (столкновение игрока с врагом/едой) -----
+        if (distToPlayer < player.radius + e.size) {
+            // Если игрок в рывке — убивает любого врага (кроме босса, он уже обработан)
+            if (player.isDashing && e.type !== 'boss') {
+                discoveredEnemies.add(e.type);
+                // Выпадение массы от врага
+                let massDrop = 1;
+                if (e.type === 'frog') massDrop = 2;
+                if (e.type === 'lizard') massDrop = 3;
+                if (e.type === 'undead') massDrop = 2;
+                if (e.type === 'hunter') massDrop = 4;
+                if (e.type === 'leprechaun') massDrop = 0;
+                if (e.type === 'bomber') massDrop = 2;
+                for(let m=0; m<massDrop; m++) spawnDroppedMass(e.x, e.y);
+                
+                // Опыт
+                let xpGain = 0;
+                if (e.type === 'frog') xpGain = 2;
+                if (e.type === 'lizard') xpGain = 5;
+                if (e.type === 'undead') xpGain = 3;
+                if (e.type === 'hunter') xpGain = 10;
+                if (e.type === 'leprechaun') xpGain = 50;
+                if (e.type === 'bomber') xpGain = 4;
+                if (e.type === 'trash') xpGain = 1;
+                if (e.type === 'bone') xpGain = 1;
+                if (xpGain > 0) gainXP(xpGain);
+                
+                explosions.push({ x: e.x, y: e.y, maxRadius: e.size, life: 0.2, maxLife: 0.2 });
+                e.active = false;
+                continue;
+            }
+            
+            // Обычное касание (не рывок)
+            if (e.type === 'trash' || e.type === 'bone') {
+                // Съедобные предметы
+                if (player.load < player.maxLoad) {
+                    player.load++;
+                    updateRadius();
+                    gainXP(e.type === 'bone' ? 1 : 0);
+                    if (e.type === 'bone') gainXP(1);
+                    e.active = false;
+                    updateUI();
+                }
+            } 
+            else if (e.type === 'leprechaun') {
+                // Лепрекон убегает, но если догнали — даёт опыт
+                gainXP(50);
+                discoveredEnemies.add('leprechaun');
+                e.active = false;
+                explosions.push({ x: e.x, y: e.y, maxRadius: 20, life: 0.2, maxLife: 0.2 });
+            }
+            else if (e.type === 'lizard') {
+                // Каменный страж — только рывком
+                takeDamage('lizard');
+                let bounceAngle = Math.atan2(player.y - e.y, player.x - e.x);
+                player.x += Math.cos(bounceAngle) * 100;
+                player.y += Math.sin(bounceAngle) * 100;
+                player.targetX = player.x; player.targetY = player.y;
+            }
+            else if (e.type === 'hunter') {
+                takeDamage('hunter');
+                let bounceAngle = Math.atan2(player.y - e.y, player.x - e.x);
+                player.x += Math.cos(bounceAngle) * 150;
+                player.y += Math.sin(bounceAngle) * 150;
+                player.targetX = player.x; player.targetY = player.y;
+            }
+            else {
+                // Обычные враги (frog, undead, bomber)
+                discoveredEnemies.add(e.type);
+                let massGain = 1;
+                if (e.type === 'frog') massGain = 2;
+                if (e.type === 'undead') {
+                    massGain = 2;
+                    // Оставляем семя
+                    spawnDroppedMass(e.x, e.y);
+                    spawnDroppedMass(e.x+20, e.y+20);
+                }
+                if (e.type === 'bomber') massGain = 2;
+                if (player.load + massGain <= player.maxLoad) {
+                    player.load += massGain;
+                    updateRadius();
+                } else {
+                    player.load = player.maxLoad;
+                }
+                let xpGain = (e.type === 'frog') ? 2 : (e.type === 'undead') ? 3 : (e.type === 'bomber') ? 4 : 1;
+                gainXP(xpGain);
+                e.active = false;
+                updateUI();
+            }
+        }
+    }
+    
+    // Удаление неактивных сущностей
+    entities = entities.filter(e => e.active);
+    
+    // Взаимодействие с порталом (сдача массы)
+    let distToPortal = Math.hypot(player.x - portal.x, player.y - portal.y);
+    if (distToPortal < player.radius + portal.radius && player.load > 0 && gameState === 'playing') {
+        player.load--;
+        updateRadius();
+        feedPortal();
+        updateUI();
+    }
+    
+    portal.pulse = Math.max(0, portal.pulse - dt*3);
+}
+
+// ----- ОТРИСОВКА -----
+function draw() {
+    camera.x = player.x - width/2;
+    camera.y = player.y - height/2;
+    camera.x = Math.min(Math.max(camera.x, 0), WORLD_SIZE - width);
+    camera.y = Math.min(Math.max(camera.y, 0), WORLD_SIZE - height);
+    
+    ctx.clearRect(0, 0, width, height);
+    let biome = biomes[Math.min(currentBiomeIdx, biomes.length-1)];
+    ctx.fillStyle = biome.bg;
+    ctx.fillRect(0, 0, width, height);
+    
+    // Сетка
+    ctx.strokeStyle = biome.line;
+    ctx.lineWidth = 1;
+    let step = 100;
+    let offsetX = camera.x % step;
+    let offsetY = camera.y % step;
+    for(let x = -offsetX; x < width; x += step) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
+    }
+    for(let y = -offsetY; y < height; y += step) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
+    }
+    
+    // Портал
+    let px = portal.x - camera.x, py = portal.y - camera.y;
+    let pulseScale = 1 + Math.sin(gameTime * 10) * 0.05;
+    ctx.beginPath(); ctx.arc(px, py, portal.radius * pulseScale, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(138,43,226,0.6)'; ctx.fill();
+    ctx.beginPath(); ctx.arc(px, py, portal.radius * 0.8, 0, Math.PI*2);
+    ctx.fillStyle = '#4b0082'; ctx.fill();
+    if (portal.pulse > 0) {
+        ctx.beginPath(); ctx.arc(px, py, portal.radius * (1 + portal.pulse*0.5), 0, Math.PI*2);
+        ctx.fillStyle = `rgba(255,255,255,${portal.pulse*0.5})`; ctx.fill();
+    }
+    
+    // Враги
+    for(let e of entities) {
+        let ex = e.x - camera.x, ey = e.y - camera.y;
+        if(ex + e.size < 0 || ex - e.size > width || ey + e.size < 0 || ey - e.size > height) continue;
+        
+        if(e.type === 'trash') { ctx.fillStyle = '#8b5a2b'; ctx.beginPath(); ctx.arc(ex, ey, e.size, 0, Math.PI*2); ctx.fill(); }
+        else if(e.type === 'frog') { ctx.fillStyle = '#2e8b57'; ctx.beginPath(); ctx.ellipse(ex, ey, e.size, e.size*0.8, 0, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(ex-5, ey-3, 3, 0, Math.PI*2); ctx.fill(); }
+        else if(e.type === 'lizard') { ctx.fillStyle = '#696969'; ctx.beginPath(); ctx.rect(ex-e.size/2, ey-e.size/2, e.size, e.size); ctx.fill(); }
+        else if(e.type === 'undead') { ctx.fillStyle = '#556b2f'; ctx.beginPath(); ctx.ellipse(ex, ey, e.size, e.size*1.2, 0, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = '#8b4513'; ctx.beginPath(); ctx.rect(ex-3, ey-5, 6, 10); ctx.fill(); }
+        else if(e.type === 'bone') { ctx.fillStyle = '#cd853f'; ctx.beginPath(); ctx.rect(ex-5, ey-2, 10, 4); ctx.fill(); }
+        else if(e.type === 'leprechaun') { ctx.fillStyle = '#daa520'; ctx.beginPath(); ctx.arc(ex, ey, e.size, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(ex-3, ey-2, 2, 0, Math.PI*2); ctx.fill(); }
+        else if(e.type === 'hunter') { ctx.fillStyle = '#2f4f4f'; ctx.beginPath(); ctx.moveTo(ex, ey-e.size); ctx.lineTo(ex+e.size, ey+e.size); ctx.lineTo(ex-e.size, ey+e.size); ctx.fill(); }
+        else if(e.type === 'bomber') { ctx.fillStyle = '#b22222'; ctx.beginPath(); ctx.ellipse(ex, ey, e.size, e.size*0.7, 0, 0, Math.PI*2); ctx.fill(); }
+        else if(e.type === 'projectile') { ctx.fillStyle = '#ff4500'; ctx.beginPath(); ctx.arc(ex, ey, 6, 0, Math.PI*2); ctx.fill(); }
+        else if(e.type === 'boss') { ctx.fillStyle = '#8b0000'; ctx.beginPath(); ctx.arc(ex, ey, e.size, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = '#ff0000'; ctx.beginPath(); ctx.ellipse(ex-20, ey-20, 10, 15, 0, 0, Math.PI*2); ctx.fill(); }
+        
+        // Взрывы
+        for(let exp of explosions) {
+            let progress = exp.life / exp.maxLife;
+            let rad = exp.maxRadius * (1 - progress);
+            ctx.beginPath(); ctx.arc(exp.x - camera.x, exp.y - camera.y, rad, 0, Math.PI*2);
+            ctx.fillStyle = `rgba(255,100,0,${1-progress})`; ctx.fill();
+        }
+    }
+    
+    // Игрок
+    let plyX = player.x - camera.x, plyY = player.y - camera.y;
+    ctx.shadowBlur = 20; ctx.shadowColor = player.isDashing ? '#fff' : '#0f0';
+    ctx.beginPath(); ctx.arc(plyX, plyY, player.radius, 0, Math.PI*2);
+    ctx.fillStyle = player.colorBase; ctx.fill();
+    ctx.beginPath(); ctx.arc(plyX-3, plyY-3, player.radius*0.3, 0, Math.PI*2);
+    ctx.fillStyle = '#fff'; ctx.fill();
+    ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(plyX-5, plyY-5, 3, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(plyX+3, plyY-3, 3, 0, Math.PI*2); ctx.fill();
+    if (player.invulnTimer > 0) {
+        ctx.globalAlpha = 0.5 + Math.sin(gameTime*30)*0.5;
+        ctx.beginPath(); ctx.arc(plyX, plyY, player.radius+5, 0, Math.PI*2);
+        ctx.fillStyle = '#fff'; ctx.fill();
+        ctx.globalAlpha = 1;
+    }
+    ctx.shadowBlur = 0;
+    
+    // Текст счёта
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 20px monospace';
+    ctx.shadowBlur = 0;
+}
+
+requestAnimationFrame(gameLoop);
+updateUI();
+updateRadius();
