@@ -401,7 +401,7 @@ function update(dt) {
             case 'leprechaun':
                 if (distToPlayer < 350) { e.angle = Math.atan2(e.y - player.y, e.x - player.x) + (Math.sin(gameTime * 15) * 0.5); e.x += Math.cos(e.angle) * 220 * dt; e.y += Math.sin(e.angle) * 220 * dt; } break;
             case 'hunter':
-                if (distToPlayer < 600) { e.angle = Math.atan2(player.y - e.y, player.x - e.x); e.x += Math.cos(e.angle) * 180 * dt; e.y += Math.sin(e.angle) * 180 * dt; } break;
+                if (distToPlayer < 350) { e.angle = Math.atan2(player.y - e.y, player.x - e.x); e.x += Math.cos(e.angle) * 180 * dt; e.y += Math.sin(e.angle) * 180 * dt; } break;
             case 'bomber':
                 if (distToPlayer < 120) { 
                     e.stateTimer += dt; 
