@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Голодная Бездна: Финал</title>
-    <link rel="stylesheet" href="slime.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <canvas id="gameCanvas"></canvas>
@@ -37,6 +37,7 @@
     </div>
 
     <div id="menu-buttons">
+        <button id="pause-btn" class="menu-btn" style="padding: 12px 15px; font-size: 16px; background: linear-gradient(45deg, #555, #222); box-shadow: 0 0 10px rgba(0,0,0,0.8);">⏸️</button>
         <button id="bestiary-btn" class="menu-btn">📖 БЕСТИАРИЙ</button>
     </div>
 
@@ -57,21 +58,27 @@
         <button id="restart-btn" onclick="location.reload()">ПЕРЕРОДИТЬСЯ</button>
     </div>
 
+    <div id="pause-screen" class="overlay">
+        <div id="pause-title">ПАУЗА</div>
+        <button id="resume-btn" class="menu-btn" style="font-size: 20px; padding: 15px 40px; margin-top: 20px;">ПРОДОЛЖИТЬ</button>
+    </div>
+
     <div id="tutorial-screen" class="overlay" style="display: flex;">
         <div id="tutorial-title">ГОЛОДНАЯ БЕЗДНА</div>
         <div class="tutorial-text">
             <p>Вы — нестабильная слизь. Ваша цель — <b>кормить Аномалию (Портал)</b>, чтобы захватывать миры.</p>
             <p>Поедайте всё! Сдавайте массу в портал, получайте уровни и мутируйте.</p>
             <p style="color: #ffaa00;">⚠️ В конце вас ждет Истинное Зло.</p>
-           <div class="controls-box">
+            <div class="controls-box">
                 <b>Управление:</b><br>
                 🖱️/👆 <b>Удерживать</b> — Ползти за курсором / пальцем<br>
-                🖱️/👆 <b>ПКМ или Двойной Тап</b> — <b>ТЕНЕВОЙ РЫВОК</b> (Тратит 1 массу, пробивает броню и наносит урон Боссу)
+                🖱️/👆 <b>ПКМ или Двойной Тап</b> — <b>ТЕНЕВОЙ РЫВОК</b> (Тратит 1 массу, пробивает броню и наносит урон Боссу)<br>
+                ⌨️ <b>Escape</b> — Пауза
             </div>
         </div>
         <button id="start-btn" class="menu-btn" style="font-size: 24px; padding: 15px 40px; margin-top: 20px;">ПОГЛОТИТЬ МИР</button>
     </div>
 
-    <script src="slime.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
