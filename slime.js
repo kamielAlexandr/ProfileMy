@@ -92,7 +92,6 @@ function spawnEntities() {
         if(type === 'bomber') size = 22;
         if(type === 'trash' || type === 'leprechaun') size = 12;
         
-        // Добавляем stateTimer для bomber
         let stateTimer = (type === 'bone') ? 3 : (type === 'bomber') ? 0 : 0;
         entities.push({ x: rx, y: ry, type: type, size: size, active: true, vx: 0, vy: 0, stateTimer: stateTimer, angle: Math.random() * Math.PI * 2 });
     }
@@ -205,7 +204,11 @@ function gainXP(amount) {
         const container = document.getElementById('cards-container'); container.innerHTML = '';
         cardPool.sort(() => 0.5 - Math.random()).slice(0, 3).forEach(card => {
             let div = document.createElement('div'); div.className = 'card';
-            div.innerHTML = `<div class="card-icon">${card.icon}</div><div class="card-title">${card.title}</div><div class="card-desc">${card.desc}</div>`;
+            div.innerHTML = `<div class="card-icon">${card.icon}</div>
+                             <div class="card-info">
+                                 <div class="card-title">${card.title}</div>
+                                 <div class="card-desc">${card.desc}</div>
+                             </div>`;
             div.onclick = () => { card.action(); document.getElementById('level-up-screen').style.display = 'none'; gameState = 'playing'; updateUI(); };
             container.appendChild(div);
         });
@@ -290,12 +293,10 @@ function update(dt) {
         player.x = Math.max(player.radius, Math.min(WORLD_SIZE - player.radius, player.x)); player.y = Math.max(player.radius, Math.min(WORLD_SIZE - player.radius, player.y));
     }
 
-    // Обработка врагов (без удаления внутри цикла)
     for (let i = 0; i < entities.length; i++) {
         let e = entities[i]; if (!e.active) continue;
         const distToPlayer = Math.hypot(player.x - e.x, player.y - e.y);
         
-        // === ЛОГИКА БОССА ===
         if (e.type === 'boss') {
             e.angle += dt * 0.5; 
             e.stateTimer -= dt;
@@ -353,13 +354,13 @@ function update(dt) {
             continue;
         }
 
-        if (player.magnetRadius > 0 && (e.type === 'trash' || e.type === 'bone')) {
+        // Магнит работает, только если желудок не забит
+        if (player.load < player.maxLoad && player.magnetRadius > 0 && (e.type === 'trash' || e.type === 'bone')) {
             if (distToPlayer < player.magnetRadius + player.radius) {
                 const magAngle = Math.atan2(player.y - e.y, player.x - e.x); e.x += Math.cos(magAngle) * 300 * dt; e.y += Math.sin(magAngle) * 300 * dt;
             }
         }
         
-        // Движение врагов
         switch (e.type) {
             case 'frog':
                 e.stateTimer -= dt;
@@ -384,24 +385,40 @@ function update(dt) {
         }
         e.x = Math.max(0, Math.min(WORLD_SIZE, e.x)); e.y = Math.max(0, Math.min(WORLD_SIZE, e.y));
         
-        // Столкновение с игроком (сбор ресурсов / урон)
-        if (distToPlayer < player.radius + e.size/2 && e.active) {
+        if (distToPlayer < player.radius + e.size / 2 && e.active) {
+            
+            // Если наткнулись на опасного врага без рывка
             if ((e.type === 'lizard' || e.type === 'hunter') && !player.isDashing) {
-                const angle = Math.atan2(player.y - e.y, player.x - e.x); player.x += Math.cos(angle) * 60; player.y += Math.sin(angle) * 60; player.targetX = player.x; player.targetY = player.y; takeDamage(e.type); e.active = false; continue;
+                const angle = Math.atan2(player.y - e.y, player.x - e.x); player.x += Math.cos(angle) * 60; player.y += Math.sin(angle) * 60; player.targetX = player.x; player.targetY = player.y; takeDamage(e.type); continue;
             }
             if (e.type === 'bomber') { explosions.push({ x: e.x, y: e.y, maxRadius: 150, life: 0.5, maxLife: 0.5 }); takeDamage('bomber'); e.active = false; continue; }
             if (e.type === 'undead') { discoveredEnemies.add('undead'); e.type = 'bone'; e.size = 14; e.stateTimer = 4.0; const angle = Math.atan2(player.y - e.y, player.x - e.x); player.x += Math.cos(angle) * 15; player.y += Math.sin(angle) * 15; continue; }
             if (e.type === 'leprechaun') { discoveredEnemies.add('leprechaun'); gainXP(50); e.active = false; continue; }
             
+            // === ПРОВЕРКА НА СЫТОСТЬ (ОТТАЛКИВАНИЕ ЕДЫ) ===
+            let isFoodOnly = ['trash', 'bone', 'frog'].includes(e.type);
+            if (isFoodOnly && player.load >= player.maxLoad) {
+                // Если желудок полон, отталкиваем еду (не съедаем)
+                let pushAngle = Math.atan2(e.y - player.y, e.x - player.x);
+                e.x += Math.cos(pushAngle) * 150 * dt;
+                e.y += Math.sin(pushAngle) * 150 * dt;
+                continue; 
+            }
+            // ==============================================
+
             discoveredEnemies.add(e.type); e.active = false; 
             let gainedMass = 1; let gainedXp = 0;
             switch(e.type) { case 'trash': gainedMass = 1; gainedXp = 0; break; case 'bone':  gainedMass = 1; gainedXp = 1; break; case 'frog':  gainedMass = 2; gainedXp = 2; break; case 'lizard': gainedMass = 3; gainedXp = 5; break; case 'hunter': gainedMass = 4; gainedXp = 10; break; }
-            if (player.load < player.maxLoad) { player.load = Math.min(player.maxLoad, player.load + gainedMass); updateRadius(); }
+            
+            if (player.load < player.maxLoad) { 
+                player.load = Math.min(player.maxLoad, player.load + gainedMass); 
+                updateRadius(); 
+            }
             if (gainedXp > 0) gainXP(gainedXp); else updateUI();
         }
     }
 
-    // Удаление неактивных сущностей
+    // Удаление мертвых сущностей
     entities = entities.filter(e => e.active);
 
     if (currentBiomeIdx < 10) {
@@ -415,7 +432,6 @@ function update(dt) {
     camera.x = player.x - width / 2; camera.y = player.y - height / 2;
 }
 
-// === ОТРИСОВКА (полностью сохранена ваша великолепная графика) ===
 function draw() {
     let bgConfig = biomes[Math.min(currentBiomeIdx, biomes.length - 1)];
     ctx.fillStyle = bgConfig.bg; ctx.fillRect(0, 0, width, height);
@@ -492,6 +508,7 @@ function draw() {
                 if (e.stateTimer > 0) { ctx.fillStyle = (Math.floor(gameTime * 20)%2===0) ? '#fff' : '#ff4081'; ctx.beginPath(); ctx.moveTo(e.size*0.6, 0); ctx.lineTo(0, e.size*0.3); ctx.lineTo(-e.size*0.6, 0); ctx.lineTo(0, -e.size*0.3); ctx.fill(); } 
                 else { ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.beginPath(); ctx.moveTo(e.size, 0); ctx.lineTo(0, e.size*0.6); ctx.lineTo(0, -e.size*0.6); ctx.fill(); }
                 ctx.shadowBlur = 0; ctx.fillStyle = '#ff4081'; ctx.fillRect(e.size*1.2, 0, 4, 4); ctx.fillRect(-e.size*1.2, 0, 4, 4); ctx.fillRect(0, e.size*1.2, 4, 4); ctx.fillRect(0, -e.size*1.2, 4, 4); break;
+            
             case 'projectile':
                 ctx.shadowColor = '#ff0044'; ctx.shadowBlur = 15; ctx.fillStyle = '#ff0044'; ctx.beginPath(); ctx.arc(0, 0, e.size, 0, Math.PI*2); ctx.fill();
                 ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, 0, e.size*0.5, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0; break;
