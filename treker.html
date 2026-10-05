@@ -1,0 +1,381 @@
+import React, { useState, useEffect } from "react";
+
+const STORAGE_KEY = "pushup-tracker-v2";
+
+const EXERCISES = [
+  { id: "pushups", name: "Отжимания", icon: "💪", unit: "шт", step: 5, defaults: [10, 20, 30, 50], goals: { pushups: 1000 } },
+  { id: "squats", name: "Приседания", icon: "🦵", unit: "шт", step: 5, defaults: [10, 20, 30, 50] },
+  { id: "plank", name: "Планка", icon: "🧘", unit: "сек", step: 15, defaults: [30, 60, 90, 120] },
+  { id: "pullups", name: "Подтягивания", icon: "🧗", unit: "шт", step: 1, defaults: [3, 5, 8, 10] },
+  { id: "abs", name: "Пресс", icon: "🔥", unit: "шт", step: 10, defaults: [20, 30, 50, 100] },
+];
+
+const loadState = () => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return {
+    goals: { pushups: 1000, squats: 1000, plank: 3600, pullups: 100, abs: 1000 },
+    entries: [],
+    dark: false,
+    reminder: null, // "HH:MM" or null
+    reminderFired: null,
+  };
+};
+
+const fmt = (n) => n.toLocaleString("ru");
+
+export default function App() {
+  const [state, setState] = useState(loadState);
+  const { goals, entries, dark, reminder } = state;
+  const set = (patch) => setState(s => ({ ...s, ...patch }));
+
+  useEffect(() => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+  }, [state]);
+
+  const [activeEx, setActiveEx] = useState("pushups");
+  const [count, setCount] = useState(10);
+  const [tab, setTab] = useState("history");
+  const [goalDialog, setGoalDialog] = useState(null);
+  const [goalInput, setGoalInput] = useState("");
+  const [done, setDone] = useState(null);
+  const [remDialog, setRemDialog] = useState(false);
+  const [remInput, setRemInput] = useState("19:00");
+
+  useEffect(() => {
+    const ex = EXERCISES.find(e => e.id === activeEx);
+    setCount(ex.defaults[0]);
+  }, [activeEx]);
+
+  // reminder check (every 30 s while app open)
+  useEffect(() => {
+    const tick = () => {
+      if (!reminder) return;
+      const now = new Date();
+      const cur = String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
+      const today = now.toISOString().slice(0, 10);
+      if (cur === reminder && state.reminderFired !== today) {
+        set({ reminderFired: today });
+        setDone({ text: "⏰ Пора тренироваться! Отметь подход 💪" });
+      }
+    };
+    tick();
+    const t = setInterval(tick, 30000);
+    return () => clearInterval(t);
+  }, [reminder, state.reminderFired]);
+
+  const ex = EXERCISES.find(e => e.id === activeEx) || EXERCISES[0];
+  const exTotal = entries.filter(e => e.id === activeEx).reduce((s, e) => s + e.count, 0);
+  const goal = goals[activeEx] || 1000;
+  const percent = Math.min(100, Math.round((exTotal / goal) * 1000) / 10);
+  const remaining = Math.max(0, goal - exTotal);
+  const completed = exTotal >= goal;
+
+  const today = new Date().toISOString().slice(0, 10);
+  const todayTotal = entries.filter(e => e.id === activeEx && e.date === today).reduce((s, e) => s + e.count, 0);
+  const todayAll = entries.filter(e => e.date === today).reduce((s, e) => s + e.count, 0);
+
+  const addEntry = () => {
+    const n = parseInt(count, 10);
+    if (!n || n <= 0) return;
+    set({ entries: [{ id: activeEx, count: n, date: today, ts: Date.now() }, ...entries] });
+    if (exTotal + n >= goal && exTotal < goal) setDone({ text: `🎉 Цель «${ex.name}» достигнута! Красавчик!` });
+  };
+
+  const removeEntry = (ts) => set({ entries: entries.filter(e => e.ts !== ts) });
+
+  const saveGoal = () => {
+    const n = parseInt(goalInput, 10);
+    if (n > 0) set({ goals: { ...goals, [activeEx]: n } });
+    setGoalDialog(false);
+  };
+
+  const saveReminder = () => {
+    set({ reminder: /^\d{2}:\d{2}$/.test(remInput) ? remInput : null });
+    setRemDialog(false);
+  };
+
+  const days = Array.from({ length: 14 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (13 - i));
+    const key = d.toISOString().slice(0, 10);
+    const c = entries.filter(e => e.date === key && e.id === activeEx).reduce((s, e) => s + e.count, 0);
+    return { label: key.slice(8) + "." + key.slice(5, 7), count: c };
+  });
+
+  const bg = dark ? "bg-slate-900" : "bg-slate-50";
+  const card = dark ? "bg-slate-800 border-slate-700 text-slate-100" : "bg-white border-slate-100 text-slate-800";
+  const muted = dark ? "text-slate-400" : "text-slate-500";
+  const chip = dark ? "bg-slate-700 text-slate-200" : "bg-slate-100 text-slate-600";
+  const soft = dark ? "bg-slate-700/50 text-slate-200" : "bg-orange-50 text-orange-600";
+
+  const Card = ({ children, className = "" }) => (
+    <div className={"rounded-2xl shadow-sm border p-5 " + card + " " + className}>{children}</div>
+  );
+
+  const tabBtn = (id, label) => (
+    <button
+      key={id}
+      onClick={() => setTab(id)}
+      className={"flex-1 py-2 rounded-xl text-sm font-semibold transition-colors " +
+        (tab === id
+          ? "bg-orange-500 text-white shadow"
+          : dark ? "text-slate-400 hover:bg-slate-700" : "text-slate-500 hover:bg-slate-100")}
+    >
+      {label}
+    </button>
+  );
+
+  return (
+    <div className={"min-h-screen flex justify-center " + bg} style={{ fontFamily: "system-ui, sans-serif" }}>
+      <div className="w-full max-w-sm p-4 pb-10">
+
+        {/* Header */}
+        <div className="flex items-center justify-between mb-3 pt-2">
+          <h1 className={"text-2xl font-black " + (dark ? "text-slate-100" : "text-slate-800")}>💪 Трекер</h1>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setRemDialog(true)}
+              className={"text-xs font-semibold px-3 py-1.5 rounded-full " + (reminder ? "bg-orange-500 text-white" : chip)}
+              title="Напоминание"
+            >
+              ⏰ {reminder || "напомнить"}
+            </button>
+            <button
+              onClick={() => set({ dark: !dark })}
+              className={"w-9 h-9 rounded-full text-base " + chip}
+              title="Тема"
+            >
+              {dark ? "☀️" : "🌙"}
+            </button>
+          </div>
+        </div>
+
+        {/* Exercise tabs */}
+        <div className="flex gap-2 overflow-x-auto pb-2 mb-3 -mx-1 px-1">
+          {EXERCISES.map(e => (
+            <button
+              key={e.id}
+              onClick={() => setActiveEx(e.id)}
+              className={"shrink-0 px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors " +
+                (activeEx === e.id
+                  ? "bg-orange-500 text-white shadow"
+                  : dark ? "bg-slate-800 text-slate-300" : "bg-white text-slate-600 border border-slate-200")}
+            >
+              {e.icon} {e.name}
+            </button>
+          ))}
+        </div>
+
+        {/* Progress */}
+        <Card className="mb-4 text-center">
+          <div className="text-5xl font-black tabular-nums">
+            {fmt(exTotal)}
+            <span className={"text-xl font-bold " + muted}> / {fmt(goal)}</span>
+          </div>
+          <div className={"text-sm mt-1 " + muted}>
+            {completed ? "🎉 Цель достигнута!" : `Осталось ${fmt(remaining)} ${ex.unit} · ${percent}%`}
+          </div>
+          <div className={"h-4 rounded-full mt-4 overflow-hidden " + (dark ? "bg-slate-700" : "bg-slate-100")}>
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-orange-400 to-orange-600 transition-all duration-500"
+              style={{ width: `${percent}%` }}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3 mt-4">
+            <div className={"rounded-xl p-3 " + (dark ? "bg-slate-700/50" : "bg-orange-50")}>
+              <div className={"text-xs font-semibold " + (dark ? "text-orange-300" : "text-orange-600")}>Сегодня · {ex.name}</div>
+              <div className="text-xl font-black">{fmt(todayTotal)} {ex.unit}</div>
+            </div>
+            <div className={"rounded-xl p-3 " + (dark ? "bg-slate-700/50" : "bg-slate-50 border border-slate-100")}>
+              <div className={"text-xs font-semibold " + muted}>Всего за сегодня</div>
+              <div className="text-xl font-black">{fmt(todayAll)}</div>
+            </div>
+          </div>
+          <button
+            onClick={() => { setGoalInput(String(goal)); setGoalDialog(true); }}
+            className={"mt-3 text-xs font-semibold underline " + (dark ? "text-orange-300" : "text-orange-500")}
+          >
+            Изменить цель ({fmt(goal)})
+          </button>
+        </Card>
+
+        {/* Quick add */}
+        <Card className="mb-4">
+          <div className="text-sm font-bold mb-3">
+            Отметить: {ex.icon} {ex.name}
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setCount(c => Math.max(1, (parseInt(c, 10) || 0) - ex.step))}
+              className={"w-11 h-11 rounded-xl text-lg font-black active:scale-95 " + chip}
+            >−{ex.step}</button>
+            <input
+              type="number"
+              value={count}
+              onChange={e => setCount(e.target.value)}
+              className={"flex-1 text-center text-2xl font-black rounded-xl py-2 tabular-nums focus:outline-none border " +
+                (dark ? "bg-slate-900 border-slate-600 text-slate-100 focus:border-orange-400" : "border-slate-200 focus:border-orange-400")}
+            />
+            <button
+              onClick={() => setCount(c => (parseInt(c, 10) || 0) + ex.step)}
+              className={"w-11 h-11 rounded-xl text-lg font-black active:scale-95 " + chip}
+            >+{ex.step}</button>
+          </div>
+          <div className="flex gap-2 mt-2">
+            {ex.defaults.map(n => (
+              <button
+                key={n}
+                onClick={() => setCount(n)}
+                className={"flex-1 py-1.5 text-xs font-semibold rounded-lg hover:opacity-80 " + chip}
+              >{n}</button>
+            ))}
+          </div>
+          <button
+            onClick={addEntry}
+            className="w-full mt-3 py-3 rounded-xl bg-orange-500 text-white font-bold text-base hover:bg-orange-600 active:scale-[0.98] transition"
+          >
+            Записать {count || 0} {ex.unit} 💪
+          </button>
+        </Card>
+
+        {/* Tabs */}
+        <div className={"flex gap-2 mb-4 rounded-xl p-1 shadow-sm border " + (dark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-100")}>
+          {tabBtn("history", "История")}
+          {tabBtn("stats", "Статистика")}
+        </div>
+
+        {tab === "history" && (
+          <div className="space-y-2">
+            {entries.length === 0 && (
+              <Card className="text-center text-sm py-8"><span className={muted}>
+                Пока пусто. Жми «Записать» после первого подхода! 🔥
+              </span></Card>
+            )}
+            {entries.map(e => {
+              const x = EXERCISES.find(x => x.id === e.id) || { icon: "❓", unit: "", name: "?" };
+              return (
+                <div key={e.ts} className={"flex items-center justify-between rounded-xl px-4 py-3 shadow-sm border " + card}>
+                  <div>
+                    <div className="font-black">{x.icon} {e.count} {x.unit}</div>
+                    <div className={"text-xs " + muted}>
+                      {x.name} · {new Date(e.ts).toLocaleString("ru", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}
+                    </div>
+                  </div>
+                  <button onClick={() => removeEntry(e.ts)} className="text-slate-400 hover:text-red-400 text-xl font-bold px-2">×</button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {tab === "stats" && (
+          <Card>
+            <div className="text-sm font-bold mb-3">{ex.icon} {ex.name} · последние 14 дней</div>
+            <div className="flex items-end gap-1 h-32">
+              {(() => {
+                const max = Math.max(...days.map(d => d.count), 1);
+                return days.map((d, i) => (
+                  <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
+                    <div className={"text-[9px] font-bold mb-0.5 " + muted}>{d.count || ""}</div>
+                    <div
+                      className={"w-full rounded-t-md " + (d.count ? "bg-orange-400" : dark ? "bg-slate-700" : "bg-slate-100")}
+                      style={{ height: `${Math.max(4, (d.count / max) * 100)}%` }}
+                    />
+                    <div className={"text-[8px] mt-1 truncate w-full text-center " + muted}>{d.label}</div>
+                  </div>
+                ));
+              })()}
+            </div>
+            {(() => {
+              const exEntries = entries.filter(e => e.id === activeEx);
+              if (exEntries.length === 0) return null;
+              return (
+                <div className={"mt-4 pt-4 border-t text-sm space-y-1 " + (dark ? "border-slate-700 " + muted : "border-slate-100 " + (dark ? "" : "text-slate-600"))}>
+                  <div>Средний подход: <b>{Math.round(exTotal / exEntries.length)} {ex.unit}</b></div>
+                  <div>Лучший подход: <b>{Math.max(...exEntries.map(e => e.count))} {ex.unit}</b></div>
+                  <div>Дней с тренировками: <b>{new Set(exEntries.map(e => e.date)).size}</b></div>
+                  <div>Всего упражнений записано: <b>{entries.length}</b></div>
+                </div>
+              );
+            })()}
+          </Card>
+        )}
+
+        {/* Goal dialog */}
+        {goalDialog && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-50" onClick={() => setGoalDialog(false)}>
+            <div className={"rounded-2xl p-5 w-full max-w-xs " + (dark ? "bg-slate-800 text-slate-100" : "bg-white")}
+              onClick={e => e.stopPropagation()}>
+              <div className="font-bold mb-3">Цель: {ex.icon} {ex.name}</div>
+              <input
+                type="number"
+                value={goalInput}
+                onChange={e => setGoalInput(e.target.value)}
+                className={"w-full border rounded-xl px-3 py-2 text-lg font-bold focus:outline-none focus:border-orange-400 " +
+                  (dark ? "bg-slate-900 border-slate-600" : "border-slate-200")}
+                autoFocus
+              />
+              <div className="flex gap-2 mt-3">
+                {ex.unit === "сек"
+                  ? [1800, 3600, 7200].map(n => (
+                      <button key={n} onClick={() => setGoalInput(String(n))}
+                        className={"flex-1 py-1.5 text-xs font-semibold rounded-lg " + chip}>
+                        {n / 60} мин
+                      </button>))
+                  : [500, 1000, 5000].map(n => (
+                      <button key={n} onClick={() => setGoalInput(String(n))}
+                        className={"flex-1 py-1.5 text-xs font-semibold rounded-lg " + chip}>{n}</button>))}
+              </div>
+              <button onClick={saveGoal} className="w-full mt-3 py-2.5 rounded-xl bg-orange-500 text-white font-bold">
+                Сохранить
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Reminder dialog */}
+        {remDialog && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-50" onClick={() => setRemDialog(false)}>
+            <div className={"rounded-2xl p-5 w-full max-w-xs " + (dark ? "bg-slate-800 text-slate-100" : "bg-white")}
+              onClick={e => e.stopPropagation()}>
+              <div className="font-bold mb-1">⏰ Напоминание о тренировке</div>
+              <div className={"text-xs mb-3 " + muted}>
+                Пока приложение открыто, в указанное время покажет напоминание.
+              </div>
+              <input
+                type="time"
+                value={remInput}
+                onChange={e => setRemInput(e.target.value)}
+                className={"w-full border rounded-xl px-3 py-2 text-lg font-bold focus:outline-none focus:border-orange-400 " +
+                  (dark ? "bg-slate-900 border-slate-600" : "border-slate-200")}
+              />
+              <div className="flex gap-2 mt-3">
+                <button onClick={() => { set({ reminder: null }); setRemDialog(false); }}
+                  className={"flex-1 py-2.5 rounded-xl text-sm font-bold " + chip}>Убрать</button>
+                <button onClick={saveReminder}
+                  className="flex-1 py-2.5 rounded-xl bg-orange-500 text-white font-bold text-sm">Включить</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Celebration / notification modal */}
+        {done && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-50" onClick={() => setDone(null)}>
+            <div className={"rounded-2xl p-8 text-center max-w-xs " + (dark ? "bg-slate-800 text-slate-100" : "bg-white")}
+              onClick={e => e.stopPropagation()}>
+              <div className="text-5xl mb-3">{done.text.startsWith("⏰") ? "⏰" : "🎉🏆"}</div>
+              <div className="text-lg font-black mb-3">{done.text}</div>
+              <button onClick={() => setDone(null)} className="w-full py-2.5 rounded-xl bg-orange-500 text-white font-bold">
+                Погнали 💪
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
